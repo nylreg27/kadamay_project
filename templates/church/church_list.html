@@ -1,0 +1,187 @@
+{# church_list.html #}
+{% extends 'base.html' %}
+
+{% block title %}Churches — Kadamay Mortuary System{% endblock %}
+
+{% block content %}
+<div class="card bg-base-100 shadow-xl p-4 md:p-8 text-base-content rounded-xl my-6 mx-auto max-w-7xl"> {# Broader max-width #}
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8"> {# Increased bottom margin #}
+        <div>
+            <h1 class="text-3xl font-extrabold text-primary">List of Churches</h1> {# Larger, primary color title #}
+            <p class="text-base-content/70 mt-1">Manage all registered churches in the system.</p> {# Subtitle #}
+        </div>
+        <div class="flex flex-wrap justify-end items-center gap-3">
+            <form method="get" class="flex items-center"> {# Added items-center for better alignment #}
+                <input type="text" name="search" placeholder="Search churches..." value="{{ request.GET.search }}"
+                       class="input input-bordered w-48 md:w-64 rounded-r-none uppercase transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                <button type="submit"
+                        class="btn btn-primary rounded-l-none transition-all duration-300 hover:scale-105">
+                    <i data-feather="search"></i>
+                </button>
+            </form>
+
+            {% if user.is_superuser %}
+            <a href="{% url 'church:church_create' %}"
+               class="btn btn-success flex items-center gap-2 transition-all duration-300 hover:scale-105">
+                <i data-feather="plus-circle"></i> {# Used plus-circle for better visual #}
+                <span>Add Church</span>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if churches %}
+    <!-- Desktop Table -->
+    <div class="hidden md:block overflow-x-auto rounded-lg shadow-md"> {# Added shadow and rounded-lg #}
+        <table class="table w-full">
+            <thead class="bg-primary text-primary-content"> {# Primary background for header #}
+                <tr>
+                    <th class="px-6 py-3 text-left text-sm font-semibold uppercase tracking-wider">Name</th> {# Adjusted font size and weight #}
+                    <th class="px-6 py-3 text-left text-sm font-semibold uppercase tracking-wider">Address</th>
+                    <th class="px-6 py-3 text-left text-sm font-semibold uppercase tracking-wider">District</th>
+                    <th class="px-6 py-3 text-left text-sm font-semibold uppercase tracking-wider">In-Charge</th>
+                    <th class="px-6 py-3 text-left text-sm font-semibold uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-left text-sm font-semibold uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for church in churches %}
+                <tr class="border-b border-base-200 hover:bg-base-200 transition-colors duration-200"> {# Added subtle border and transition #}
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <a href="{% url 'church:church_detail' church.id %}"
+                           class="link link-hover link-primary font-medium text-base"> {# Slightly larger text #}
+                            {{ church.name|upper }} {# Ensure name is uppercase #}
+                        </a>
+                    </td>
+                    <td class="px-6 py-4">{{ church.address|truncatechars:40|upper }}</td> {# Uppercase and truncate #}
+                    <td class="px-6 py-4">{{ church.district.name|default:"N/A"|upper }}</td> {# Uppercase #}
+                    <td class="px-6 py-4">{{ church.in_charge.username|default:"N/A"|upper }}</td> {# Uppercase #}
+                    <td class="px-6 py-4">
+                        <span class="badge
+                              {% if church.is_active %}badge-success{% else %}badge-error{% endif %} badge-lg font-semibold"> {# Larger badge #}
+                            {% if church.is_active %}ACTIVE{% else %}INACTIVE{% endif %} {# Uppercase status text #}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex gap-2"> {# Reduced gap for action buttons #}
+                            <a href="{% url 'church:church_detail' church.id %}"
+                               class="btn btn-sm btn-info btn-square tooltip" data-tip="View Details"> {# Changed to btn-info, added tooltip #}
+                                <i data-feather="eye"></i>
+                            </a>
+                            {% if user.is_superuser %}
+                            <a href="{% url 'church:church_update' church.id %}"
+                               class="btn btn-sm btn-warning btn-square tooltip" data-tip="Edit Church"> {# Changed to btn-warning #}
+                                <i data-feather="edit"></i>
+                            </a>
+                            <a href="{% url 'church:church_delete' church.id %}"
+                               class="btn btn-sm btn-error btn-square tooltip" data-tip="Delete Church"> {# Changed to btn-error #}
+                                <i data-feather="trash-2"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Mobile Card View -->
+    <div class="md:hidden space-y-4">
+        {% for church in churches %}
+        <div class="card bg-base-200 shadow-lg p-6 rounded-lg border border-base-300"> {# Enhanced card styling #}
+            <div class="flex justify-between items-start mb-3">
+                <h2 class="text-xl font-bold text-primary">
+                    <a href="{% url 'church:church_detail' church.id %}" class="link link-hover">
+                        {{ church.name|upper }}
+                    </a>
+                </h2>
+                <span class="badge
+                      {% if church.is_active %}badge-success{% else %}badge-error{% endif %} badge-lg font-semibold">
+                    {% if church.is_active %}ACTIVE{% else %}INACTIVE{% endif %}
+                </span>
+            </div>
+
+            <div class="space-y-2 text-base"> {# Increased spacing and text size #}
+                <p>
+                    <span class="font-medium text-base-content/80">Address:</span> {{ church.address|truncatechars:50|upper }}
+                </p>
+                <p>
+                    <span class="font-medium text-base-content/80">District:</span> {{ church.district.name|default:"N/A"|upper }}
+                </p>
+                <p>
+                    <span class="font-medium text-base-content/80">In-Charge:</span> {{ church.in_charge.username|default:"N/A"|upper }}
+                </p>
+            </div>
+
+            <div class="card-actions justify-end mt-4"> {# Increased top margin #}
+                <a href="{% url 'church:church_detail' church.id %}"
+                   class="btn btn-sm btn-info">
+                    <i data-feather="eye"></i> View
+                </a>
+                {% if user.is_superuser %}
+                <a href="{% url 'church:church_update' church.id %}"
+                   class="btn btn-sm btn-warning">
+                    <i data-feather="edit"></i> Edit
+                </a>
+                <a href="{% url 'church:church_delete' church.id %}"
+                   class="btn btn-sm btn-error">
+                    <i data-feather="trash-2"></i> Delete
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div class="mt-8 flex justify-center"> {# Increased top margin #}
+        <div class="join shadow-md rounded-lg"> {# Added shadow and rounded to join #}
+            {% if page_obj.has_previous %}
+            <a href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}"
+               class="join-item btn btn-primary btn-outline"> {# Primary outline for nav buttons #}
+                <i data-feather="chevrons-left"></i> First
+            </a>
+            <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}"
+               class="join-item btn btn-primary btn-outline">
+                <i data-feather="chevron-left"></i> Previous
+            </a>
+            {% endif %}
+
+            <span class="join-item btn btn-primary font-bold"> {# Active button style #}
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}"
+               class="join-item btn btn-primary btn-outline">
+                Next <i data-feather="chevron-right"></i>
+            </a>
+            <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}"
+               class="join-item btn btn-primary btn-outline">
+                Last <i data-feather="chevrons-right"></i>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="hero bg-base-200 rounded-lg p-10 text-center shadow-lg"> {# Enhanced empty state #}
+        <div class="hero-content flex flex-col items-center">
+            <i data-feather="archive" class="w-20 h-20 text-base-content/50 mb-4"></i> {# Icon #}
+            <h2 class="text-2xl font-bold mb-3 text-base-content">No Churches Found</h2>
+            <p class="mb-6 text-lg text-base-content/80">It looks like there are no churches registered yet. Add one to get started!</p>
+            {% if user.is_superuser %}
+            <a href="{% url 'church:church_create' %}"
+               class="btn btn-primary btn-lg flex items-center gap-2 transition-all duration-300 hover:scale-105"> {# Larger button #}
+                <i data-feather="plus"></i>
+                <span>Add First Church</span>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

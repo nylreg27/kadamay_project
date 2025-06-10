@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-8 px-4 bg-gray-900 min-h-screen text-gray-300">
+
+  <h1 class="text-3xl font-bold mb-6 text-white flex items-center gap-2">📊 Church Dashboard</h1>
+
+  <!-- Church Filter -->
+  <form method="get" class="mb-6 flex items-center gap-3">
+    <label for="church" class="text-gray-400">Filter by Church:</label>
+    <select name="church" id="church" class="bg-gray-800 border border-gray-700 rounded px-3 py-1 text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <option value="" class="text-gray-900">All Churches</option>
+      {% for church in churches %}
+        <option value="{{ church.id }}" {% if selected_church == church.id|stringformat:"s" %}selected{% endif %} class="text-gray-900">{{ church.name }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded transition">Apply</button>
+  </form>
+
+  <!-- Metric Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="bg-gray-800 p-6 rounded-lg shadow border-t-4 border-blue-500">
+      <h2 class="text-sm text-gray-400">Total Members</h2>
+      <p class="text-3xl font-bold text-blue-400">{{ total_members }}</p>
+    </div>
+
+    <div class="bg-gray-800 p-6 rounded-lg shadow border-t-4 border-green-500">
+      <h2 class="text-sm text-gray-400">Active Members</h2>
+      <p class="text-3xl font-bold text-green-400">{{ active_members }}</p>
+    </div>
+
+    <div class="bg-gray-800 p-6 rounded-lg shadow border-t-4 border-purple-500">
+      <h2 class="text-sm text-gray-400">Total Families</h2>
+      <p class="text-3xl font-bold text-purple-400">{{ total_families }}</p>
+    </div>
+
+    <div class="bg-gray-800 p-6 rounded-lg shadow border-t-4 border-red-500">
+      <h2 class="text-sm text-gray-400">Inactive Members</h2>
+      <p class="text-3xl font-bold text-red-400">{{ inactive_alive|add:inactive_deceased }}</p>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bg-gray-800 p-6 rounded-lg shadow">
+      <h2 class="text-lg font-semibold mb-4 text-white">Monthly Contributions (₱)</h2>
+      <canvas id="monthlyContributionsChart" height="200"></canvas>
+    </div>
+
+    <div class="bg-gray-800 p-6 rounded-lg shadow">
+      <h2 class="text-lg font-semibold mb-4 text-white">Families per Church</h2>
+      <canvas id="familyChart" height="200"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+  // Monthly Contributions
+  const months = {{ months|safe }};
+  const contributions = {{ contributions|safe }};
+
+  new Chart(document.getElementById("monthlyContributionsChart"), {
+    type: 'line',
+    data: {
+      labels: months,
+      datasets: [{
+        label: '₱ Contributions',
+        data: contributions,
+        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+        borderColor: '#3B82F6',
+        borderWidth: 2,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: '#cbd5e1' } }
+      },
+      scales: {
+        x: { ticks: { color: '#cbd5e1' }, grid: { color: '#374151' } },
+        y: { ticks: { color: '#cbd5e1' }, grid: { color: '#374151' } }
+      }
+    }
+  });
+
+  // Families per Church
+  const churchNames = {{ church_names|safe }};
+  const familyCounts = {{ family_counts|safe }};
+
+  new Chart(document.getElementById("familyChart"), {
+    type: 'bar',
+    data: {
+      labels: churchNames,
+      datasets: [{
+        label: 'Family Count',
+        data: familyCounts,
+        backgroundColor: '#10B981'
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: '#cbd5e1' } }
+      },
+      scales: {
+        x: { ticks: { color: '#cbd5e1' }, grid: { color: '#374151' } },
+        y: { ticks: { color: '#cbd5e1' }, grid: { color: '#374151' } }
+      }
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="{{ request.user.profile.theme|default:'corporate' }}">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Kadamay System{% endblock %}</title>
+  <!-- DaisyUI and Tailwind CSS from CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@4.10.1/dist/full.min.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Feather Icons for vector icons -->
+  <script src="https://unpkg.com/feather-icons"></script> {# Ito ang library #}
+  {% block extra_css %}{% endblock %}
+</head>
+
+<body class="bg-base-200 text-base-content min-h-screen flex flex-col">
+
+  <!-- Mobile Header -->
+  <header class="lg:hidden navbar bg-base-100 shadow-md z-50">
+    <div class="flex-1">
+      <a class="btn btn-ghost normal-case text-xl">Kadamay</a>
+    </div>
+    <div class="flex-none">
+      <!-- Button to toggle mobile sidebar/drawer -->
+      <button class="btn btn-square btn-ghost" onclick="document.getElementById('drawer-toggle').checked = !document.getElementById('drawer-toggle').checked;">
+        <i data-feather="menu"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Sidebar (Drawer) - uses DaisyUI drawer component -->
+  <div class="drawer lg:drawer-open z-40">
+    <!-- Checkbox input is hidden but controls the drawer state -->
+    <input id="drawer-toggle" type="checkbox" class="drawer-toggle" />
+    <div class="drawer-content flex flex-col">
+      <!-- Desktop Header -->
+      <header class="hidden lg:flex navbar bg-base-100 shadow-md">
+        <div class="flex-1">
+          <a class="btn btn-ghost text-xl">Kadamay</a>
+        </div>
+        <div class="flex-none gap-2">
+          <!-- User Profile Dropdown -->
+          <div class="dropdown dropdown-end">
+            <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
+              <div class="w-10 rounded-full">
+                {# Logic para sa Profile Picture #}
+                {% if user.profile.profile_picture %}
+                    {# Kung may in-upload na picture ang user #}
+                    <img alt="User avatar" src="{{ user.profile.profile_picture.url }}" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/initials/svg?seed={{ user.username }}';"/>
+                {% else %}
+                    {# Kung walang picture, gamitin ang Dicebear avatar #}
+                    <img alt="User avatar" src="https://api.dicebear.com/7.x/initials/svg?seed={{ user.username }}" />
+                {% endif %}
+              </div>
+            </div>
+            <ul tabindex="0" class="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 rounded-box w-52">
+              {# Idinagdag ang link sa Profile Settings #}
+              <li><a href="{% url 'account:profile_settings' %}">Profile Settings</a></li>
+              <!-- Admin link (only visible if user is staff/superuser) -->
+              {% if user.is_staff %}
+              <li><a href="{% url 'admin:index' %}">Admin Dashboard</a></li>
+              {% endif %}
+              <!-- Change Password Link -->
+              <li><a href="{% url 'password_change' %}">Change Password</a></li>
+              <!-- Logout Link -->
+              <li><a href="{% url 'logout' %}?next={% url 'login' %}">Logout</a></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Content Area where page-specific content will be injected -->
+      <main class="flex-grow p-4">
+        {% block content %}
+        <!-- Default content if block is not overridden -->
+        <h1 class="text-3xl font-bold mb-4">Welcome to Kadamay System!</h1>
+        <p>This is the main content area. Extend `base.html` and override the `content` block.</p>
+        {% endblock %}
+      </main>
+
+      <!-- Footer -->
+      <footer class="footer footer-center p-4 bg-base-300 text-base-content text-sm">
+        <aside>
+          <p>&copy; 2025 Kadamay Mortuary System. All rights reserved.</p>
+        </aside>
+      </footer>
+    </div>
+
+    <!-- Sidebar Navigation -->
+    <div class="drawer-side" id="drawer-menu">
+      <label for="drawer-toggle" class="drawer-overlay"></label>
+      <ul class="menu p-4 w-80 min-h-full bg-base-100 text-base-content">
+        <!-- Sidebar Logo/Title for Mobile View if drawer is open -->
+        <li class="lg:hidden mb-4">
+            <a class="btn btn-ghost normal-case text-xl">Kadamay</a>
+        </li>
+        <!-- User Info for Mobile Sidebar -->
+        {% if user.is_authenticated %}
+        <li class="lg:hidden mb-4">
+            <div class="flex items-center p-2">
+                <div class="w-10 rounded-full mr-3"> {# Avatar div #}
+                    {% if user.profile.profile_picture %}
+                        <img alt="User avatar" src="{{ user.profile.profile_picture.url }}" class="w-full h-full object-cover onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/initials/svg?seed={{ user.username }}';"/>
+                    {% else %}
+                        <img alt="User avatar" src="https://api.dicebear.com/7.x/initials/svg?seed={{ user.username }}" class="w-full h-full object-cover"/>
+                    {% endif %}
+                </div>
+                <div>
+                    <p class="font-semibold">{{ user.get_full_name|default:user.username }}</p>
+                    <p class="text-sm text-base-content/80">{{ user.get_role_display }}</p>
+                </div>
+            </div>
+        </li>
+        {% endif %}
+        <!-- Navigation Links -->
+        <li><a href="{% url 'report:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><i data-feather="home"></i> Dashboard</a></li>
+        <li><a href="{% url 'individual:individual_list' %}" class="{% if 'individual' in request.resolver_match.app_names %}active{% endif %}"><i data-feather="users"></i> Members</a></li>
+        <li><a href="{% url 'family:family_list' %}" class="{% if 'family' in request.resolver_match.app_names %}active{% endif %}"><i data-feather="user-check"></i> Families</a></li>
+        <li><a href="{% url 'church:church_list' %}" class="{% if 'church' in request.resolver_match.app_names %}active{% endif %}"><i data-feather="activity"></i> Churches</a></li>
+        <li><a href="{% url 'payment:payment_list' %}" class="{% if 'payment' in request.resolver_match.app_names %}active{% endif %}"><i data-feather="credit-card"></i> Payments</a></li>
+        <li><a href="{% url 'report:dashboard' %}" class="{% if 'report' in request.resolver_match.app_names %}active{% endif %}"><i data-feather="file-text"></i> Reports</a></li>
+        {% if church %}
+        <li><a href="{% url 'chat:chat_room' church.id %}" class="{% if request.resolver_match.url_name == 'chat_room' %}active{% endif %}"><i data-feather="message-square"></i> Chat Room</a></li>
+        {% else %}
+        <li><span class="text-base-content/50 cursor-not-allowed" title="Chat Room requires a church context"><i data-feather="message-square"></i> Chat Room</span></li>
+        {% endif %}
+        <li><a href="{% url 'issues:user_issue_list' %}" class="{% if 'issues' in request.resolver_match.app_names %}active{% endif %}"><i data-feather="alert-circle"></i> Issues</a></li>
+        {% if user.is_superuser %}
+        <li><a href="{% url 'account:user_list' %}" class="{% if 'account' in request.resolver_match.app_names and request.resolver_match.url_name != 'create_incharge' %}active{% endif %}"><i data-feather="user-plus"></i> Users</a></li>
+        <li><a href="{% url 'chat:create_incharge' %}" class="{% if request.resolver_match.url_name == 'create_incharge' %}active{% endif %}"><i data-feather="plus-circle"></i> Create In-Charge</a></li>
+        {% endif %}
+        <li><a href="{% url 'logout' %}?next={% url 'login' %}" class="mt-auto"><i data-feather="log-out"></i> Logout</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Reusable Modal Component -->
+  <!-- This dialog element will be controlled by JavaScript -->
+  <dialog id="reusable_modal" class="modal">
+    <div class="modal-box">
+      <h3 id="modal_title" class="font-bold text-lg"></h3>
+      <div id="modal_content" class="py-4"></div>
+      <div class="modal-action">
+        <!-- Close button for the modal -->
+        <form method="dialog">
+          <button class="btn" onclick="hideModal()">Close</button>
+        </form>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Reusable Toast/Notification Container -->
+  <!-- Fixed position at the bottom-right, will hold multiple toast messages -->
+  <div id="toast_container" class="toast toast-end z-[999]">
+    {# Individual toast messages will be appended here by JavaScript #}
+  </div>
+
+  {% block extra_js %}
+  <script>
+    // Initialize Feather Icons AFTER the entire page has loaded, including the script.
+    window.onload = function() { // IMPORTANT: Ito ang nagsisiguro na loaded na ang Feather library
+        feather.replace(); 
+    };
+
+    // Close the mobile drawer when a menu item is clicked
+    document.querySelectorAll('.drawer-side ul.menu li a').forEach(item => {
+        item.addEventListener('click', () => {
+            const drawerToggle = document.getElementById('drawer-toggle');
+            if (drawerToggle && drawerToggle.checked) {
+                drawerToggle.checked = false; // Uncheck to close drawer
+            }
+        });
+    });
+
+    // --- Reusable Modal Functions ---
+    const reusableModal = document.getElementById('reusable_modal');
+    const modalTitle = document.getElementById('modal_title');
+    const modalContent = document.getElementById('modal_content');
+
+    /**
+     * Shows the reusable modal with dynamic content.
+     * @param {string} title - The title of the modal.
+     * @param {string} content - The HTML content to display inside the modal body.
+     */
+    function showModal(title, content) {
+        if (reusableModal && modalTitle && modalContent) {
+            modalTitle.textContent = title;
+            modalContent.innerHTML = content; // Use innerHTML to allow for HTML content
+            reusableModal.showModal(); // DaisyUI's showModal() method
+        } else {
+            console.error("Modal elements not found for showModal.");
+        }
+    }
+
+    /**
+     * Hides the reusable modal.
+     */
+    function hideModal() {
+        if (reusableModal) {
+            reusableModal.close(); // DaisyUI's close() method
+            // Clear content after closing to prepare for next use
+            if (modalTitle) modalTitle.textContent = '';
+            if (modalContent) modalContent.innerHTML = '';
+        }
+    }
+
+    // --- Reusable Toast/Notification Functions ---
+    const toastContainer = document.getElementById('toast_container');
+
+    /**
+     * Shows a dynamic toast notification.
+     * @param {string} message - The text message for the toast.
+     * @param {string} type - The type of toast: 'success', 'error', 'warning', or 'info'.
+     * @param {number} duration - How long the toast should display in milliseconds (default: 3000).
+     */
+    function showToast(message, type = 'info', duration = 3000) {
+        if (!toastContainer) {
+            console.error("Toast container not found.");
+            return;
+        }
+
+        const toastDiv = document.createElement('div');
+        let alertClass = 'alert'; // Default DaisyUI alert class
+
+        // Determine DaisyUI alert class based on type
+        switch (type) {
+            case 'success':
+                alertClass += ' alert-success';
+                break;
+            case 'error':
+                alertClass += ' alert-error';
+                break;
+            case 'warning':
+                alertClass += ' alert-warning';
+                break;
+            case 'info':
+            default:
+                alertClass += ' alert-info';
+                break;
+        }
+
+        toastDiv.className = alertClass + ' rounded-lg shadow-lg flex items-center justify-between p-4 mb-2'; // Add padding and flex for icon/text layout
+        toastDiv.innerHTML = `
+            <div class="flex items-center">
+                <span class="mr-2"></span> {# Placeholder for icon #}
+                <span>${message}</span>
+            </div>
+            <button class="btn btn-ghost btn-xs" onclick="this.closest('.alert').remove()"><i data-feather="x" class="w-4 h-4"></i></button>
+        `;
+
+        // Add Feather Icon dynamically based on type
+        const iconSpan = toastDiv.querySelector('span.mr-2');
+        let iconName = '';
+        let iconColor = '';
+        switch (type) {
+            case 'success': iconName = 'check-circle'; iconColor = 'text-white'; break;
+            case 'error': iconName = 'x-circle'; iconColor = 'text-white'; break;
+            case 'warning': iconName = 'alert-triangle'; iconColor = 'text-white'; break;
+            case 'info': default: iconName = 'info'; iconColor = 'text-white'; break;
+        }
+        if (iconName) {
+            const iconElement = feather.icons[iconName].toSvg({'class': `w-5 h-5 ${iconColor}`});
+            iconSpan.innerHTML = iconElement;
+        }
+
+        toastContainer.appendChild(toastDiv);
+
+        // Auto-remove toast after duration
+        setTimeout(() => {
+            toastDiv.remove();
+        }, duration);
+    }
+
+    // --- Integrate Django Flash Messages with Toast System ---
+    // This script runs when the DOM is fully loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        const djangoMessagesContainer = document.getElementById('django_messages_container');
+        if (djangoMessagesContainer) {
+            const messages = djangoMessagesContainer.querySelectorAll('.django-message');
+            messages.forEach(msg => {
+                const messageText = msg.textContent.trim();
+                let messageType = 'info'; // Default type
+
+                // Get type from data-tag attribute (or class if using older Django version)
+                if (msg.dataset.tag) {
+                    const tags = msg.dataset.tag.split(' ');
+                    if (tags.includes('success')) {
+                        messageType = 'success';
+                    } else if (tags.includes('error')) {
+                        messageType = 'error';
+                    } else if (tags.includes('warning')) {
+                        messageType = 'warning';
+                    } else if (tags.includes('info')) {
+                        messageType = 'info';
+                    }
+                }
+                showToast(messageText, messageType);
+            });
+            // Optionally, remove the original Django message container after processing
+            djangoMessagesContainer.remove();
+        }
+    });
+
+  </script>
+  {% endblock %}
+
+  <!-- Hidden container for Django messages (will be processed by JS) -->
+  {% comment %}
+    Django's messages block, modified to be a hidden container
+    The JavaScript will read these messages and convert them into toasts.
+    This div will then be removed from the DOM.
+  {% endcomment %}
+  <div id="django_messages_container" style="display: none;">
+    {% if messages %}
+      {% for message in messages %}
+        <div class="django-message" data-tag="{{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  </div>
+
+</body>
+</html>

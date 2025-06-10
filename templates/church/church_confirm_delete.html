@@ -1,0 +1,71 @@
+{# church_confirm_delete.html #}
+{% extends 'base.html' %}
+
+{% block title %}Confirm Delete - Kadamay Mortuary System{% endblock %}
+
+{% block content %}
+<div class="card bg-base-100 shadow-xl p-6 md:p-8 text-base-content max-w-4xl mx-auto my-6 rounded-xl">
+
+  <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+    <h1 class="text-3xl font-extrabold">Confirm Church Deletion</h1>
+    <a href="{% url 'church:church_detail' church.id %}"
+       class="btn btn-ghost flex items-center gap-2">
+      <i data-feather="arrow-left"></i> Back to Details
+    </a>
+  </header>
+
+  <section class="alert alert-warning mb-10">
+    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-8 w-8" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+    <div>
+      <h2 class="text-xl font-semibold">Warning</h2>
+      <p class="text-lg leading-relaxed">
+        Are you absolutely sure you want to delete the church <strong class="font-bold">{{ church.name }}</strong>? <br>
+        This action <span class="underline font-semibold">cannot be undone</span> and will permanently remove all associated
+        families, members, payments, and related records.
+      </p>
+    </div>
+  </section>
+
+  <section class="mb-10">
+    <h3 class="text-2xl font-semibold mb-4 border-b-2 pb-2">Church Details</h3>
+    <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+      <div>
+        <dt class="font-medium text-base-content/70">Name</dt>
+        <dd class="mt-1 text-lg">{{ church.name }}</dd>
+      </div>
+      <div>
+        <dt class="font-medium text-base-content/70">Date Established</dt>
+        <dd class="mt-1 text-lg">{{ church.date_established|date:"F d, Y" }}</dd>
+      </div>
+      <div class="md:col-span-2">
+        <dt class="font-medium text-base-content/70">Address</dt>
+        <dd class="mt-1 text-lg">{{ church.address }}</dd>
+      </div>
+    </dl>
+  </section>
+
+  <section class="alert alert-info mb-12">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+    <div>
+      <h3 class="text-xl font-semibold">Resources to be deleted</h3>
+      <ul class="list-disc list-inside space-y-2 text-lg font-medium">
+        <li><strong>{{ church.families.count }}</strong> Families</li>
+        <li><strong>{{ church.members.count }}</strong> Members</li>
+        <li>All associated payments and related records</li>
+      </ul>
+    </div>
+  </section>
+
+  <form method="post" class="flex justify-end space-x-4">
+    {% csrf_token %}
+    <a href="{% url 'church:church_detail' church.id %}"
+       class="btn btn-ghost">
+      Cancel
+    </a>
+    <button type="submit"
+            class="btn btn-error">
+      Confirm Delete
+    </button>
+  </form>
+</div>
+{% endblock %}

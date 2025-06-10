@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="text-2xl font-bold mb-4">Create Profile</h2>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+  {{ form.as_p }}
+  
+  <button type="submit" class="btn btn-primary mt-4">Create</button>
+  <a href="{% url 'profile_list' %}" class="btn btn-secondary ml-2">Cancel</a>
+</form>
+{% endblock %}

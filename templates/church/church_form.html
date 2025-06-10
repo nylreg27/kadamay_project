@@ -1,0 +1,127 @@
+{# church_form.html #}
+{% extends 'base.html' %}
+
+{% block title %}{% if form.instance.pk %}Edit{% else %}Create{% endif %} Church - Kadamay Mortuary System{% endblock %}
+
+{% block content %}
+<div class="card bg-base-100 shadow-xl p-6 md:p-8 text-base-content max-w-3xl mx-auto my-6 rounded-xl">
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        <h1 class="text-3xl font-extrabold text-primary">{% if form.instance.pk %}Edit{% else %}Add New{% endif %} Church</h1>
+        <a href="{% url 'church:church_list' %}" class="btn btn-ghost flex items-center gap-2">
+            <i data-feather="arrow-left"></i> Back to List
+        </a>
+    </div>
+
+    <form method="post" class="space-y-6" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+        <div role="alert" class="alert alert-error animate-pulse">
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <div>
+                {% for error in form.non_field_errors %}
+                    <p class="font-bold">Error:</p>
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Church Name -->
+            <div class="form-control">
+                <label for="{{ form.name.id_for_label }}" class="label">
+                    <span class="label-text text-lg font-medium">Church Name</span>
+                </label>
+                <input type="text" name="{{ form.name.name }}" id="{{ form.name.id_for_label }}"
+                       value="{{ form.name.value|default:'' }}"
+                       placeholder="Enter church name"
+                       class="input input-bordered w-full text-lg uppercase transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent {% if form.name.errors %}input-error{% endif %}" autocomplete="off" />
+                {% if form.name.errors %}
+                <label class="label">
+                    <span class="label-text-alt text-error text-sm">{{ form.name.errors }}</span>
+                </label>
+                {% endif %}
+            </div>
+
+            <!-- District -->
+            <div class="form-control">
+                <label for="{{ form.district.id_for_label }}" class="label">
+                    <span class="label-text text-lg font-medium">District</span>
+                </label>
+                <select name="{{ form.district.name }}" id="{{ form.district.id_for_label }}"
+                        class="select select-bordered w-full text-lg uppercase transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent {% if form.district.errors %}select-error{% endif %}">
+                    <option value="">Select District</option>
+                    {% for district in form.fields.district.queryset %}
+                        <option value="{{ district.pk }}" {% if district.pk|stringformat:"s" == form.district.value|stringformat:"s" %}selected{% endif %}>{{ district.name|upper }}</option>
+                    {% endfor %}
+                </select>
+                {% if form.district.errors %}
+                <label class="label">
+                    <span class="label-text-alt text-error text-sm">{{ form.district.errors }}</span>
+                </label>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Address -->
+        <div class="form-control">
+            <label for="{{ form.address.id_for_label }}" class="label">
+                <span class="label-text text-lg font-medium">Address</span>
+            </label>
+            <textarea name="{{ form.address.name }}" id="{{ form.address.id_for_label }}" rows="3"
+                      placeholder="Enter church address"
+                      class="textarea textarea-bordered h-24 w-full text-lg uppercase transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent {% if form.address.errors %}textarea-error{% endif %} resize-y">{{ form.address.value|default:'' }}</textarea>
+            {% if form.address.errors %}
+            <label class="label">
+                <span class="label-text-alt text-error text-sm">{{ form.address.errors }}</span>
+            </label>
+            {% endif %}
+        </div>
+
+        <!-- In-Charge -->
+        <div class="form-control">
+            <label for="{{ form.in_charge.id_for_label }}" class="label">
+                <span class="label-text text-lg font-medium">In-Charge</span>
+            </label>
+            <select name="{{ form.in_charge.name }}" id="{{ form.in_charge.id_for_label }}"
+                    class="select select-bordered w-full text-lg uppercase transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent {% if form.in_charge.errors %}select-error{% endif %}">
+                <option value="">Select In-Charge</option>
+                {% for user in form.fields.in_charge.queryset %}
+                    <option value="{{ user.pk }}" {% if user.pk|stringformat:"s" == form.in_charge.value|stringformat:"s" %}selected{% endif %}>{{ user.username|upper }}</option>
+                {% endfor %}
+            </select>
+            {% if form.in_charge.errors %}
+            <label class="label">
+                <span class="label-text-alt text-error text-sm">{{ form.in_charge.errors }}</span>
+            </label>
+            {% endif %}
+        </div>
+
+        <!-- Is Active Checkbox -->
+        <div class="form-control flex-row items-center gap-2"> {# Use flex-row and items-center for inline checkbox #}
+            <label class="label cursor-pointer flex-grow justify-start gap-2"> {# Added justify-start and gap-2 #}
+                <input type="checkbox" name="{{ form.is_active.name }}" id="{{ form.is_active.id_for_label }}"
+                       {% if form.is_active.value %}checked{% endif %}
+                       class="checkbox checkbox-primary" />
+                <span class="label-text text-lg font-medium">Is Active</span>
+            </label>
+            {% if form.is_active.errors %}
+            <label class="label">
+                <span class="label-text-alt text-error text-sm">{{ form.is_active.errors }}</span>
+            </label>
+            {% endif %}
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex justify-end mt-8 space-x-4">
+            <a href="{% url 'church:church_list' %}" class="btn btn-secondary btn-outline transition-all duration-300 hover:scale-105">
+                Cancel
+            </a>
+            <button type="submit" class="btn btn-primary transition-all duration-300 hover:scale-105">
+                <i data-feather="save"></i>
+                {% if form.instance.pk %}Update{% else %}Create{% endif %} Church
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

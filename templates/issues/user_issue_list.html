@@ -1,0 +1,14 @@
+<!-- user_issue_list.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<h1>User Issue List</h1>
+
+<ul>
+  {% for issue in object_list %}
+    <li>{{ issue.title }} - {{ issue.created_at }}</li>
+  {% empty %}
+    <li>No issues found.</li>
+  {% endfor %}
+</ul>
+{% endblock %}

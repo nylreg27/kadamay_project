@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="corporate"> {# Pwede kang maglagay ng default theme dito #}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Kadamay System</title>
+    <!-- DaisyUI and Tailwind CSS from CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@4.10.1/dist/full.min.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Optional: Add custom styles here if needed */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f3f4f6; /* bg-base-200 equivalent */
+        }
+        .login-card {
+            max-width: 400px;
+            width: 90%;
+        }
+    </style>
+</head>
+<body class="bg-base-200">
+    <div class="login-card card bg-base-100 shadow-xl p-8">
+        <h2 class="text-3xl font-bold text-center mb-6 text-base-content">Welcome to Kadamay System</h2>
+        <h3 class="text-xl font-semibold text-center mb-8 text-base-content">Login to your account</h3>
+
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="form-control">
+                    <label class="label" for="{{ field.id_for_label }}">
+                        <span class="label-text">{{ field.label }}</span>
+                    </label>
+                    <input type="{{ field.field.widget.input_type|default:'text' }}"
+                           name="{{ field.name }}"
+                           id="{{ field.id_for_label }}"
+                           placeholder="{{ field.label }}"
+                           class="input input-bordered w-full {% if field.errors %}input-error{% endif %}"
+                           value="{{ field.value|default_if_none:'' }}"
+                           {% if field.field.widget.input_type == 'password' %}autocomplete="current-password"{% endif %}
+                    >
+                    {% if field.help_text %}
+                        <label class="label">
+                            <span class="label-text-alt text-gray-500">{{ field.help_text }}</span>
+                        </label>
+                    {% endif %}
+                    {% for error in field.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ error }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+
+            {# Non-field errors #}
+            {% if form.non_field_errors %}
+                <div class="alert alert-error mt-4">
+                    <ul class="list-disc ml-4">
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            <input type="hidden" name="next" value="{{ next }}">
+            <button type="submit" class="btn btn-primary w-full mt-6">Login</button>
+        </form>
+
+        <div class="text-center mt-4 text-sm">
+            <a href="{% url 'password_reset' %}" class="link link-hover text-base-content">Forgot password?</a>
+        </div>
+        <div class="text-center mt-2 text-sm">
+            Don't have an account? <a href="{% url 'admin:auth_user_add' %}" class="link link-hover text-base-content">Contact Admin</a>
+        </div>
+    </div>
+</body>
+</html>

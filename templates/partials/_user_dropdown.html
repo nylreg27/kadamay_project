@@ -1,0 +1,16 @@
+<div class="relative group">
+    <button aria-haspopup="true" aria-expanded="false" class="flex items-center space-x-1 focus:outline-none" id="userMenuButton" aria-controls="userMenu">
+        <div class="flex items-center">
+            <div class="bg-gray-200 border-2 border-dashed rounded-xl w-8 h-8 mr-2"></div>
+            {{ user.get_full_name|default:user.username }}
+        </div>
+        <i class="fas fa-chevron-down text-xs"></i>
+    </button>
+    
+    <div id="userMenu" role="menu" aria-labelledby="userMenuButton" class="absolute right-0 w-48 mt-2 bg-white rounded-md shadow-lg py-1 z-50 hidden group-hover:block focus-within:block">
+        <a href="{% url 'admin:index' %}" role="menuitem" class="block px-4 py-2 text-gray-800 hover:bg-blue-100">Admin</a>
+        <a href="{% url 'chat:create_incharge' %}" role="menuitem" class="block px-4 py-2 text-gray-800 hover:bg-blue-100">Create In-Charge</a>
+        <a href="{% url 'password_change' %}" role="menuitem" class="block px-4 py-2 text-gray-800 hover:bg-blue-100">Change Password</a>
+        <a href="{% url 'logout' %}" role="menuitem" class="block px-4 py-2 text-gray-800 hover:bg-blue-100">Logout</a>
+    </div>
+</div>

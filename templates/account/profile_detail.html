@@ -1,0 +1,7 @@
+<h2>{{ object.user.username }}'s Profile</h2>
+<p>{{ object.bio }}</p>
+{% if object.photo %}
+    <img src="{{ object.photo.url }}" alt="Profile photo" style="max-width:200px;"/>
+{% endif %}
+<a href="{% url 'account:profile_update' object.pk %}">Edit Profile</a>
+<a href="{% url 'account:profile_delete' object.pk %}">Delete Profile</a>

@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block title %}Families - Kadamay Mortuary System{% endblock %}
+
+{% block content %}
+<div class="bg-gray-900 text-gray-200 rounded-lg shadow-lg p-6">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-extrabold text-white">Families</h1>
+    
+    <div class="flex items-center space-x-3">
+      <form method="get" class="flex">
+        <input 
+          type="text" 
+          name="search" 
+          placeholder="Search families..." 
+          value="{{ request.GET.search }}" 
+          class="bg-gray-800 border border-gray-700 rounded-l-md px-4 py-2 placeholder-gray-400 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+          aria-label="Search families"
+        >
+        <button 
+          type="submit" 
+          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-r-md flex items-center justify-center"
+          aria-label="Search"
+        >
+          <i class="fas fa-search"></i>
+        </button>
+      </form>
+      
+      <a href="{% url 'family:family_create' %}" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-md flex items-center shadow-md transition duration-150">
+        <i class="fas fa-plus mr-2"></i> Add Family
+      </a>
+    </div>
+  </div>
+  
+  <div class="mb-6">
+    <div class="flex items-center space-x-2">
+      <label for="church-filter" class="text-sm font-semibold text-gray-300">Filter by Church:</label>
+      <select 
+        id="church-filter" 
+        onchange="window.location.href='?church=' + this.value" 
+        class="bg-gray-800 border border-gray-700 rounded-md py-2 px-3 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        aria-label="Filter by Church"
+      >
+        <option value="" class="bg-gray-900 text-gray-300">All Churches</option>
+        {% for church in churches %}
+        <option value="{{ church.id }}" {% if request.GET.church == church.id|stringformat:"s" %}selected{% endif %} class="bg-gray-900 text-gray-300">{{ church.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  
+  {% if families %}
+  <div class="overflow-x-auto rounded-md shadow-md border border-gray-700">
+    <table class="min-w-full divide-y divide-gray-700">
+      <thead class="bg-gray-800">
+        <tr>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Family Name</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Church</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Address</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Members</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Status</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="bg-gray-900 divide-y divide-gray-700">
+        {% for family in families %}
+        <tr class="hover:bg-gray-800 transition-colors duration-200">
+          <td class="px-6 py-4 whitespace-nowrap">
+            <a href="{% url 'family:family_detail' family.id %}" class="text-blue-400 hover:text-blue-600 font-semibold">{{ family.family_name }}</a>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <a href="{% url 'church:church_detail' family.church.id %}" class="text-blue-400 hover:text-blue-600 font-semibold">{{ family.church.name }}</a>
+          </td>
+          <td class="px-6 py-4 text-gray-300">{{ family.address }}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-gray-300 font-medium">{{ family.members.count }}</td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            {% if family.is_active %}
+            <span class="inline-flex px-2 py-1 rounded-full text-xs font-semibold bg-green-700 text-green-300">Active</span>
+            {% else %}
+            <span class="inline-flex px-2 py-1 rounded-full text-xs font-semibold bg-red-700 text-red-300">Inactive</span>
+            {% endif %}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium flex space-x-3">
+            <a href="{% url 'family:family_detail' family.id %}" class="text-blue-400 hover:text-blue-600" title="View">
+              <i class="fas fa-eye"></i>
+            </a>
+            <a href="{% url 'family:family_update' family.id %}" class="text-indigo-400 hover:text-indigo-600" title="Edit">
+              <i class="fas fa-edit"></i>
+            </a>
+            <a href="{% url 'family:family_delete' family.id %}" class="text-red-400 hover:text-red-600" title="Delete">
+              <i class="fas fa-trash-alt"></i>
+            </a>
+            <a href="{% url 'individual:family_individual_create' family.id %}" class="text-green-400 hover:text-green-600" title="Add Member">
+              <i class="fas fa-user-plus"></i>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if is_paginated %}
+  <div class="flex justify-center mt-6">
+    <nav class="inline-flex rounded-md shadow-md bg-gray-800 border border-gray-700">
+      {% if page_obj.has_previous %}
+      <a href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.church %}&church={{ request.GET.church }}{% endif %}" class="py-2 px-4 text-gray-300 hover:text-white hover:bg-gray-700 rounded-l-md transition">First</a>
+      <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.church %}&church={{ request.GET.church }}{% endif %}" class="py-2 px-4 text-gray-300 hover:text-white hover:bg-gray-700 transition">Previous</a>
+      {% endif %}
+
+      <span class="py-2 px-4 bg-blue-600 text-white font-semibold">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.church %}&church={{ request.GET.church }}{% endif %}" class="py-2 px-4 text-gray-300 hover:text-white hover:bg-gray-700 transition">Next</a>
+      <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.church %}&church={{ request.GET.church }}{% endif %}" class="py-2 px-4 text-gray-300 hover:text-white hover:bg-gray-700 rounded-r-md transition">Last</a>
+      {% endif %}
+    </nav>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="bg-gray-800 p-6 rounded-lg text-center">
+    <p class="text-gray-400 text-lg mb-4">No families found.</p>
+    <a href="{% url 'family:family_create' %}" class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md shadow-md transition">
+      <i class="fas fa-plus mr-2"></i> Add Family
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
