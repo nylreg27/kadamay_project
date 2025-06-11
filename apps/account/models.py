@@ -1,27 +1,63 @@
 # apps/account/models.py
 from django.db import models
-from django.contrib.auth import get_user_model # Always use get_user_model() for custom User references
-from apps.church.models import Church # Keep this for UserChurch model
-# from django.urls import reverse_lazy # Not used directly in models.py
+from django.contrib.auth import get_user_model
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from apps.church.models import Church  # Import ng Church model mo
 
+# Custom User model
 User = get_user_model()
 
-# Listahan ng mga available na DaisyUI themes
-DAISYUI_THEMES = [
-    ('light', 'Light'),
-    ('dark', 'Dark'),
-    ('corporate', 'Corporate'),
-    ('cupcake', 'Cupcake'),
-    ('bumblebee', 'Bumblebee'),
-    ('emerald', 'Emerald'),
-    ('synthwave', 'Synthwave'),
-    ('retro', 'Retro'),
-    ('garden', 'Garden'),
-    ('business', 'Business'),
-    ('night', 'Night'),
-]
 
-# UserChurch model (This looks correct as a standalone model)
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+
+    # Inilipat ang THEME_CHOICES sa loob ng Profile class
+    THEME_CHOICES = [
+        ('light', 'Light (Default DaisyUI)'),
+        ('dark', 'Dark'),
+        ('corporate', 'Corporate'),  # Your current default
+        ('retro', 'Retro'),
+        ('cyberpunk', 'Cyberpunk'),
+        ('valentine', 'Valentine'),
+        ('halloween', 'Halloween'),
+        ('forest', 'Forest'),
+        ('aqua', 'Aqua'),
+        ('luxury', 'Luxury'),
+        ('dracula', 'Dracula'),
+        ('cmyk', 'CMYK'),
+        ('autumn', 'Autumn'),
+        ('business', 'Business'),
+        ('acid', 'Acid'),
+        ('lemonade', 'Lemonade'),
+        ('night', 'Night'),
+        ('coffee', 'Coffee'),
+        ('winter', 'Winter'),
+        ('dim', 'Dim'),
+        ('nord', 'Nord'),
+        ('sunset', 'Sunset'),
+    ]
+    theme = models.CharField(
+        max_length=50, choices=THEME_CHOICES, default='corporate')
+    profile_picture = models.ImageField(
+        upload_to='profile_pics/', blank=True, null=True)
+
+    # Maaari kang magdagdag ng iba pang fields dito para sa user profile
+
+    def __str__(self):
+        return self.user.username
+
+# Signal para automatic na gumawa ng Profile kapag may bagong User, at i-save ang existing profile
+
+
+@receiver(post_save, sender=User)
+def create_or_update_user_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.create(user=instance)
+    # Always save the profile, whether created or not, to ensure updates
+    instance.profile.save()
+
+
 class UserChurch(models.Model):
     user = models.OneToOneField(
         User, on_delete=models.CASCADE, related_name='assigned_church')
@@ -30,7 +66,6 @@ class UserChurch(models.Model):
 
     @property
     def role(self):
-        # This property will determine the user's role based on superuser status
         if self.user.is_superuser:
             return "Admin"
         # You might want to add more roles here later based on groups or other fields
@@ -39,31 +74,7 @@ class UserChurch(models.Model):
     class Meta:
         verbose_name = 'User Church Assignment'
         verbose_name_plural = 'User Church Assignments'
-        unique_together = ('user', 'church') # Ensures a user can only be assigned to one church at a time in this context
+        unique_together = ('user', 'church')
 
     def __str__(self):
         return f"{self.user.username} - {self.church.name}"
-
-# Profile model (CORRECTLY UN-INDENTED and UPDATED fields)
-class Profile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile') # Added related_name
-    
-    # Updated fields based on our theme and profile picture features
-    theme = models.CharField(
-        max_length=50,
-        choices=DAISYUI_THEMES,
-        default='corporate', # Default theme for new users
-        blank=True,
-        null=True,
-        help_text="Choose your preferred color theme for the application."
-    )
-    profile_picture = models.ImageField(
-        upload_to='profile_pics/', # Files will be saved in MEDIA_ROOT/profile_pics/
-        blank=True,
-        null=True,
-        help_text="Upload your profile picture (optional)."
-    )
-
-    def __str__(self):
-        return f"{self.user.username}'s Profile"
-

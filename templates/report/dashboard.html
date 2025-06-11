@@ -5,115 +5,189 @@
 {% block content %}
 <div class="max-w-7xl mx-auto py-8 px-4 bg-gray-900 min-h-screen text-gray-300">
 
-  <h1 class="text-3xl font-bold mb-6 text-white flex items-center gap-2">📊 Church Dashboard</h1>
+    <h1 class="text-3xl font-bold mb-6 text-white flex items-center gap-3">
+        <i data-feather="activity" class="w-8 h-8 text-blue-400"></i> Church Dashboard {# Replaced emoji with Feather Icon #}
+    </h1>
 
-  <!-- Church Filter -->
-  <form method="get" class="mb-6 flex items-center gap-3">
-    <label for="church" class="text-gray-400">Filter by Church:</label>
-    <select name="church" id="church" class="bg-gray-800 border border-gray-700 rounded px-3 py-1 text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
-      <option value="" class="text-gray-900">All Churches</option>
-      {% for church in churches %}
-        <option value="{{ church.id }}" {% if selected_church == church.id|stringformat:"s" %}selected{% endif %} class="text-gray-900">{{ church.name }}</option>
-      {% endfor %}
-    </select>
-    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded transition">Apply</button>
-  </form>
+    ---
 
-  <!-- Metric Cards -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-    <div class="bg-gray-800 p-6 rounded-lg shadow border-t-4 border-blue-500">
-      <h2 class="text-sm text-gray-400">Total Members</h2>
-      <p class="text-3xl font-bold text-blue-400">{{ total_members }}</p>
+    <div class="card bg-gray-800 p-4 rounded-lg shadow mb-6"> {# Wrapped filter in a card for consistency #}
+        <form method="get" class="flex flex-col md:flex-row items-center gap-4">
+            <label for="church" class="text-gray-400 font-semibold flex-shrink-0">Filter by Church:</label>
+            <select name="church" id="church" class="select select-bordered bg-gray-700 border-gray-600 rounded-md px-3 py-2 text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 flex-grow"> {# DaisyUI select #}
+                <option value="" class="text-gray-300">All Churches</option>
+                {% for church in churches %}
+                    <option value="{{ church.id }}" {% if selected_church == church.id|stringformat:"s" %}selected{% endif %} class="text-gray-300">{{ church.name }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary px-6 py-2 transition duration-200 ease-in-out transform hover:scale-105"> {# DaisyUI button #}
+                <i data-feather="filter" class="w-4 h-4 mr-2"></i> Apply
+            </button>
+        </form>
     </div>
 
-    <div class="bg-gray-800 p-6 rounded-lg shadow border-t-4 border-green-500">
-      <h2 class="text-sm text-gray-400">Active Members</h2>
-      <p class="text-3xl font-bold text-green-400">{{ active_members }}</p>
+    ---
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="card bg-gray-800 p-6 rounded-lg shadow-xl border-t-4 border-blue-500"> {# DaisyUI card #}
+            <h2 class="text-sm text-gray-400 mb-2">Total Members</h2>
+            <p class="text-4xl font-extrabold text-blue-400">{{ total_members }}</p>
+        </div>
+
+        <div class="card bg-gray-800 p-6 rounded-lg shadow-xl border-t-4 border-green-500"> {# DaisyUI card #}
+            <h2 class="text-sm text-gray-400 mb-2">Active Members</h2>
+            <p class="text-4xl font-extrabold text-green-400">{{ active_members }}</p>
+        </div>
+
+        <div class="card bg-gray-800 p-6 rounded-lg shadow-xl border-t-4 border-purple-500"> {# DaisyUI card #}
+            <h2 class="text-sm text-gray-400 mb-2">Total Families</h2>
+            <p class="text-4xl font-extrabold text-purple-400">{{ total_families }}</p>
+        </div>
+
+        <div class="card bg-gray-800 p-6 rounded-lg shadow-xl border-t-4 border-red-500"> {# DaisyUI card #}
+            <h2 class="text-sm text-gray-400 mb-2">Inactive Members <span class="tooltip tooltip-bottom text-xs" data-tip="Includes both inactive (alive) and deceased members."><i data-feather="info" class="inline-block w-3 h-3 ml-1"></i></span></h2> {# Added tooltip for clarity #}
+            <p class="text-4xl font-extrabold text-red-400">{{ inactive_alive|add:inactive_deceased }}</p>
+        </div>
     </div>
 
-    <div class="bg-gray-800 p-6 rounded-lg shadow border-t-4 border-purple-500">
-      <h2 class="text-sm text-gray-400">Total Families</h2>
-      <p class="text-3xl font-bold text-purple-400">{{ total_families }}</p>
-    </div>
+    ---
 
-    <div class="bg-gray-800 p-6 rounded-lg shadow border-t-4 border-red-500">
-      <h2 class="text-sm text-gray-400">Inactive Members</h2>
-      <p class="text-3xl font-bold text-red-400">{{ inactive_alive|add:inactive_deceased }}</p>
-    </div>
-  </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="card bg-gray-800 p-6 rounded-lg shadow-xl"> {# DaisyUI card #}
+            <h2 class="text-lg font-semibold mb-4 text-white flex items-center gap-2">
+                <i data-feather="trending-up" class="w-6 h-6 text-blue-400"></i> Monthly Contributions (₱)
+            </h2>
+            {% if contributions %}
+                <canvas id="monthlyContributionsChart" height="200"></canvas>
+            {% else %}
+                <div class="flex items-center justify-center h-48 bg-gray-700 rounded-lg">
+                    <p class="text-gray-500 text-lg">No contribution data available.</p>
+                </div>
+            {% endif %}
+        </div>
 
-  <!-- Charts -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <div class="bg-gray-800 p-6 rounded-lg shadow">
-      <h2 class="text-lg font-semibold mb-4 text-white">Monthly Contributions (₱)</h2>
-      <canvas id="monthlyContributionsChart" height="200"></canvas>
+        <div class="card bg-gray-800 p-6 rounded-lg shadow-xl"> {# DaisyUI card #}
+            <h2 class="text-lg font-semibold mb-4 text-white flex items-center gap-2">
+                <i data-feather="users" class="w-6 h-6 text-purple-400"></i> Families per Church
+            </h2>
+            {% if family_counts %}
+                <canvas id="familyChart" height="200"></canvas>
+            {% else %}
+                <div class="flex items-center justify-center h-48 bg-gray-700 rounded-lg">
+                    <p class="text-gray-500 text-lg">No family data available for churches.</p>
+                </div>
+            {% endif %}
+        </div>
     </div>
-
-    <div class="bg-gray-800 p-6 rounded-lg shadow">
-      <h2 class="text-lg font-semibold mb-4 text-white">Families per Church</h2>
-      <canvas id="familyChart" height="200"></canvas>
-    </div>
-  </div>
 
 </div>
 
-<!-- Chart.js CDN -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://unpkg.com/feather-icons"></script>
 
 <script>
-  // Monthly Contributions
-  const months = {{ months|safe }};
-  const contributions = {{ contributions|safe }};
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace(); // Initialize Feather Icons
 
-  new Chart(document.getElementById("monthlyContributionsChart"), {
-    type: 'line',
-    data: {
-      labels: months,
-      datasets: [{
-        label: '₱ Contributions',
-        data: contributions,
-        backgroundColor: 'rgba(59, 130, 246, 0.2)',
-        borderColor: '#3B82F6',
-        borderWidth: 2,
-        fill: true
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { labels: { color: '#cbd5e1' } }
-      },
-      scales: {
-        x: { ticks: { color: '#cbd5e1' }, grid: { color: '#374151' } },
-        y: { ticks: { color: '#cbd5e1' }, grid: { color: '#374151' } }
-      }
-    }
-  });
+        // Monthly Contributions
+        const months = {{ months|safe }};
+        const contributions = {{ contributions|safe }};
 
-  // Families per Church
-  const churchNames = {{ church_names|safe }};
-  const familyCounts = {{ family_counts|safe }};
+        if (months.length > 0 && contributions.length > 0) {
+            new Chart(document.getElementById("monthlyContributionsChart"), {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: '₱ Contributions',
+                        data: contributions,
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)', // blue-500 with opacity
+                        borderColor: '#3B82F6', // blue-500
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3 // Adds slight curve to line
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false, // Allow height to be controlled by CSS
+                    plugins: {
+                        legend: { labels: { color: '#cbd5e1' } }, // text-gray-300
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `₱${context.raw.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#9ca3af' }, // text-gray-400
+                            grid: { color: '#374151', drawBorder: false } // gray-700
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#9ca3af', // text-gray-400
+                                callback: function(value, index, values) {
+                                    return '₱' + value.toLocaleString();
+                                }
+                            },
+                            grid: { color: '#374151', drawBorder: false } // gray-700
+                        }
+                    }
+                }
+            });
+        }
 
-  new Chart(document.getElementById("familyChart"), {
-    type: 'bar',
-    data: {
-      labels: churchNames,
-      datasets: [{
-        label: 'Family Count',
-        data: familyCounts,
-        backgroundColor: '#10B981'
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { labels: { color: '#cbd5e1' } }
-      },
-      scales: {
-        x: { ticks: { color: '#cbd5e1' }, grid: { color: '#374151' } },
-        y: { ticks: { color: '#cbd5e1' }, grid: { color: '#374151' } }
-      }
-    }
-  });
+        // Families per Church
+        const churchNames = {{ church_names|safe }};
+        const familyCounts = {{ family_counts|safe }};
+
+        if (churchNames.length > 0 && familyCounts.length > 0) {
+            new Chart(document.getElementById("familyChart"), {
+                type: 'bar',
+                data: {
+                    labels: churchNames,
+                    datasets: [{
+                        label: 'Family Count',
+                        data: familyCounts,
+                        backgroundColor: '#10B981', // green-500
+                        borderColor: '#059669', // green-600
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false, // Allow height to be controlled by CSS
+                    plugins: {
+                        legend: { labels: { color: '#cbd5e1' } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.raw} Families`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#9ca3af' },
+                            grid: { color: '#374151', drawBorder: false }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#9ca3af',
+                                precision: 0 // Ensure whole numbers for family counts
+                            },
+                            grid: { color: '#374151', drawBorder: false }
+                        }
+                    }
+                }
+            });
+        }
+    });
 </script>
 {% endblock %}

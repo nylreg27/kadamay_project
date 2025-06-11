@@ -1,5 +1,6 @@
 {# church_form.html #}
 {% extends 'base.html' %}
+{% load widget_tweaks %} {# Added for potential future use or consistency, although not strictly needed for manually rendered fields #}
 
 {% block title %}{% if form.instance.pk %}Edit{% else %}Create{% endif %} Church - Kadamay Mortuary System{% endblock %}
 
@@ -8,15 +9,15 @@
     <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         <h1 class="text-3xl font-extrabold text-primary">{% if form.instance.pk %}Edit{% else %}Add New{% endif %} Church</h1>
         <a href="{% url 'church:church_list' %}" class="btn btn-ghost flex items-center gap-2">
-            <i data-feather="arrow-left"></i> Back to List
+            <i data-feather="arrow-left" class="w-5 h-5"></i> Back to List {# Added w-5 h-5 #}
         </a>
     </div>
 
     <form method="post" class="space-y-6" novalidate>
         {% csrf_token %}
         {% if form.non_field_errors %}
-        <div role="alert" class="alert alert-error animate-pulse">
-            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        <div role="alert" class="alert alert-error"> {# Removed animate-pulse, typically less common for persistent alerts #}
+            <i data-feather="alert-triangle" class="w-6 h-6 stroke-current shrink-0"></i> {# Replaced SVG with Feather icon #}
             <div>
                 {% for error in form.non_field_errors %}
                     <p class="font-bold">Error:</p>
@@ -27,10 +28,10 @@
         {% endif %}
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Church Name -->
             <div class="form-control">
                 <label for="{{ form.name.id_for_label }}" class="label">
                     <span class="label-text text-lg font-medium">Church Name</span>
+                    {% if form.name.field.required %}<span class="text-error ml-1">*</span>{% endif %} {# Added required asterisk #}
                 </label>
                 <input type="text" name="{{ form.name.name }}" id="{{ form.name.id_for_label }}"
                        value="{{ form.name.value|default:'' }}"
@@ -43,10 +44,10 @@
                 {% endif %}
             </div>
 
-            <!-- District -->
             <div class="form-control">
                 <label for="{{ form.district.id_for_label }}" class="label">
                     <span class="label-text text-lg font-medium">District</span>
+                    {% if form.district.field.required %}<span class="text-error ml-1">*</span>{% endif %} {# Added required asterisk #}
                 </label>
                 <select name="{{ form.district.name }}" id="{{ form.district.id_for_label }}"
                         class="select select-bordered w-full text-lg uppercase transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent {% if form.district.errors %}select-error{% endif %}">
@@ -63,10 +64,10 @@
             </div>
         </div>
 
-        <!-- Address -->
         <div class="form-control">
             <label for="{{ form.address.id_for_label }}" class="label">
                 <span class="label-text text-lg font-medium">Address</span>
+                {% if form.address.field.required %}<span class="text-error ml-1">*</span>{% endif %} {# Added required asterisk #}
             </label>
             <textarea name="{{ form.address.name }}" id="{{ form.address.id_for_label }}" rows="3"
                       placeholder="Enter church address"
@@ -78,10 +79,10 @@
             {% endif %}
         </div>
 
-        <!-- In-Charge -->
         <div class="form-control">
             <label for="{{ form.in_charge.id_for_label }}" class="label">
                 <span class="label-text text-lg font-medium">In-Charge</span>
+                {% if form.in_charge.field.required %}<span class="text-error ml-1">*</span>{% endif %} {# Added required asterisk #}
             </label>
             <select name="{{ form.in_charge.name }}" id="{{ form.in_charge.id_for_label }}"
                     class="select select-bordered w-full text-lg uppercase transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent {% if form.in_charge.errors %}select-error{% endif %}">
@@ -97,7 +98,6 @@
             {% endif %}
         </div>
 
-        <!-- Is Active Checkbox -->
         <div class="form-control flex-row items-center gap-2"> {# Use flex-row and items-center for inline checkbox #}
             <label class="label cursor-pointer flex-grow justify-start gap-2"> {# Added justify-start and gap-2 #}
                 <input type="checkbox" name="{{ form.is_active.name }}" id="{{ form.is_active.id_for_label }}"
@@ -112,13 +112,12 @@
             {% endif %}
         </div>
 
-        <!-- Buttons -->
         <div class="flex justify-end mt-8 space-x-4">
             <a href="{% url 'church:church_list' %}" class="btn btn-secondary btn-outline transition-all duration-300 hover:scale-105">
                 Cancel
             </a>
-            <button type="submit" class="btn btn-primary transition-all duration-300 hover:scale-105">
-                <i data-feather="save"></i>
+            <button type="submit" class="btn btn-primary flex items-center gap-2 transition-all duration-300 hover:scale-105"> {# Added flex items-center gap-2 #}
+                <i data-feather="save" class="w-5 h-5"></i> {# Added w-5 h-5 #}
                 {% if form.instance.pk %}Update{% else %}Create{% endif %} Church
             </button>
         </div>

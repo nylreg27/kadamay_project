@@ -5,33 +5,30 @@
 
 {% block content %}
 <div class="card bg-base-100 shadow-xl p-6 md:p-8 text-base-content rounded-xl my-6 mx-auto max-w-7xl">
-    <!-- Header Section -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
             <h1 class="text-3xl font-extrabold text-primary">{{ church.name|upper }}</h1>
-            <p class="text-base-content/70 mt-1 text-lg">{{ church.address|upper }}</p>
+            <p class="text-base-content/70 mt-1 text-lg max-w-prose">{{ church.address|upper }}</p> {# Added max-w-prose #}
         </div>
         <div class="flex flex-wrap md:flex-nowrap gap-3 w-full md:w-auto justify-end">
             <a href="{% url 'church:church_list' %}"
                class="btn btn-ghost flex items-center gap-2 transition-all duration-300 hover:scale-105 w-full md:w-auto">
-                <i data-feather="arrow-left"></i> Back to List
+                <i data-feather="arrow-left" class="w-5 h-5"></i> Back to List {# Added w-5 h-5 #}
             </a>
             {% if user.is_superuser %}
             <a href="{% url 'church:church_update' church.id %}"
                class="btn btn-primary flex items-center gap-2 transition-all duration-300 hover:scale-105 w-full md:w-auto">
-                <i data-feather="edit"></i> Edit Church
+                <i data-feather="edit" class="w-5 h-5"></i> Edit Church {# Added w-5 h-5 #}
             </a>
             <a href="{% url 'church:church_delete' church.id %}"
                class="btn btn-error flex items-center gap-2 transition-all duration-300 hover:scale-105 w-full md:w-auto">
-                <i data-feather="trash-2"></i> Delete Church
+                <i data-feather="trash-2" class="w-5 h-5"></i> Delete Church {# Added w-5 h-5 #}
             </a>
             {% endif %}
         </div>
     </div>
 
-    <!-- Stats and Details Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
-        <!-- Church Details Card -->
         <div class="card bg-base-200 rounded-xl p-6 shadow-md border border-base-300">
             <h2 class="text-2xl font-bold mb-4 text-secondary">Church Information</h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
@@ -61,27 +58,38 @@
             </div>
         </div>
 
-        <!-- Quick Stats Card -->
         <div class="card bg-base-200 rounded-xl p-6 shadow-md border border-base-300">
             <h2 class="text-2xl font-bold mb-4 text-secondary">Quick Stats</h2>
             <div class="stats stats-vertical lg:stats-horizontal shadow w-full">
                 <div class="stat place-items-center">
-                    <div class="stat-title text-base">Total Families</div>
-                    <div class="stat-value text-primary">{{ church.family_set.count }}</div>
+                    <div class="stat-figure text-primary">
+                        <i data-feather="home" class="w-8 h-8"></i> {# Icon for Families #}
+                    </div>
+                    <div class="stat-title text-sm">Total Families</div> {# Smaller title #}
+                    <div class="stat-value text-primary text-4xl">{{ church.family_set.count }}</div> {# Larger value #}
                 </div>
                 <div class="stat place-items-center">
-                    <div class="stat-title text-base">Total Members</div>
-                    <div class="stat-value text-secondary">{{ church.individual_set.count }}</div>
+                    <div class="stat-figure text-secondary">
+                        <i data-feather="users" class="w-8 h-8"></i> {# Icon for Members #}
+                    </div>
+                    <div class="stat-title text-sm">Total Members</div>
+                    <div class="stat-value text-secondary text-4xl">{{ church.individual_set.count }}</div>
                 </div>
                 <div class="stat place-items-center">
-                    <div class="stat-title text-base">Active Members</div>
-                    <div class="stat-value text-accent">
+                    <div class="stat-figure text-accent">
+                        <i data-feather="user-check" class="w-8 h-8"></i> {# Icon for Active Members #}
+                    </div>
+                    <div class="stat-title text-sm">Active Members</div>
+                    <div class="stat-value text-accent text-4xl">
                       {{ active_members_count }}
                     </div>
                 </div>
                 <div class="stat place-items-center">
-                    <div class="stat-title text-base">Deceased</div>
-                    <div class="stat-value text-info">
+                    <div class="stat-figure text-info">
+                        <i data-feather="crosshair" class="w-8 h-8"></i> {# Icon for Deceased Members #}
+                    </div>
+                    <div class="stat-title text-sm">Deceased</div>
+                    <div class="stat-value text-info text-4xl">
                       {{ deceased_members_count }}
                     </div>
                 </div>
@@ -89,7 +97,6 @@
         </div>
     </div>
 
-    <!-- Tab Navigation -->
     <div class="tabs tabs-boxed mb-6 bg-base-200 shadow-sm rounded-lg">
         <button
             id="families-tab-btn"
@@ -107,13 +114,12 @@
         </button>
     </div>
 
-    <!-- Families Tab Content -->
     <div id="families-tab" class="tab-content">
-        <div class="flex justify-between items-center mb-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3"> {# Adjusted for small screen responsiveness #}
             <h3 class="text-xl font-bold text-base-content">Recent Families</h3>
             <a href="{% url 'family:church_families' church.id %}"
-               class="link link-hover link-primary flex items-center gap-1 font-semibold">
-                View All <i data-feather="arrow-right" class="w-5 h-5"></i>
+               class="link link-hover link-primary flex items-center gap-1 font-semibold transition-all duration-300 hover:scale-105"> {# Added transition #}
+                View All <i data-feather="arrow-right" class="w-5 h-5"></i> {# Added w-5 h-5 #}
             </a>
         </div>
 
@@ -136,7 +142,7 @@
                                 {{ family.family_name|upper }}
                             </a>
                         </td>
-                        <td class="px-6 py-4">{{ family.address|truncatechars:30|upper }}</td>
+                        <td class="px-6 py-4">{{ family.address|truncatechars:40|upper }}</td> {# Increased truncate chars for better detail #}
                         <td class="px-6 py-4">{{ family.individual_set.count }}</td>
                         <td class="px-6 py-4">
                             {% if family.is_active %}
@@ -153,11 +159,12 @@
         {% else %}
         <div class="hero bg-base-200 rounded-lg p-10 text-center shadow-lg">
             <div class="hero-content flex flex-col items-center">
-                <i data-feather="users" class="w-16 h-16 text-base-content/50 mb-4"></i>
+                <i data-feather="users" class="w-20 h-20 text-base-content/50 mb-4"></i> {# Increased icon size #}
                 <p class="text-xl font-bold mb-4 text-base-content">No families found for this church.</p>
                 {% if user.is_superuser %}
-                <a href="{% url 'family:family_create_in_church' church.id %}" class="btn btn-secondary flex items-center gap-2">
-                    <i data-feather="plus"></i> Add First Family
+                <a href="{% url 'family:family_create_in_church' church.id %}"
+                   class="btn btn-primary flex items-center gap-2 transition-all duration-300 hover:scale-105"> {# Changed to btn-primary and added transition #}
+                    <i data-feather="plus" class="w-5 h-5"></i> Add First Family {# Added w-5 h-5 #}
                 </a>
                 {% endif %}
             </div>
@@ -165,13 +172,12 @@
         {% endif %}
     </div>
 
-    <!-- Members Tab Content -->
     <div id="members-tab" class="tab-content hidden">
-        <div class="flex justify-between items-center mb-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3"> {# Adjusted for small screen responsiveness #}
             <h3 class="text-xl font-bold text-base-content">Recent Members</h3>
             <a href="{% url 'individual:church_individuals' church.id %}"
-               class="link link-hover link-primary flex items-center gap-1 font-semibold">
-                View All <i data-feather="arrow-right" class="w-5 h-5"></i>
+               class="link link-hover link-primary flex items-center gap-1 font-semibold transition-all duration-300 hover:scale-105"> {# Added transition #}
+                View All <i data-feather="arrow-right" class="w-5 h-5"></i> {# Added w-5 h-5 #}
             </a>
         </div>
 
@@ -217,7 +223,7 @@
         {% else %}
         <div class="hero bg-base-200 rounded-lg p-10 text-center shadow-lg">
             <div class="hero-content flex flex-col items-center">
-                <i data-feather="user" class="w-16 h-16 text-base-content/50 mb-4"></i>
+                <i data-feather="user" class="w-20 h-20 text-base-content/50 mb-4"></i> {# Increased icon size #}
                 <p class="text-xl font-bold mb-4 text-base-content">No members found for this church.</p>
                 {# Consider adding a link to add a member here if applicable, or redirect to family creation #}
             </div>
@@ -225,7 +231,6 @@
         {% endif %}
     </div>
 
-    <!-- JS for Tab Switching and Feather Icons -->
     <script>
         function openTab(evt, tabName) {
             // Hide all tab content
@@ -248,7 +253,6 @@
             }
         }
 
-        // Make sure this runs after the DOM is fully loaded
         document.addEventListener("DOMContentLoaded", function() {
             // Explicitly click the families tab button to initialize on load
             const familiesTabBtn = document.getElementById("families-tab-btn");
@@ -257,6 +261,7 @@
             }
 
             // Initial feather icon replacement for the whole page
+            // This is generally good practice to ensure all static icons are rendered on load
             if (typeof feather !== 'undefined') {
                 feather.replace();
             } else {
@@ -265,4 +270,11 @@
         });
     </script>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{# This block ensures feather.replace() runs if not called directly in content #}
+{# It's generally good practice to have a global feather.replace() call once DOM is ready #}
+{# but your inline script for tabs already handles it for dynamic content. #}
+{# Keeping this block here makes it clear if you need to add more page-specific JS later. #}
 {% endblock %}

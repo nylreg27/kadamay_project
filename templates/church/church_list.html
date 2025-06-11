@@ -16,14 +16,14 @@
                        class="input input-bordered w-48 md:w-64 rounded-r-none uppercase transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
                 <button type="submit"
                         class="btn btn-primary rounded-l-none transition-all duration-300 hover:scale-105">
-                    <i data-feather="search"></i>
+                    <i data-feather="search" class="w-5 h-5"></i> {# Added w-5 h-5 for explicit icon sizing #}
                 </button>
             </form>
 
             {% if user.is_superuser %}
             <a href="{% url 'church:church_create' %}"
                class="btn btn-success flex items-center gap-2 transition-all duration-300 hover:scale-105">
-                <i data-feather="plus-circle"></i> {# Used plus-circle for better visual #}
+                <i data-feather="plus-circle" class="w-5 h-5"></i> {# Used plus-circle for better visual, added sizing #}
                 <span>Add Church</span>
             </a>
             {% endif %}
@@ -31,7 +31,6 @@
     </div>
 
     {% if churches %}
-    <!-- Desktop Table -->
     <div class="hidden md:block overflow-x-auto rounded-lg shadow-md"> {# Added shadow and rounded-lg #}
         <table class="table w-full">
             <thead class="bg-primary text-primary-content"> {# Primary background for header #}
@@ -58,7 +57,7 @@
                     <td class="px-6 py-4">{{ church.in_charge.username|default:"N/A"|upper }}</td> {# Uppercase #}
                     <td class="px-6 py-4">
                         <span class="badge
-                              {% if church.is_active %}badge-success{% else %}badge-error{% endif %} badge-lg font-semibold"> {# Larger badge #}
+                                     {% if church.is_active %}badge-success{% else %}badge-error{% endif %} badge-lg font-semibold"> {# Larger badge #}
                             {% if church.is_active %}ACTIVE{% else %}INACTIVE{% endif %} {# Uppercase status text #}
                         </span>
                     </td>
@@ -66,16 +65,16 @@
                         <div class="flex gap-2"> {# Reduced gap for action buttons #}
                             <a href="{% url 'church:church_detail' church.id %}"
                                class="btn btn-sm btn-info btn-square tooltip" data-tip="View Details"> {# Changed to btn-info, added tooltip #}
-                                <i data-feather="eye"></i>
+                                <i data-feather="eye" class="w-5 h-5"></i>
                             </a>
                             {% if user.is_superuser %}
                             <a href="{% url 'church:church_update' church.id %}"
                                class="btn btn-sm btn-warning btn-square tooltip" data-tip="Edit Church"> {# Changed to btn-warning #}
-                                <i data-feather="edit"></i>
+                                <i data-feather="edit" class="w-5 h-5"></i>
                             </a>
                             <a href="{% url 'church:church_delete' church.id %}"
                                class="btn btn-sm btn-error btn-square tooltip" data-tip="Delete Church"> {# Changed to btn-error #}
-                                <i data-feather="trash-2"></i>
+                                <i data-feather="trash-2" class="w-5 h-5"></i>
                             </a>
                             {% endif %}
                         </div>
@@ -86,7 +85,6 @@
         </table>
     </div>
 
-    <!-- Mobile Card View -->
     <div class="md:hidden space-y-4">
         {% for church in churches %}
         <div class="card bg-base-200 shadow-lg p-6 rounded-lg border border-base-300"> {# Enhanced card styling #}
@@ -97,7 +95,7 @@
                     </a>
                 </h2>
                 <span class="badge
-                      {% if church.is_active %}badge-success{% else %}badge-error{% endif %} badge-lg font-semibold">
+                              {% if church.is_active %}badge-success{% else %}badge-error{% endif %} badge-lg font-semibold">
                     {% if church.is_active %}ACTIVE{% else %}INACTIVE{% endif %}
                 </span>
             </div>
@@ -117,16 +115,16 @@
             <div class="card-actions justify-end mt-4"> {# Increased top margin #}
                 <a href="{% url 'church:church_detail' church.id %}"
                    class="btn btn-sm btn-info">
-                    <i data-feather="eye"></i> View
+                    <i data-feather="eye" class="w-4 h-4"></i> View
                 </a>
                 {% if user.is_superuser %}
                 <a href="{% url 'church:church_update' church.id %}"
                    class="btn btn-sm btn-warning">
-                    <i data-feather="edit"></i> Edit
+                    <i data-feather="edit" class="w-4 h-4"></i> Edit
                 </a>
                 <a href="{% url 'church:church_delete' church.id %}"
                    class="btn btn-sm btn-error">
-                    <i data-feather="trash-2"></i> Delete
+                    <i data-feather="trash-2" class="w-4 h-4"></i> Delete
                 </a>
                 {% endif %}
             </div>
@@ -134,18 +132,17 @@
         {% endfor %}
     </div>
 
-    <!-- Pagination -->
     {% if is_paginated %}
     <div class="mt-8 flex justify-center"> {# Increased top margin #}
         <div class="join shadow-md rounded-lg"> {# Added shadow and rounded to join #}
             {% if page_obj.has_previous %}
             <a href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}"
                class="join-item btn btn-primary btn-outline"> {# Primary outline for nav buttons #}
-                <i data-feather="chevrons-left"></i> First
+                <i data-feather="chevrons-left" class="w-5 h-5"></i> First
             </a>
             <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}"
                class="join-item btn btn-primary btn-outline">
-                <i data-feather="chevron-left"></i> Previous
+                <i data-feather="chevron-left" class="w-5 h-5"></i> Previous
             </a>
             {% endif %}
 
@@ -156,11 +153,11 @@
             {% if page_obj.has_next %}
             <a href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}"
                class="join-item btn btn-primary btn-outline">
-                Next <i data-feather="chevron-right"></i>
+                Next <i data-feather="chevron-right" class="w-5 h-5"></i>
             </a>
             <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}"
                class="join-item btn btn-primary btn-outline">
-                Last <i data-feather="chevrons-right"></i>
+                Last <i data-feather="chevrons-right" class="w-5 h-5"></i>
             </a>
             {% endif %}
         </div>
@@ -176,7 +173,7 @@
             {% if user.is_superuser %}
             <a href="{% url 'church:church_create' %}"
                class="btn btn-primary btn-lg flex items-center gap-2 transition-all duration-300 hover:scale-105"> {# Larger button #}
-                <i data-feather="plus"></i>
+                <i data-feather="plus" class="w-5 h-5"></i> {# Added sizing #}
                 <span>Add First Church</span>
             </a>
             {% endif %}
@@ -184,4 +181,13 @@
     </div>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace();
+    });
+</script>
 {% endblock %}

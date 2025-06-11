@@ -1,130 +1,141 @@
+{# family_list.html #}
 {% extends 'base.html' %}
 
 {% block title %}Families - Kadamay Mortuary System{% endblock %}
 
 {% block content %}
-<div class="bg-gray-900 text-gray-200 rounded-lg shadow-lg p-6">
-  <div class="flex justify-between items-center mb-6">
-    <h1 class="text-3xl font-extrabold text-white">Families</h1>
+<div class="card bg-base-100 shadow-xl p-6 md:p-8 text-base-content rounded-xl my-6 mx-auto max-w-7xl">
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <h1 class="text-3xl font-extrabold text-primary">Families</h1>
+        
+        <div class="flex flex-col md:flex-row items-stretch md:items-center gap-3 w-full md:w-auto">
+            <form method="get" class="flex flex-grow md:flex-grow-0">
+                <input 
+                    type="text" 
+                    name="search" 
+                    placeholder="Search families..." 
+                    value="{{ request.GET.search }}" 
+                    class="input input-bordered w-full rounded-r-none" {# DaisyUI input #}
+                    aria-label="Search families"
+                >
+                <button 
+                    type="submit" 
+                    class="btn btn-primary rounded-l-none" {# DaisyUI button #}
+                    aria-label="Search"
+                >
+                    <i data-feather="search" class="w-5 h-5"></i> {# Using Feather icon #}
+                </button>
+            </form>
+            
+            <a href="{% url 'family:family_create' %}" class="btn btn-primary w-full md:w-auto flex items-center gap-2 transition-all duration-300 hover:scale-105"> {# DaisyUI button #}
+                <i data-feather="plus" class="w-5 h-5"></i> Add Family {# Using Feather icon #}
+            </a>
+        </div>
+    </header>
     
-    <div class="flex items-center space-x-3">
-      <form method="get" class="flex">
-        <input 
-          type="text" 
-          name="search" 
-          placeholder="Search families..." 
-          value="{{ request.GET.search }}" 
-          class="bg-gray-800 border border-gray-700 rounded-l-md px-4 py-2 placeholder-gray-400 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-          aria-label="Search families"
+    <div class="mb-6 flex flex-col md:flex-row items-start md:items-center gap-3">
+        <label for="church-filter" class="text-base-content/70 text-sm font-semibold">Filter by Church:</label>
+        <select 
+            id="church-filter" 
+            onchange="window.location.href='?church=' + this.value + '{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}'" {# Preserve search term #}
+            class="select select-bordered w-full max-w-xs" {# DaisyUI select #}
+            aria-label="Filter by Church"
         >
-        <button 
-          type="submit" 
-          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-r-md flex items-center justify-center"
-          aria-label="Search"
-        >
-          <i class="fas fa-search"></i>
-        </button>
-      </form>
-      
-      <a href="{% url 'family:family_create' %}" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-md flex items-center shadow-md transition duration-150">
-        <i class="fas fa-plus mr-2"></i> Add Family
-      </a>
+            <option value="">All Churches</option>
+            {% for church in churches %}
+            <option value="{{ church.id }}" {% if request.GET.church == church.id|stringformat:"s" %}selected{% endif %}>{{ church.name }}</option>
+            {% endfor %}
+        </select>
     </div>
-  </div>
-  
-  <div class="mb-6">
-    <div class="flex items-center space-x-2">
-      <label for="church-filter" class="text-sm font-semibold text-gray-300">Filter by Church:</label>
-      <select 
-        id="church-filter" 
-        onchange="window.location.href='?church=' + this.value" 
-        class="bg-gray-800 border border-gray-700 rounded-md py-2 px-3 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        aria-label="Filter by Church"
-      >
-        <option value="" class="bg-gray-900 text-gray-300">All Churches</option>
-        {% for church in churches %}
-        <option value="{{ church.id }}" {% if request.GET.church == church.id|stringformat:"s" %}selected{% endif %} class="bg-gray-900 text-gray-300">{{ church.name }}</option>
-        {% endfor %}
-      </select>
+    
+    {% if families %}
+    <div class="overflow-x-auto rounded-lg shadow-md border border-base-300"> {# DaisyUI equivalent #}
+        <table class="table table-zebra w-full"> {# DaisyUI table with zebra stripes #}
+            <thead class="bg-base-200"> {# DaisyUI table header background #}
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Family Name</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Church</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Address</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Members</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Status</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-base-100"> {# DaisyUI table body background #}
+                {% for family in families %}
+                <tr class="hover:bg-base-200 transition-colors duration-200"> {# DaisyUI hover #}
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <a href="{% url 'family:family_detail' family.id %}" class="link link-primary font-semibold">{{ family.family_name|upper }}</a> {# DaisyUI link, uppercase #}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <a href="{% url 'church:church_detail' family.church.id %}" class="link link-primary font-semibold">{{ family.church.name|upper }}</a> {# DaisyUI link, uppercase #}
+                    </td>
+                    <td class="px-6 py-4 text-base-content">{{ family.address|truncatechars:40|upper }}</td> {# DaisyUI text, uppercase, truncate #}
+                    <td class="px-6 py-4 whitespace-nowrap text-base-content font-medium">{{ family.individual_set.count }}</td> {# Corrected relationship, DaisyUI text #}
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if family.is_active %}
+                        <span class="badge badge-success badge-lg font-semibold">Active</span> {# DaisyUI badge #}
+                        {% else %}
+                        <span class="badge badge-error badge-lg font-semibold">Inactive</span> {# DaisyUI badge #}
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium flex space-x-3">
+                        <a href="{% url 'family:family_detail' family.id %}" class="btn btn-ghost btn-xs text-info tooltip" data-tip="View Family"> {# DaisyUI button, tooltip #}
+                            <i data-feather="eye" class="w-4 h-4"></i> {# Feather icon #}
+                        </a>
+                        <a href="{% url 'family:family_update' family.id %}" class="btn btn-ghost btn-xs text-warning tooltip" data-tip="Edit Family"> {# DaisyUI button, tooltip #}
+                            <i data-feather="edit" class="w-4 h-4"></i> {# Feather icon #}
+                        </a>
+                        <a href="{% url 'family:family_delete' family.id %}" class="btn btn-ghost btn-xs text-error tooltip" data-tip="Delete Family"> {# DaisyUI button, tooltip #}
+                            <i data-feather="trash-2" class="w-4 h-4"></i> {# Feather icon #}
+                        </a>
+                        <a href="{% url 'individual:family_individual_create' family.id %}" class="btn btn-ghost btn-xs text-success tooltip" data-tip="Add Member"> {# DaisyUI button, tooltip #}
+                            <i data-feather="user-plus" class="w-4 h-4"></i> {# Feather icon #}
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
-  </div>
-  
-  {% if families %}
-  <div class="overflow-x-auto rounded-md shadow-md border border-gray-700">
-    <table class="min-w-full divide-y divide-gray-700">
-      <thead class="bg-gray-800">
-        <tr>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Family Name</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Church</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Address</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Members</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Status</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Actions</th>
-        </tr>
-      </thead>
-      <tbody class="bg-gray-900 divide-y divide-gray-700">
-        {% for family in families %}
-        <tr class="hover:bg-gray-800 transition-colors duration-200">
-          <td class="px-6 py-4 whitespace-nowrap">
-            <a href="{% url 'family:family_detail' family.id %}" class="text-blue-400 hover:text-blue-600 font-semibold">{{ family.family_name }}</a>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <a href="{% url 'church:church_detail' family.church.id %}" class="text-blue-400 hover:text-blue-600 font-semibold">{{ family.church.name }}</a>
-          </td>
-          <td class="px-6 py-4 text-gray-300">{{ family.address }}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-gray-300 font-medium">{{ family.members.count }}</td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            {% if family.is_active %}
-            <span class="inline-flex px-2 py-1 rounded-full text-xs font-semibold bg-green-700 text-green-300">Active</span>
-            {% else %}
-            <span class="inline-flex px-2 py-1 rounded-full text-xs font-semibold bg-red-700 text-red-300">Inactive</span>
+
+    {% if is_paginated %}
+    <div class="flex justify-center mt-6">
+        <div class="join"> {# DaisyUI join for pagination #}
+            {% if page_obj.has_previous %}
+            <a href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.church %}&church={{ request.GET.church }}{% endif %}" class="join-item btn btn-md">First</a>
+            <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.church %}&church={{ request.GET.church }}{% endif %}" class="join-item btn btn-md">«</a>
             {% endif %}
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium flex space-x-3">
-            <a href="{% url 'family:family_detail' family.id %}" class="text-blue-400 hover:text-blue-600" title="View">
-              <i class="fas fa-eye"></i>
-            </a>
-            <a href="{% url 'family:family_update' family.id %}" class="text-indigo-400 hover:text-indigo-600" title="Edit">
-              <i class="fas fa-edit"></i>
-            </a>
-            <a href="{% url 'family:family_delete' family.id %}" class="text-red-400 hover:text-red-600" title="Delete">
-              <i class="fas fa-trash-alt"></i>
-            </a>
-            <a href="{% url 'individual:family_individual_create' family.id %}" class="text-green-400 hover:text-green-600" title="Add Member">
-              <i class="fas fa-user-plus"></i>
-            </a>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
 
-  {% if is_paginated %}
-  <div class="flex justify-center mt-6">
-    <nav class="inline-flex rounded-md shadow-md bg-gray-800 border border-gray-700">
-      {% if page_obj.has_previous %}
-      <a href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.church %}&church={{ request.GET.church }}{% endif %}" class="py-2 px-4 text-gray-300 hover:text-white hover:bg-gray-700 rounded-l-md transition">First</a>
-      <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.church %}&church={{ request.GET.church }}{% endif %}" class="py-2 px-4 text-gray-300 hover:text-white hover:bg-gray-700 transition">Previous</a>
-      {% endif %}
+            <button class="join-item btn btn-md btn-active">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</button>
 
-      <span class="py-2 px-4 bg-blue-600 text-white font-semibold">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.church %}&church={{ request.GET.church }}{% endif %}" class="join-item btn btn-md">»</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.church %}&church={{ request.GET.church }}{% endif %}" class="join-item btn btn-md">Last</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
 
-      {% if page_obj.has_next %}
-      <a href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.church %}&church={{ request.GET.church }}{% endif %}" class="py-2 px-4 text-gray-300 hover:text-white hover:bg-gray-700 transition">Next</a>
-      <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.church %}&church={{ request.GET.church }}{% endif %}" class="py-2 px-4 text-gray-300 hover:text-white hover:bg-gray-700 rounded-r-md transition">Last</a>
-      {% endif %}
-    </nav>
-  </div>
-  {% endif %}
-
-  {% else %}
-  <div class="bg-gray-800 p-6 rounded-lg text-center">
-    <p class="text-gray-400 text-lg mb-4">No families found.</p>
-    <a href="{% url 'family:family_create' %}" class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md shadow-md transition">
-      <i class="fas fa-plus mr-2"></i> Add Family
-    </a>
-  </div>
-  {% endif %}
+    {% else %}
+    <div class="hero bg-base-200 rounded-lg p-10 text-center shadow-lg"> {# DaisyUI hero #}
+        <div class="hero-content flex flex-col items-center">
+            <i data-feather="folder-open" class="w-20 h-20 text-base-content/50 mb-4"></i> {# Feather icon, larger size #}
+            <p class="text-xl font-bold mb-4 text-base-content">No families found matching your criteria.</p>
+            <a href="{% url 'family:family_create' %}" class="btn btn-primary flex items-center gap-2 transition-all duration-300 hover:scale-105"> {# DaisyUI button #}
+                <i data-feather="plus" class="w-5 h-5"></i> Add New Family {# Feather icon #}
+            </a>
+        </div>
+    </div>
+    {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{# Ensure feather icons are replaced on DOM load #}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace();
+    });
+</script>
 {% endblock %}

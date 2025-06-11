@@ -3,106 +3,169 @@
 {% block title %}{% if form.instance.pk %}Edit{% else %}Create{% endif %} Payment - Kadamay Mortuary System{% endblock %}
 
 {% block content %}
-<div class="bg-white rounded-lg shadow-md p-6">
-  <div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold">{% if form.instance.pk %}Edit{% else %}Create{% endif %} Payment</h1>
-    
-    <a href="{% if form.instance.pk %}{% url 'payment:payment_detail' form.instance.pk %}{% elif individual %}{% url 'individual:individual_detail' individual.id %}{% else %}{% url 'payment:payment_list' %}{% endif %}" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
-      <i class="fas fa-arrow-left mr-2"></i> Back
-    </a>
-  </div>
-  
-  {% if individual %}
-  <div class="bg-blue-50 p-4 rounded-lg mb-6">
-    <h2 class="text-lg font-semibold mb-2">Adding Payment for:</h2>
-    <div class="flex items-center">
-      {% if individual.photo %}
-      <img src="{{ individual.photo.url }}" alt="{{ individual.given_name }}" class="w-12 h-12 object-cover rounded-full mr-4">
-      {% else %}
-      <div class="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center mr-4">
-        <i class="fas fa-user text-gray-400 text-lg"></i>
-      </div>
-      {% endif %}
-      
-    <p class="font-medium">{{ individual.surname }}, {{ individual.given_name }} {{ individual.middle_name|default:'' }}</p>
-    <p class="text-sm text-gray-600">ID: {{ individual.members_serial }}</p>
-</div>
-</div>
-{% endif %}
-
-<form method="post" class="space-y-6">
-{% csrf_token %}
-
-{% if form.non_field_errors %}
-<div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
-  {{ form.non_field_errors }}
-</div>
-{% endif %}
-
-{% if not individual %}
-  <label for="{{ form.individual.id_for_label }}" class="block text-sm font-medium text-gray-700">Member</label>
-  <select name="{{ form.individual.name }}" id="{{ form.individual.id_for_label }}" 
-          class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm {% if form.individual.errors %}border-red-500{% endif %}">
-    <option value="">Select Member</option>
-    {% for member_id, member_name in form.fields.individual.choices %}
-      {% if member_id %}
-      <option value="{{ member_id }}" {% if form.individual.value|stringformat:"s" == member_id|stringformat:"s" %}selected{% endif %}>{{ member_name }}</option>
-      {% endif %}
-    {% endfor %}
-  </select>
-  {% if form.individual.errors %}
-  <p class="mt-2 text-sm text-red-600">{{ form.individual.errors }}</p>
-  {% endif %}
-{% endif %}
-
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <label for="{{ form.contribution_type.id_for_label }}" class="block text-sm font-medium text-gray-700">Contribution Type</label>
-    <select name="{{ form.contribution_type.name }}" id="{{ form.contribution_type.id_for_label }}" 
-            class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm {% if form.contribution_type.errors %}border-red-500{% endif %}">
-      <option value="">Select Contribution Type</option>
-      {% for type_id, type_name in form.fields.contribution_type.choices %}
-        {% if type_id %}
-        <option value="{{ type_id }}" {% if form.contribution_type.value|stringformat:"s" == type_id|stringformat:"s" %}selected{% endif %}>{{ type_name }}</option>
-        {% endif %}
-      {% endfor %}
-    </select>
-    {% if form.contribution_type.errors %}
-    <p class="mt-2 text-sm text-red-600">{{ form.contribution_type.errors }}</p>
-    {% endif %}
-    <label for="{{ form.amount.id_for_label }}" class="block text-sm font-medium text-gray-700">Amount</label>
-    <div class="mt-1 relative rounded-md shadow-sm">
-      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-        <span class="text-gray-500 sm:text-sm">₱</span>
-      <input type="text" name="{{ form.amount.name }}" id="{{ form.amount.id_for_label }}" 
-             value="{{ form.amount.value|default:'' }}" 
-             class="pl-7 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md {% if form.amount.errors %}border-red-500{% endif %}">
+<div class="card bg-base-100 shadow-xl p-6 md:p-8 text-base-content rounded-xl my-6 mx-auto max-w-4xl">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <h1 class="text-3xl font-extrabold text-primary flex items-center">
+            {% if form.instance.pk %}
+                <i data-feather="edit" class="w-8 h-8 mr-3"></i> Edit Payment
+            {% else %}
+                <i data-feather="plus-circle" class="w-8 h-8 mr-3"></i> Create Payment
+            {% endif %}
+        </h1>
+        
+        <a href="{% if form.instance.pk %}{% url 'payment:payment_detail' form.instance.pk %}{% elif individual %}{% url 'individual:individual_detail' individual.id %}{% else %}{% url 'payment:payment_list' %}{% endif %}" 
+           class="btn btn-ghost flex items-center gap-2 transition-all duration-300 hover:scale-105">
+            <i data-feather="arrow-left" class="w-5 h-5"></i> Back
+        </a>
     </div>
-    {% if form.amount.errors %}
-    <p class="mt-2 text-sm text-red-600">{{ form.amount.errors }}</p>
+    
+    ---
+
+    {% if individual %}
+    <div class="alert alert-info shadow-lg mb-6"> {# DaisyUI alert for individual info #}
+        <div>
+            {% if individual.photo %}
+            <div class="avatar">
+                <div class="w-12 h-12 rounded-full">
+                    <img src="{{ individual.photo.url }}" alt="{{ individual.given_name }}" class="object-cover">
+                </div>
+            </div>
+            {% else %}
+            <div class="avatar placeholder">
+                <div class="bg-base-300 text-base-content rounded-full w-12 h-12">
+                    <span class="text-xl">
+                        {% if individual.given_name %}{{ individual.given_name|first|upper }}{% else %}<i data-feather="user" class="w-6 h-6"></i>{% endif %}
+                    </span>
+                </div>
+            </div>
+            {% endif %}
+            <div>
+                <h2 class="text-lg font-semibold">Adding Payment for:</h2>
+                <p class="font-medium text-info-content">{{ individual.surname|upper }}, {{ individual.given_name|upper }} {% if individual.middle_name %}{{ individual.middle_name|upper }}{% endif %}</p>
+                <p class="text-sm opacity-80">ID: {{ individual.members_serial|default:"N/A" }}</p>
+            </div>
+        </div>
+    </div>
     {% endif %}
-  </div>
-    <label for="{{ form.date_paid.id_for_label }}" class="block text-sm font-medium text-gray-700">Date Paid</label>
-    <input type="date" name="{{ form.date_paid.name }}" id="{{ form.date_paid.id_for_label }}" 
-           value="{{ form.date_paid.value|date:'Y-m-d'|default:'' }}" 
-           class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md {% if form.date_paid.errors %}border-red-500{% endif %}">
-    {% if form.date_paid.errors %}
-    <p class="mt-2 text-sm text-red-600">{{ form.date_paid.errors }}</p>
+
+    <form method="post" class="space-y-6">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-error shadow-lg mb-4"> {# DaisyUI alert for non-field errors #}
+        <div>
+            <i data-feather="alert-circle" class="w-6 h-6"></i>
+            <span class="font-semibold">{{ form.non_field_errors }}</span>
+        </div>
+    </div>
     {% endif %}
+
+    {% if not individual %}
+    <div class="form-control w-full"> {# DaisyUI form control #}
+        <label for="{{ form.individual.id_for_label }}" class="label">
+            <span class="label-text">Member</span>
+        </label>
+        <select name="{{ form.individual.name }}" id="{{ form.individual.id_for_label }}" 
+                 class="select select-bordered w-full {% if form.individual.errors %}select-error{% endif %}"> {# DaisyUI select with error state #}
+            <option value="">Select Member</option>
+            {% for member_id, member_name in form.fields.individual.choices %}
+                {% if member_id %}
+                <option value="{{ member_id }}" {% if form.individual.value|stringformat:"s" == member_id|stringformat:"s" %}selected{% endif %}>{{ member_name }}</option>
+                {% endif %}
+            {% endfor %}
+        </select>
+        {% if form.individual.errors %}
+        <label class="label">
+            <span class="label-text-alt text-error">{{ form.individual.errors }}</span>
+        </label>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="form-control w-full"> {# DaisyUI form control #}
+            <label for="{{ form.contribution_type.id_for_label }}" class="label">
+                <span class="label-text">Contribution Type</span>
+            </label>
+            <select name="{{ form.contribution_type.name }}" id="{{ form.contribution_type.id_for_label }}" 
+                     class="select select-bordered w-full {% if form.contribution_type.errors %}select-error{% endif %}"> {# DaisyUI select with error state #}
+                <option value="">Select Contribution Type</option>
+                {% for type_id, type_name in form.fields.contribution_type.choices %}
+                    {% if type_id %}
+                    <option value="{{ type_id }}" {% if form.contribution_type.value|stringformat:"s" == type_id|stringformat:"s" %}selected{% endif %}>{{ type_name }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+            {% if form.contribution_type.errors %}
+            <label class="label">
+                <span class="label-text-alt text-error">{{ form.contribution_type.errors }}</span>
+            </label>
+            {% endif %}
+        </div>
+
+        <div class="form-control w-full"> {# DaisyUI form control #}
+            <label for="{{ form.amount.id_for_label }}" class="label">
+                <span class="label-text">Amount</span>
+            </label>
+            <label class="input input-bordered flex items-center gap-2 {% if form.amount.errors %}input-error{% endif %}"> {# DaisyUI input with prefix #}
+                ₱
+                <input type="number" step="0.01" name="{{ form.amount.name }}" id="{{ form.amount.id_for_label }}" 
+                       value="{{ form.amount.value|default:'' }}" 
+                       class="grow"> {# Use grow to fill remaining space #}
+            </label>
+            {% if form.amount.errors %}
+            <label class="label">
+                <span class="label-text-alt text-error">{{ form.amount.errors }}</span>
+            </label>
+            {% endif %}
+        </div>
+
+        <div class="form-control w-full"> {# DaisyUI form control #}
+            <label for="{{ form.date_paid.id_for_label }}" class="label">
+                <span class="label-text">Date Paid</span>
+            </label>
+            <input type="date" name="{{ form.date_paid.name }}" id="{{ form.date_paid.id_for_label }}" 
+                   value="{{ form.date_paid.value|date:'Y-m-d'|default:'' }}" 
+                   class="input input-bordered w-full {% if form.date_paid.errors %}input-error{% endif %}"> {# DaisyUI input with error state #}
+            {% if form.date_paid.errors %}
+            <label class="label">
+                <span class="label-text-alt text-error">{{ form.date_paid.errors }}</span>
+            </label>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="form-control w-full"> {# DaisyUI form control #}
+        <label for="{{ form.remarks.id_for_label }}" class="label">
+            <span class="label-text">Remarks</span>
+        </label>
+        <textarea name="{{ form.remarks.name }}" id="{{ form.remarks.id_for_label }}" rows="3" 
+                  class="textarea textarea-bordered h-24 {% if form.remarks.errors %}textarea-error{% endif %}">{{ form.remarks.value|default:'' }}</textarea> {# DaisyUI textarea with error state #}
+        {% if form.remarks.errors %}
+        <label class="label">
+            <span class="label-text-alt text-error">{{ form.remarks.errors }}</span>
+        </label>
+        {% endif %}
+    </div>
+
+    <div class="flex justify-end space-x-3 mt-8">
+        <a href="{% if form.instance.pk %}{% url 'payment:payment_detail' form.instance.pk %}{% elif individual %}{% url 'individual:individual_detail' individual.id %}{% else %}{% url 'payment:payment_list' %}{% endif %}" 
+           class="btn btn-ghost">
+            Cancel
+        </a>
+        <button type="submit" class="btn btn-primary">
+            {% if form.instance.pk %}Update{% else %}Create{% endif %} Payment
+        </button>
+    </div>
+    </form>
 </div>
-  <label for="{{ form.remarks.id_for_label }}" class="block text-sm font-medium text-gray-700">Remarks</label>
-  <textarea name="{{ form.remarks.name }}" id="{{ form.remarks.id_for_label }}" rows="3" 
-            class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md {% if form.remarks.errors %}border-red-500{% endif %}">{{ form.remarks.value|default:'' }}</textarea>
-  {% if form.remarks.errors %}
-  <p class="mt-2 text-sm text-red-600">{{ form.remarks.errors }}</p>
-  {% endif %}
-<div class="flex justify-end space-x-3">
-  <a href="{% if form.instance.pk %}{% url 'payment:payment_detail' form.instance.pk %}{% elif individual %}{% url 'individual:individual_detail' individual.id %}{% else %}{% url 'payment:payment_list' %}{% endif %}" class="py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-    Cancel
-  </a>
-  <button type="submit" class="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-    {% if form.instance.pk %}Update{% else %}Create{% endif %} Payment
-  </button>
-</div>
-</form>
-</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace(); // Ensure Feather Icons are re-initialized
+    });
+</script>
 {% endblock %}

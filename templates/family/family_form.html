@@ -1,86 +1,126 @@
+{# family_form.html #}
 {% extends 'base.html' %}
 
 {% block title %}{% if form.instance.pk %}Edit{% else %}Create{% endif %} Family - Kadamay Mortuary System{% endblock %}
 
 {% block content %}
-<div class="bg-gray-900 rounded-lg shadow-lg p-6 text-gray-200">
-  <div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold">{% if form.instance.pk %}Edit{% else %}Create{% endif %} Family</h1>
+<div class="card bg-base-100 shadow-xl p-6 md:p-8 text-base-content rounded-xl my-6 mx-auto max-w-4xl">
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <h1 class="text-3xl font-extrabold text-primary">{% if form.instance.pk %}Edit Family{% else %}Create New Family{% endif %}</h1>
+        
+        <a href="{% if form.instance.pk %}{% url 'family:family_detail' form.instance.pk %}{% else %}{% url 'family:family_list' %}{% endif %}" 
+           class="btn btn-ghost flex items-center gap-2 transition-all duration-300 hover:scale-105 w-full md:w-auto">
+            <i data-feather="arrow-left" class="w-5 h-5"></i> Back
+        </a>
+    </header>
     
-    <a href="{% if form.instance.pk %}{% url 'family:family_detail' form.instance.pk %}{% else %}{% url 'family:family_list' %}{% endif %}" 
-       class="bg-gray-700 hover:bg-gray-600 text-gray-300 px-4 py-2 rounded transition">
-      <i class="fas fa-arrow-left mr-2"></i> Back
-    </a>
-  </div>
-  
-  <form method="post" class="space-y-6">
-    {% csrf_token %}
-    
-    {% if form.non_field_errors %}
-    <div class="bg-red-800 border-l-4 border-red-600 text-red-400 p-4 mb-4" role="alert">
-      {{ form.non_field_errors }}
-    </div>
-    {% endif %}
-    
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div class="flex flex-col">
-        <label for="{{ form.family_name.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-1">Family Name</label>
-        <input type="text" name="{{ form.family_name.name }}" id="{{ form.family_name.id_for_label }}" 
-               value="{{ form.family_name.value|default:'' }}" 
-               class="mt-1 bg-gray-800 border border-gray-700 rounded-md py-2 px-3 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {% if form.family_name.errors %}border-red-500{% endif %}">
-        {% if form.family_name.errors %}
-        <p class="mt-1 text-xs text-red-500">{{ form.family_name.errors }}</p>
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+        <div role="alert" class="alert alert-error mb-4"> {# DaisyUI alert #}
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <span>
+                {% for error in form.non_field_errors %}
+                    {{ error }}
+                {% endfor %}
+            </span>
+        </div>
         {% endif %}
-      </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="form-control w-full"> {# DaisyUI form control #}
+                <label class="label" for="{{ form.family_name.id_for_label }}">
+                    <span class="label-text text-base-content/70">Family Name</span>
+                </label>
+                <input type="text" 
+                       name="{{ form.family_name.name }}" 
+                       id="{{ form.family_name.id_for_label }}" 
+                       value="{{ form.family_name.value|default:'' }}" 
+                       placeholder="e.g., Dela Cruz Family"
+                       class="input input-bordered w-full {% if form.family_name.errors %}input-error{% endif %}"
+                >
+                {% if form.family_name.errors %}
+                <label class="label">
+                    <span class="label-text-alt text-error">{{ form.family_name.errors }}</span>
+                </label>
+                {% endif %}
+            </div>
 
-      <div class="flex flex-col">
-        <label for="{{ form.church.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-1">Church</label>
-        <select name="{{ form.church.name }}" id="{{ form.church.id_for_label }}" 
-                class="mt-1 bg-gray-800 border border-gray-700 rounded-md py-2 px-3 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {% if form.church.errors %}border-red-500{% endif %}">
-          <option value="" class="text-gray-400">Select Church</option>
-          {% for church_id, church_name in form.fields.church.choices %}
-            {% if church_id %}
-            <option value="{{ church_id }}" {% if form.church.value|stringformat:"s" == church_id|stringformat:"s" %}selected{% endif %}>{{ church_name }}</option>
+            <div class="form-control w-full"> {# DaisyUI form control #}
+                <label class="label" for="{{ form.church.id_for_label }}">
+                    <span class="label-text text-base-content/70">Church</span>
+                </label>
+                <select name="{{ form.church.name }}" 
+                        id="{{ form.church.id_for_label }}" 
+                        class="select select-bordered w-full {% if form.church.errors %}select-error{% endif %}">
+                  <option value="" disabled selected>Select Church</option> {# Disabled and selected for placeholder #}
+                    {% for church_id, church_name in form.fields.church.choices %}
+                        {% if church_id %} {# Ensure value is not empty string for valid options #}
+                        <option value="{{ church_id }}" {% if form.church.value|stringformat:"s" == church_id|stringformat:"s" %}selected{% endif %}>{{ church_name }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+                {% if form.church.errors %}
+                <label class="label">
+                    <span class="label-text-alt text-error">{{ form.church.errors }}</span>
+                </label>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="form-control w-full"> {# DaisyUI form control #}
+            <label class="label" for="{{ form.address.id_for_label }}">
+                <span class="label-text text-base-content/70">Address</span>
+            </label>
+            <textarea name="{{ form.address.name }}" 
+                      id="{{ form.address.id_for_label }}" 
+                      rows="3" 
+                      placeholder="e.g., 123 Main St, Anytown"
+                      class="textarea textarea-bordered h-24 w-full {% if form.address.errors %}textarea-error{% endif %}">{{ form.address.value|default:'' }}</textarea>
+            {% if form.address.errors %}
+            <label class="label">
+                <span class="label-text-alt text-error">{{ form.address.errors }}</span>
+            </label>
             {% endif %}
-          {% endfor %}
-        </select>
-        {% if form.church.errors %}
-        <p class="mt-1 text-xs text-red-500">{{ form.church.errors }}</p>
-        {% endif %}
-      </div>
-    </div>
+        </div>
 
-    <div class="flex flex-col">
-      <label for="{{ form.address.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-1">Address</label>
-      <textarea name="{{ form.address.name }}" id="{{ form.address.id_for_label }}" rows="3" 
-                class="mt-1 bg-gray-800 border border-gray-700 rounded-md py-2 px-3 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {% if form.address.errors %}border-red-500{% endif %}">{{ form.address.value|default:'' }}</textarea>
-      {% if form.address.errors %}
-      <p class="mt-1 text-xs text-red-500">{{ form.address.errors }}</p>
-      {% endif %}
-    </div>
+        <div class="form-control"> {# DaisyUI form control for checkbox #}
+            <label class="label cursor-pointer justify-start gap-3"> {# Align checkbox and label #}
+                <input type="checkbox" 
+                       name="{{ form.is_active.name }}" 
+                       id="{{ form.is_active.id_for_label }}" 
+                       {% if form.is_active.value %}checked{% endif %} 
+                       class="checkbox checkbox-primary"
+                >
+                <span class="label-text text-base-content">Is Active</span>
+            </label>
+            {% if form.is_active.errors %}
+            <label class="label">
+                <span class="label-text-alt text-error">{{ form.is_active.errors }}</span>
+            </label>
+            {% endif %}
+        </div>
 
-    <div class="flex items-center space-x-2">
-      <input type="checkbox" name="{{ form.is_active.name }}" id="{{ form.is_active.id_for_label }}" 
-             {% if form.is_active.value %}checked{% endif %} 
-             class="h-4 w-4 text-blue-600 bg-gray-800 border-gray-600 rounded focus:ring-blue-500">
-      <label for="{{ form.is_active.id_for_label }}" class="block text-sm text-gray-300 select-none">
-        Is Active
-      </label>
-      {% if form.is_active.errors %}
-      <p class="mt-1 text-xs text-red-500">{{ form.is_active.errors }}</p>
-      {% endif %}
-    </div>
-
-    <div class="flex justify-end space-x-3">
-      <a href="{% if form.instance.pk %}{% url 'family:family_detail' form.instance.pk %}{% else %}{% url 'family:family_list' %}{% endif %}" 
-         class="py-2 px-4 border border-gray-600 rounded-md text-sm font-medium text-gray-300 bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition">
-        Cancel
-      </a>
-      <button type="submit" 
-              class="py-2 px-4 rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition">
-        {% if form.instance.pk %}Update{% else %}Create{% endif %} Family
-      </button>
-    </div>
-  </form>
+        <div class="flex justify-end space-x-3 mt-8"> {# Increased top margin #}
+            <a href="{% if form.instance.pk %}{% url 'family:family_detail' form.instance.pk %}{% else %}{% url 'family:family_list' %}{% endif %}" 
+               class="btn btn-ghost transition-all duration-300 hover:scale-105">
+                Cancel
+            </a>
+            <button type="submit" 
+                    class="btn btn-primary transition-all duration-300 hover:scale-105">
+                {% if form.instance.pk %}Update Family{% else %}Create Family{% endif %}
+            </button>
+        </div>
+    </form>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace();
+    });
+</script>
 {% endblock %}

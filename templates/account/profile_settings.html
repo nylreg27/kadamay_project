@@ -1,197 +1,129 @@
-{# account/profile_settings.html #}
-{% extends "base.html" %}
+{# apps/account/templates/account/profile_settings.html #}
+{% extends 'base.html' %}
+{% load widget_tweaks %} {# For easier application of CSS classes to form fields #}
 
-{% block title %}Profile Settings - Kadamay Mortuary System{% endblock %}
+{% block title %}Profile Settings — Kadamay Mortuary System{% endblock %}
 
 {% block content %}
-<div class="card bg-base-100 shadow-xl p-6 md:p-8 text-base-content max-w-4xl mx-auto my-6 rounded-xl">
-    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-        <h1 class="text-3xl font-extrabold">Profile Settings</h1>
-        <a href="{% url 'report:dashboard' %}" class="btn btn-ghost flex items-center gap-2">
-            <i data-feather="arrow-left"></i> Back to Dashboard
+<div class="card bg-base-100 shadow-xl p-4 md:p-6 text-base-content rounded-xl">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-3xl font-bold text-primary">Profile Settings for {{ user.username }}</h1> {# Changed text-2xl to text-3xl and added text-primary #}
+        <a href="{% url 'report:dashboard' %}" class="btn btn-ghost">
+            <i data-feather="arrow-left" class="w-5 h-5 mr-2"></i> Back to Dashboard {# Added size and margin to icon #}
         </a>
     </div>
 
-    <form method="post" enctype="multipart/form-data" class="space-y-6" novalidate>
+    <form method="post" enctype="multipart/form-data" class="space-y-6">
         {% csrf_token %}
 
-        {# Non-field errors for User Form #}
-        {% if user_form.non_field_errors %}
-        <div role="alert" class="alert alert-error">
-            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            <span>
-                {% for error in user_form.non_field_errors %}
-                    {{ error }}<br>
-                {% endfor %}
-            </span>
-        </div>
+        {# Display non-field errors if any #}
+        {% if form.non_field_errors %}
+            <div class="alert alert-error">
+                <i data-feather="alert-circle" class="w-6 h-6"></i> {# Added size to icon #}
+                <span>
+                    {% for error in form.non_field_errors %}
+                        {{ error }}
+                    {% endfor %}
+                </span>
+            </div>
         {% endif %}
 
-        {# Non-field errors for Profile Form #}
-        {% if profile_form.non_field_errors %}
-        <div role="alert" class="alert alert-error">
-            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            <span>
-                {% for error in profile_form.non_field_errors %}
-                    {{ error }}<br>
-                {% endfor %}
-            </span>
-        </div>
-        {% endif %}
-
-        {# User Information Section #}
-        <h2 class="text-2xl font-semibold mb-4 border-b-2 pb-2 text-base-content">User Account Information</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {# Username #}
-            <div class="form-control">
-                <label for="{{ user_form.username.id_for_label }}" class="label">
-                    <span class="label-text">Username</span>
-                </label>
-                <input type="text" name="{{ user_form.username.name }}" id="{{ user_form.username.id_for_label }}"
-                       value="{{ user_form.username.value|default:'' }}"
-                       class="input input-bordered w-full {% if user_form.username.errors %}input-error{% endif %}" autocomplete="username" readonly /> {# Username is usually read-only #}
-                {% if user_form.username.errors %}
+        {# Section for Theme Settings #}
+        <h2 class="text-2xl font-semibold border-b pb-2 mb-4 text-primary">Theme Settings</h2> {# Changed text-xl to text-2xl and added text-primary #}
+        <div class="form-control w-full max-w-xs">
+            <label class="label" for="{{ form.theme.id_for_label }}">
+                <span class="label-text text-base-content">Select Theme</span> {# Ensured label-text is theme-aware #}
+            </label>
+            {# Render the theme field with DaisyUI classes #}
+            {% render_field form.theme class="select select-bordered w-full max-w-xs" %}
+            {% if form.theme.help_text %}
                 <label class="label">
-                    <span class="label-text-alt text-error">{{ user_form.username.errors }}</span>
+                    <span class="label-text-alt text-sm text-base-content/70">{{ form.theme.help_text }}</span> {# Changed text-gray-500 to text-base-content/70 #}
                 </label>
-                {% endif %}
-            </div>
-
-            {# Email #}
-            <div class="form-control">
-                <label for="{{ user_form.email.id_for_label }}" class="label">
-                    <span class="label-text">Email</span>
-                </label>
-                <input type="email" name="{{ user_form.email.name }}" id="{{ user_form.email.id_for_label }}"
-                       value="{{ user_form.email.value|default:'' }}"
-                       class="input input-bordered w-full {% if user_form.email.errors %}input-error{% endif %}" autocomplete="email" />
-                {% if user_form.email.errors %}
+            {% endif %}
+            {% if form.theme.errors %}
                 <label class="label">
-                    <span class="label-text-alt text-error">{{ user_form.email.errors }}</span>
+                    <span class="label-text-alt text-error text-sm">{% for error in form.theme.errors %}{{ error }}{% endfor %}</span>
                 </label>
-                {% endif %}
-            </div>
-            
-            {# First Name #}
-            <div class="form-control">
-                <label for="{{ user_form.first_name.id_for_label }}" class="label">
-                    <span class="label-text">First Name</span>
-                </label>
-                <input type="text" name="{{ user_form.first_name.name }}" id="{{ user_form.first_name.id_for_label }}"
-                       value="{{ user_form.first_name.value|default:'' }}"
-                       class="input input-bordered w-full {% if user_form.first_name.errors %}input-error{% endif %}" autocomplete="given-name" />
-                {% if user_form.first_name.errors %}
-                <label class="label">
-                    <span class="label-text-alt text-error">{{ user_form.first_name.errors }}</span>
-                </label>
-                {% endif %}
-            </div>
-
-            {# Last Name #}
-            <div class="form-control">
-                <label for="{{ user_form.last_name.id_for_label }}" class="label">
-                    <span class="label-text">Last Name</span>
-                </label>
-                <input type="text" name="{{ user_form.last_name.name }}" id="{{ user_form.last_name.id_for_label }}"
-                       value="{{ user_form.last_name.value|default:'' }}"
-                       class="input input-bordered w-full {% if user_form.last_name.errors %}input-error{% endif %}" autocomplete="family-name" />
-                {% if user_form.last_name.errors %}
-                <label class="label">
-                    <span class="label-text-alt text-error">{{ user_form.last_name.errors }}</span>
-                </label>
-                {% endif %}
-            </div>
+            {% endif %}
         </div>
 
-        {# Profile Information Section #}
-        <h2 class="text-2xl font-semibold mb-4 border-b-2 pb-2 text-base-content mt-8">Additional Profile Information</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {# Role #}
-            <div class="form-control">
-                <label for="{{ profile_form.role.id_for_label }}" class="label">
-                    <span class="label-text">Role</span>
-                </label>
-                <select name="{{ profile_form.role.name }}" id="{{ profile_form.role.id_for_label }}"
-                        class="select select-bordered w-full {% if profile_form.role.errors %}select-error{% endif %}"
-                        {% if not user.is_superuser %}disabled{% endif %}> {# Only superusers can change roles #}
-                    <option value="">Select Role</option>
-                    {% for value, text in profile_form.role.field.choices %}
-                        <option value="{{ value }}" {% if value == profile_form.role.value %}selected{% endif %}>{{ text }}</option>
-                    {% endfor %}
-                </select>
-                {% if not user.is_superuser %}
-                    <label class="label">
-                        <span class="label-text-alt text-info">Only Superusers can change roles.</span>
-                    </label>
-                {% endif %}
-                {% if profile_form.role.errors %}
-                <label class="label">
-                    <span class="label-text-alt text-error">{{ profile_form.role.errors }}</span>
-                </label>
-                {% endif %}
-            </div>
-
-            {# Church (for In-Charge users) #}
-            <div class="form-control">
-                <label for="{{ profile_form.church.id_for_label }}" class="label">
-                    <span class="label-text">Associated Church (for In-Charge)</span>
-                </label>
-                <select name="{{ profile_form.church.name }}" id="{{ profile_form.church.id_for_label }}"
-                        class="select select-bordered w-full {% if profile_form.church.errors %}select-error{% endif %}"
-                        {% if not user.is_superuser %}disabled{% endif %}> {# Only superusers can assign churches #}
-                    <option value="">Select Church</option>
-                    {% for church in profile_form.fields.church.queryset %}
-                        <option value="{{ church.pk }}" {% if church.pk|stringformat:"s" == profile_form.church.value|stringformat:"s" %}selected{% endif %}>{{ church.name }}</option>
-                    {% endfor %}
-                </select>
-                {% if not user.is_superuser %}
-                    <label class="label">
-                        <span class="label-text-alt text-info">Only Superusers can assign churches.</span>
-                    </label>
-                {% endif %}
-                {% if profile_form.church.errors %}
-                <label class="label">
-                    <span class="label-text-alt text-error">{{ profile_form.church.errors }}</span>
-                </label>
-                {% endif %}
-            </div>
-
-            {# Profile Picture #}
-            <div class="form-control col-span-1 md:col-span-2">
-                <label for="{{ profile_form.profile_picture.id_for_label }}" class="label">
-                    <span class="label-text">Profile Picture (Optional)</span>
-                </label>
-                <input type="file" name="{{ profile_form.profile_picture.name }}" id="{{ profile_form.profile_picture.id_for_label }}"
-                       class="file-input file-input-bordered w-full {% if profile_form.profile_picture.errors %}file-input-error{% endif %}" accept="image/*" />
-                {% if profile_form.profile_picture.errors %}
-                <label class="label">
-                    <span class="label-text-alt text-error">{{ profile_form.profile_picture.errors }}</span>
-                </label>
-                {% endif %}
-                {% if profile_form.instance.profile_picture %}
-                <div class="mt-2">
-                    <p class="text-sm text-base-content/70">Current picture:</p>
-                    <img src="{{ profile_form.instance.profile_picture.url }}" alt="Current Profile Picture" class="w-24 h-24 object-cover rounded-full mt-2">
-                    <div class="form-control mt-2">
-                        <label class="label cursor-pointer">
-                            <span class="label-text">Remove picture</span>
-                            <input type="checkbox" name="profile_picture-clear" id="profile_picture-clear_id" class="checkbox checkbox-primary">
-                        </label>
-                    </div>
+        {# Section for Other Profile Information #}
+        <h2 class="text-2xl font-semibold border-b pb-2 mb-4 mt-8 text-primary">Personal Information</h2> {# Changed text-xl to text-2xl and added text-primary #}
+        
+        {# Profile Picture #}
+        <div class="form-control w-full max-w-xs">
+            <label class="label" for="{{ form.profile_picture.id_for_label }}">
+                <span class="label-text text-base-content">Profile Picture</span> {# Ensured label-text is theme-aware #}
+            </label>
+            {% if user.profile.profile_picture %}
+                <div class="mb-2">
+                    <img src="{{ user.profile.profile_picture.url }}" alt="Current Profile Picture" class="w-24 h-24 rounded-full object-cover border border-base-content/20 shadow"> {# Added border and shadow for visual appeal #}
                 </div>
-                {% endif %}
-            </div>
+            {% endif %}
+            {% render_field form.profile_picture class="file-input file-input-bordered w-full max-w-xs" %}
+            {% if form.profile_picture.help_text %}
+                <label class="label">
+                    <span class="label-text-alt text-sm text-base-content/70">{{ form.profile_picture.help_text }}</span> {# Changed text-gray-500 to text-base-content/70 #}
+                </label>
+            {% endif %}
+            {% if form.profile_picture.errors %}
+                <label class="label">
+                    <span class="label-text-alt text-error text-sm">{% for error in form.profile_picture.errors %}{{ error }}{% endfor %}</span>
+                </label>
+            {% endif %}
         </div>
 
-        {# Buttons #}
-        <div class="flex justify-end mt-6 space-x-4">
-            <a href="{% url 'report:dashboard' %}" class="btn btn-ghost">
-                Cancel
-            </a>
-            <button type="submit" class="btn btn-primary">
-                Update Profile
+        {# Iterate through the remaining fields if any, excluding 'theme' and 'profile_picture' which are handled #}
+        {% for field in form %}
+            {% if field.name != 'theme' and field.name != 'profile_picture' %}
+                <div class="form-control w-full">
+                    <label class="label" for="{{ field.id_for_label }}">
+                        <span class="label-text text-base-content font-semibold">{{ field.label }}</span>
+                        {% if field.field.required %}
+                            <span class="text-error ml-1">*</span>
+                        {% endif %}
+                    </label>
+                    {% if field.field.widget.input_type == 'checkbox' %}
+                        {# Special rendering for checkboxes #}
+                        <label class="label cursor-pointer justify-start gap-3">
+                            {{ field|add_class:"checkbox checkbox-primary" }}
+                            <span class="label-text">{{ field.label }}</span>
+                        </label>
+                    {% elif field.field.widget.input_type == 'textarea' %}
+                         {{ field|add_class:"textarea textarea-bordered h-24 w-full focus:outline-none focus:ring-2 focus:ring-primary" }}
+                    {% else %}
+                        {{ field|add_class:"input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-primary" }}
+                    {% endif %}
+                    
+                    {% if field.help_text %}
+                        <label class="label">
+                            <span class="label-text-alt text-base-content/70">{{ field.help_text }}</span>
+                        </label>
+                    {% endif %}
+                    {% if field.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ field.errors }}</span>
+                        </label>
+                    {% endif %}
+                </div>
+            {% endif %}
+        {% endfor %}
+
+        <div class="flex justify-end mt-6">
+            <button type="submit" class="btn btn-primary flex items-center gap-2">
+                <i data-feather="save" class="w-5 h-5"></i> Save Settings
             </button>
         </div>
     </form>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }} {# Include existing base.html extra_js #}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace();
+    });
+</script>
 {% endblock %}

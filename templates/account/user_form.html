@@ -2,37 +2,40 @@
 {% load widget_tweaks %}
 
 {% block content %}
-<div class="max-w-xl mx-auto mt-10 bg-gray-900 p-8 rounded-lg shadow-lg border border-gray-700">
-  <h2 class="text-3xl font-bold mb-6 text-white">Create New User</h2>
-  <form method="post" novalidate>
-    {% csrf_token %}
+<div class="max-w-xl mx-auto mt-10 bg-base-100 p-8 rounded-lg shadow-lg border border-base-300 text-base-content">
+    <h2 class="text-3xl font-bold mb-6 text-primary">Create New User</h2>
+    <form method="post" novalidate>
+        {% csrf_token %}
 
-    {% for field in form %}
-      <div class="mb-5">
-        <label for="{{ field.id_for_label }}" class="block text-gray-300 font-semibold mb-2">
-          {{ field.label }}
-          {% if field.field.required %}
-            <span class="text-red-500">*</span>
-          {% endif %}
-        </label>
-        {{ field|add_class:"bg-gray-800 text-gray-100 border border-gray-600 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500" }}
-        {% if field.help_text %}
-          <p class="text-gray-400 text-xs mt-1">{{ field.help_text }}</p>
-        {% endif %}
-        {% if field.errors %}
-          <p class="text-red-500 text-sm mt-1">{{ field.errors }}</p>
-        {% endif %}
-      </div>
-    {% endfor %}
+        {% for field in form %}
+            <div class="mb-5">
+                <label for="{{ field.id_for_label }}" class="block text-base-content font-semibold mb-2">
+                    {{ field.label }}
+                    {% if field.field.required %}
+                        <span class="text-error">*</span> {# Changed to text-error for theme consistency #}
+                    {% endif %}
+                </label>
+                {# Using DaisyUI input classes for theme consistency #}
+                {{ field|add_class:"input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-primary" }}
+                {% if field.help_text %}
+                    <p class="text-base-content/70 text-xs mt-1">{{ field.help_text }}</p> {# Adjusted text color for theme #}
+                {% endif %}
+                {% if field.errors %}
+                    <p class="text-error text-sm mt-1">{{ field.errors }}</p> {# Changed to text-error #}
+                {% endif %}
+            </div>
+        {% endfor %}
 
-    <div class="mt-8 flex items-center">
-      <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded transition">
-        Save
-      </button>
-      <a href="{% url 'account:user_list' %}" class="ml-4 text-gray-400 hover:text-gray-200 underline transition">
-        Cancel
-      </a>
-    </div>
-  </form>
+        <div class="mt-8 flex items-center">
+            {# Using DaisyUI button classes for theme consistency #}
+            <button type="submit" class="btn btn-primary font-semibold px-6 py-2 rounded transition">
+                Save
+            </button>
+            {# Using DaisyUI link classes for theme consistency #}
+            <a href="{% url 'account:user_list' %}" class="ml-4 link link-hover text-base-content/80 transition">
+                Cancel
+            </a>
+        </div>
+    </form>
 </div>
 {% endblock %}
