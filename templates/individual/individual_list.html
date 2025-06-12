@@ -1,75 +1,97 @@
-{# apps/individual/templates/individual/individual_list.html #}
-{% extends 'base.html' %} {# Extends your base.html for consistent layout #}
+{% extends 'base.html' %}
 
 {% block title %}Members List - Kadamay Mortuary System{% endblock %}
 
 {% block content %}
 <div class="container mx-auto p-4 max-w-7xl">
     <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <h1 class="text-3xl font-extrabold text-primary">Members</h1>
+        <h1 class="text-2xl font-extrabold text-primary">Members</h1> {# Changed to text-2xl #}
         <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto items-center">
-            <form action="{% url 'individual:individual_list' %}" method="GET" class="flex w-full md:w-auto">
-                <label class="input input-bordered flex items-center gap-2 w-full rounded-md transition-all duration-200 focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent"> {# DaisyUI input with flex for icon #}
+            <form action="{% url 'individual:individual_list' %}" method="GET" class="flex w-full md:w-auto" id="searchForm">
+                <label class="input input-bordered flex items-center gap-2 w-full rounded-md transition-all duration-200 focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent input-sm"> {# Added input-sm #}
                     <input
                         type="text"
                         name="search"
                         placeholder="Search members..."
-                        value="{{ search_query }}"
-                        class="grow border-none focus:outline-none focus:ring-0" {# Remove borders/rings from inner input #}
+                        value="{{ request.GET.search }}"
+                        class="grow border-none focus:outline-none focus:ring-0 text-sm" {# Adjusted text-sm for search input #}
+                        id="searchInput"
                     />
                     <button
                         type="submit"
-                        class="btn btn-ghost btn-circle btn-sm p-0" {# Smaller, circular, icon-only button #}
+                        class="btn btn-ghost btn-circle btn-sm p-0"
                         aria-label="Submit search"
                     >
-                        <i data-feather="search" class="w-5 h-5"></i>
+                        <i data-feather="search" class="w-4 h-4"></i> {# Reduced icon size for search #}
                     </button>
                 </label>
             </form>
             
-            {# NEW: Refresh All Button #}
+            {% if request.GET.search %}
             <a href="{% url 'individual:individual_list' %}"
-               class="btn btn-info flex items-center gap-2 transition-all duration-300 hover:scale-105 w-full md:w-auto"
+               class="btn btn-ghost btn-circle btn-sm tooltip" {# Maintained btn-sm for circle buttons #}
+               data-tip="Clear Search"
                aria-label="Refresh list"
             >
-                <i data-feather="refresh-ccw" class="w-5 h-5"></i> Refresh All
+                <i data-feather="refresh-cw" class="w-4 h-4"></i> {# Reduced icon size #}
             </a>
+            {% endif %}
 
             {% if user.is_superuser %}
             <a href="{% url 'individual:individual_create' %}"
-               class="btn btn-success flex items-center gap-2 transition-all duration-300 hover:scale-105 w-full md:w-auto"
+               class="btn btn-success flex items-center gap-2 transition-all duration-300 hover:scale-105 w-full md:w-auto btn-sm" {# Added btn-sm #}
                aria-label="Add new member"
             >
-              <i data-feather="user-plus" class="w-5 h-5"></i> Add Member {# Changed plus-circle to user-plus #}
+              <i data-feather="user-plus" class="w-4 h-4"></i> Add Member {# Reduced icon size #}
             </a>
             {% endif %}
         </div>
     </header>
 
+    {# NEW POSITION FOR ACTION BUTTONS: BELOW THE HEADER, ABOVE THE TABLE #}
+    <div class="flex gap-2 mb-4">
+        <a href="#" id="viewMemberBtn" class="btn btn-info btn-square tooltip btn-sm" data-tip="View Selected" aria-label="View selected member" disabled> {# Added btn-sm #}
+            <i data-feather="eye" class="w-4 h-4"></i> {# Reduced icon size #}
+        </a>
+        {% if user.is_superuser %}
+        <a href="#" id="editMemberBtn" class="btn btn-warning btn-square tooltip btn-sm" data-tip="Edit Selected" aria-label="Edit selected member" disabled> {# Added btn-sm #}
+            <i data-feather="edit" class="w-4 h-4"></i> {# Reduced icon size #}
+        </a>
+        <a href="#" id="deleteMemberBtn" class="btn btn-error btn-square tooltip btn-sm" data-tip="Delete Selected" aria-label="Delete selected member" disabled> {# Added btn-sm #}
+            <i data-feather="trash-2" class="w-4 h-4"></i> {# Reduced icon size #}
+        </a>
+        {% endif %}
+    </div>
+
     {% if individuals %}
-        <div class="hidden md:block overflow-x-auto rounded-lg shadow-md border border-base-300"> {# Added border for visual separation #}
-            <table class="table table-zebra w-full"> {# Using table-zebra for striped rows #}
+        <div class="hidden md:block overflow-x-auto rounded-lg shadow-md border border-base-300">
+            <table class="table table-zebra w-full table-sm"> {# Added table-sm for smaller table rows #}
                 <thead>
                     <tr>
-                        <th class="text-left text-sm font-semibold uppercase tracking-wider text-base-content/70">Name</th>
-                        <th class="text-left text-sm font-semibold uppercase tracking-wider text-base-content/70">Family</th>
-                        <th class="text-left text-sm font-semibold uppercase tracking-wider text-base-content/70">Church</th>
-                        <th class="text-left text-sm font-semibold uppercase tracking-wider text-base-content/70">Relationship</th>
-                        <th class="text-left text-sm font-semibold uppercase tracking-wider text-base-content/70">Sex</th>
-                        <th class="text-left text-sm font-semibold uppercase tracking-wider text-base-content/70">Civil Status</th>
-                        <th class="text-left text-sm font-semibold uppercase tracking-wider text-base-content/70">Status</th>
-                        <th class="text-left text-sm font-semibold uppercase tracking-wider text-base-content/70">Actions</th>
+                        <th class="w-8"></th> {# Adjusted width for checkbox column #}
+                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Name</th> {# Changed to text-xs #}
+                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Family</th> {# Changed to text-xs #}
+                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Church</th> {# Changed to text-xs #}
+                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Relationship</th> {# Changed to text-xs #}
+                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Sex</th> {# Changed to text-xs #}
+                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Civil Status</th> {# Changed to text-xs #}
+                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Status</th> {# Changed to text-xs #}
                     </tr>
                 </thead>
                 <tbody>
                     {% for individual in individuals %}
-                    <tr>
-                        <td class="whitespace-nowrap">
-                            <a href="{% url 'individual:individual_detail' individual.id %}" class="link link-hover link-primary font-medium text-base">
+                    <tr class="hover:bg-base-200 cursor-pointer" data-individual-id="{{ individual.id }}">
+                        <td class="w-8"> {# Adjusted width for checkbox column #}
+                            <label class="label cursor-pointer justify-center p-0">
+                                <input type="checkbox" name="selected_individual" value="{{ individual.id }}" class="checkbox checkbox-primary checkbox-xs individual-checkbox" /> {# Added checkbox-xs #}
+                            </label>
+                        </td>
+                        <td class="whitespace-nowrap text-xs"> {# Changed to text-xs #}
+                            <a href="{% url 'individual:individual_detail' individual.id %}" class="link link-hover link-primary font-medium">
                                 {{ individual.surname|upper }}, {{ individual.given_name|upper }} {% if individual.middle_name %}{{ individual.middle_name|upper }}{% endif %} {% if individual.suffix_name %}{{ individual.suffix_name|upper }}{% endif %}
                             </a>
                         </td>
-                        <td class="whitespace-nowrap">
+                        <td class="whitespace-nowrap text-xs"> {# Changed to text-xs #}
                             {% if individual.family %}
                             <a href="{% url 'family:family_detail' individual.family.id %}" class="link link-hover link-secondary">
                                 {{ individual.family.family_name|upper }}
@@ -78,7 +100,7 @@
                             <span class="italic text-base-content/60">- No Family -</span>
                             {% endif %}
                         </td>
-                        <td class="whitespace-nowrap">
+                        <td class="whitespace-nowrap text-xs"> {# Changed to text-xs #}
                             {% if individual.family and individual.family.church %}
                                 <a href="{% url 'church:church_detail' individual.family.church.id %}" class="link link-hover link-accent">
                                     {{ individual.family.church.name|upper }}
@@ -87,26 +109,17 @@
                                 <span class="italic text-base-content/60">- No Church -</span>
                             {% endif %}
                         </td>
-                        <td class="whitespace-nowrap">{{ individual.get_relationship_display|upper }}</td>
-                        <td class="whitespace-nowrap">{{ individual.get_sex_display|upper }}</td>
-                        <td class="whitespace-nowrap">{{ individual.get_civil_status_display|upper }}</td>
+                        <td class="whitespace-nowrap text-xs">{{ individual.get_relationship_display|upper }}</td> {# Changed to text-xs #}
+                        <td class="whitespace-nowrap text-xs">{{ individual.get_sex_display|upper }}</td> {# Changed to text-xs #}
+                        <td class="whitespace-nowrap text-xs">{{ individual.get_civil_status_display|upper }}</td> {# Changed to text-xs #}
                         <td class="whitespace-nowrap">
                             {% if individual.is_active_member and individual.is_alive %}
-                                <span class="badge badge-success badge-lg font-semibold">ACTIVE</span>
+                                <span class="badge badge-success badge-sm font-semibold">ACTIVE</span> {# Changed to badge-sm #}
                             {% elif not individual.is_alive %}
-                                <span class="badge badge-info badge-lg font-semibold">DECEASED</span>
+                                <span class="badge badge-info badge-sm font-semibold">DECEASED</span> {# Changed to badge-sm #}
                             {% else %}
-                                <span class="badge badge-error badge-lg font-semibold">INACTIVE</span>
+                                <span class="badge badge-error badge-sm font-semibold">INACTIVE</span> {# Changed to badge-sm #}
                             {% endif %}
-                        </td>
-                        <td class="text-sm font-medium">
-                            <div class="flex space-x-2">
-                                <a href="{% url 'individual:individual_detail' individual.id %}" class="btn btn-ghost btn-xs btn-square text-info tooltip" data-tip="View"><i data-feather="eye" class="w-4 h-4"></i></a>
-                                {% if user.is_superuser %}
-                                <a href="{% url 'individual:individual_update' individual.id %}" class="btn btn-ghost btn-xs btn-square text-warning tooltip" data-tip="Edit"><i data-feather="edit" class="w-4 h-4"></i></a>
-                                <a href="{% url 'individual:individual_delete' individual.id %}" class="btn btn-ghost btn-xs btn-square text-error tooltip" data-tip="Delete"><i data-feather="trash-2" class="w-4 h-4"></i></a>
-                                {% endif %}
-                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -114,89 +127,99 @@
             </table>
         </div>
 
-        {# Mobile View #}
-        <div class="md:hidden space-y-4">
+        {# Mobile View (Updated for selection) #}
+        <div class="md:hidden space-y-3"> {# Adjusted space-y #}
+            {# Action buttons for mobile view (placed here for consistency with desktop) #}
+            <div class="flex gap-2 mb-4">
+                <a href="#" id="viewMemberBtnMobile" class="btn btn-info btn-square tooltip btn-sm" data-tip="View Selected" aria-label="View selected member" disabled> {# Added btn-sm #}
+                    <i data-feather="eye" class="w-4 h-4"></i> {# Reduced icon size #}
+                </a>
+                {% if user.is_superuser %}
+                <a href="#" id="editMemberBtnMobile" class="btn btn-warning btn-square tooltip btn-sm" data-tip="Edit Selected" aria-label="Edit selected member" disabled> {# Added btn-sm #}
+                    <i data-feather="edit" class="w-4 h-4"></i> {# Reduced icon size #}
+                </a>
+                <a href="#" id="deleteMemberBtnMobile" class="btn btn-error btn-square tooltip btn-sm" data-tip="Delete Selected" aria-label="Delete selected member" disabled> {# Added btn-sm #}
+                    <i data-feather="trash-2" class="w-4 h-4"></i> {# Reduced icon size #}
+                </a>
+                {% endif %}
+            </div>
             {% for individual in individuals %}
-            <div class="card bg-base-100 shadow-md rounded-lg p-4">
-                <div class="flex justify-between items-center mb-2">
-                    <h2 class="text-lg font-semibold text-primary">
+            <div class="card bg-base-100 shadow-md rounded-lg p-3 flex items-center"> {# Adjusted padding #}
+                <label class="label cursor-pointer justify-center p-0 mr-3"> {# Adjusted margin #}
+                    <input type="checkbox" name="selected_individual" value="{{ individual.id }}" class="checkbox checkbox-primary checkbox-xs individual-checkbox" /> {# Added checkbox-xs #}
+                </label>
+                <div class="flex-grow">
+                    <h2 class="text-base font-semibold text-primary mb-1"> {# Adjusted text size and mb #}
                         <a href="{% url 'individual:individual_detail' individual.id %}" class="link link-hover">
                             {{ individual.surname|upper }}, {{ individual.given_name|upper }}
                         </a>
                     </h2>
-                    <div class="flex space-x-2">
-                        <a href="{% url 'individual:individual_detail' individual.id %}" class="btn btn-ghost btn-xs btn-square text-info tooltip" data-tip="View"><i data-feather="eye" class="w-4 h-4"></i></a>
-                        {% if user.is_superuser %}
-                        <a href="{% url 'individual:individual_update' individual.id %}" class="btn btn-ghost btn-xs btn-square text-warning tooltip" data-tip="Edit"><i data-feather="edit" class="w-4 h-4"></i></a>
-                        <a href="{% url 'individual:individual_delete' individual.id %}" class="btn btn-ghost btn-xs btn-square text-error tooltip" data-tip="Delete"><i data-feather="trash-2" class="w-4 h-4"></i></a>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="text-sm text-base-content/80 space-y-1">
-                    <p><strong>Family:</strong> 
-                        {% if individual.family %}
-                        <a href="{% url 'family:family_detail' individual.family.id %}" class="link link-hover link-secondary">
-                            {{ individual.family.family_name|upper }}
-                        </a>
-                        {% else %}
-                        <span class="italic text-base-content/60">- No Family -</span>
-                        {% endif %}
-                    </p>
-                    <p><strong>Church:</strong>
-                        {% if individual.family and individual.family.church %}
-                            <a href="{% url 'church:church_detail' individual.family.church.id %}" class="link link-hover link-accent">
-                                {{ individual.family.church.name|upper }}
+                    <div class="text-xs text-base-content/80 space-y-0.5"> {# Changed to text-xs and space-y-0.5 #}
+                        <p><strong>Family:</strong> 
+                            {% if individual.family %}
+                            <a href="{% url 'family:family_detail' individual.family.id %}" class="link link-hover link-secondary">
+                                {{ individual.family.family_name|upper }}
                             </a>
-                        {% else %}
-                            <span class="italic text-base-content/60">- No Church -</span>
-                        {% endif %}
-                    </p>
-                    <p><strong>Relationship:</strong> {{ individual.get_relationship_display|upper }}</p>
-                    <p><strong>Sex:</strong> {{ individual.get_sex_display|upper }}</p>
-                    <p><strong>Civil Status:</strong> {{ individual.get_civil_status_display|upper }}</p>
-                    <p><strong>Status:</strong> 
-                        {% if individual.is_active_member and individual.is_alive %}
-                            <span class="badge badge-success badge-sm font-semibold">ACTIVE</span>
-                        {% elif not individual.is_alive %}
-                            <span class="badge badge-info badge-sm font-semibold">DECEASED</span>
-                        {% else %}
-                            <span class="badge badge-error badge-sm font-semibold">INACTIVE</span>
-                        {% endif %}
-                    </p>
+                            {% else %}
+                            <span class="italic text-base-content/60">- No Family -</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Church:</strong>
+                            {% if individual.family and individual.family.church %}
+                                <a href="{% url 'church:church_detail' individual.family.church.id %}" class="link link-hover link-accent">
+                                    {{ individual.family.church.name|upper }}
+                                </a>
+                            {% else %}
+                                <span class="italic text-base-content/60">- No Church -</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Relationship:</strong> {{ individual.get_relationship_display|upper }}</p>
+                        <p><strong>Sex:</strong> {{ individual.get_sex_display|upper }}</p>
+                        <p><strong>Civil Status:</strong> {{ individual.get_civil_status_display|upper }}</p>
+                        <p><strong>Status:</strong> 
+                            {% if individual.is_active_member and individual.is_alive %}
+                                <span class="badge badge-success badge-sm font-semibold">ACTIVE</span> {# Changed to badge-sm #}
+                            {% elif not individual.is_alive %}
+                                <span class="badge badge-info badge-sm font-semibold">DECEASED</span> {# Changed to badge-sm #}
+                            {% else %}
+                                <span class="badge badge-error badge-sm font-semibold">INACTIVE</span> {# Changed to badge-sm #}
+                            {% endif %}
+                        </p>
+                    </div>
                 </div>
             </div>
             {% endfor %}
         </div>
 
         {% if is_paginated %}
-        <div class="flex justify-center mt-6">
-            <div class="join">
+        <div class="flex justify-center mt-4"> {# Adjusted mt #}
+            <div class="join join-sm"> {# Added join-sm for smaller pagination buttons #}
                 {% if page_obj.has_previous %}
-                <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" class="join-item btn">«</a>
+                <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="join-item btn btn-sm">«</a> {# Added btn-sm #}
                 {% else %}
-                <button class="join-item btn btn-disabled">«</button>
+                <button class="join-item btn btn-sm btn-disabled">«</button> {# Added btn-sm #}
                 {% endif %}
 
-                <button class="join-item btn">Page {{ page_obj.number }} of {{ page_obj.num_pages }}</button>
+                <button class="join-item btn btn-sm">Page {{ page_obj.number }} of {{ page_obj.num_pages }}</button> {# Added btn-sm #}
 
                 {% if page_obj.has_next %}
-                <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" class="join-item btn">»</a>
+                <a href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="join-item btn btn-sm">»</a> {# Added btn-sm #}
                 {% else %}
-                <button class="join-item btn btn-disabled">»</button>
+                <button class="join-item btn btn-sm btn-disabled">»</button> {# Added btn-sm #}
                 {% endif %}
             </div>
         </div>
         {% endif %}
 
     {% else %}
-        <div class="hero bg-base-200 rounded-lg p-10 text-center shadow-lg border border-base-300"> {# Changed to bg-base-200 #}
+        <div class="hero bg-base-200 rounded-lg p-8 text-center shadow-lg border border-base-300"> {# Adjusted padding #}
             <div class="hero-content flex flex-col items-center">
-                <i data-feather="users" class="w-20 h-20 text-base-content/50 mb-6"></i>
-                <p class="text-xl font-bold mb-4 text-base-content">No members found.</p>
-                <p class="text-base-content/80 mb-6">It looks like there are no members in the system yet. You can add one by clicking the button below.</p>
+                <i data-feather="users" class="w-16 h-16 text-base-content/50 mb-4"></i> {# Reduced icon size and mb #}
+                <p class="text-lg font-bold mb-2 text-base-content">No members found.</p> {# Adjusted text size and mb #}
+                <p class="text-sm text-base-content/80 mb-4">It looks like there are no members in the system yet. You can add one by clicking the button below.</p> {# Adjusted text size and mb #}
                 {% if user.is_superuser %}
-                <a href="{% url 'individual:individual_create' %}" class="btn btn-success flex items-center gap-2">
-                    <i data-feather="user-plus" class="w-5 h-5"></i> Add First Member {# Changed plus to user-plus #}
+                <a href="{% url 'individual:individual_create' %}" class="btn btn-success flex items-center gap-2 btn-sm"> {# Added btn-sm #}
+                    <i data-feather="user-plus" class="w-4 h-4"></i> Add First Member {# Reduced icon size #}
                 </a>
                 {% endif %}
             </div>
@@ -209,7 +232,119 @@
 {{ block.super }}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        feather.replace(); // Initialize Feather Icons again for new content
+        feather.replace();
+
+        // --- Auto-submit Search on Enter ---
+        const searchInput = document.getElementById('searchInput');
+        const searchForm = document.getElementById('searchForm');
+
+        if (searchInput && searchForm) {
+            searchInput.addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    searchForm.submit();
+                }
+            });
+        }
+
+        // --- Handle Row Selection for Action Buttons ---
+        const checkboxes = document.querySelectorAll('.individual-checkbox');
+        
+        // Desktop Buttons
+        const viewBtn = document.getElementById('viewMemberBtn');
+        const editBtn = document.getElementById('editMemberBtn');
+        const deleteBtn = document.getElementById('deleteMemberBtn');
+
+        // Mobile Buttons (added specific IDs for mobile buttons)
+        const viewBtnMobile = document.getElementById('viewMemberBtnMobile');
+        const editBtnMobile = document.getElementById('editMemberBtnMobile');
+        const deleteBtnMobile = document.getElementById('deleteMemberBtnMobile');
+
+        function updateActionButtons() {
+            const checkedBoxes = document.querySelectorAll('.individual-checkbox:checked');
+            const selectedIndividualId = checkedBoxes.length === 1 ? checkedBoxes[0].value : null;
+
+            // Define the URLs for the selected ID
+            const viewUrl = selectedIndividualId ? `{% url 'individual:individual_detail' 0 %}`.replace('0', selectedIndividualId) : '#';
+            const editUrl = selectedIndividualId ? `{% url 'individual:individual_update' 0 %}`.replace('0', selectedIndividualId) : '#';
+            const deleteUrl = selectedIndividualId ? `{% url 'individual:individual_delete' 0 %}`.replace('0', selectedIndividualId) : '#';
+
+            // Function to update a set of buttons
+            function applyButtonState(viewB, editB, deleteB, isSuperuser) {
+                if (selectedIndividualId) {
+                    viewB.removeAttribute('disabled');
+                    viewB.href = viewUrl;
+                    
+                    if (isSuperuser) {
+                        editB.removeAttribute('disabled');
+                        editB.href = editUrl;
+                        deleteB.removeAttribute('disabled');
+                        deleteB.href = deleteUrl;
+                    }
+                } else {
+                    viewB.setAttribute('disabled', 'disabled');
+                    viewB.href = '#';
+                    
+                    if (isSuperuser) {
+                        editB.setAttribute('disabled', 'disabled');
+                        editB.href = '#';
+                        deleteB.setAttribute('disabled', 'disabled');
+                        deleteB.href = '#';
+                    }
+                }
+            }
+
+            // Apply state to desktop buttons
+            applyButtonState(viewBtn, editBtn, deleteBtn, {% if user.is_superuser %}true{% else %}false{% endif %});
+            
+            // Apply state to mobile buttons
+            applyButtonState(viewBtnMobile, editBtnMobile, deleteBtnMobile, {% if user.is_superuser %}true{% else %}false{% endif %});
+        }
+
+        // Add event listeners to all checkboxes
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                // Deselect all other checkboxes if one is checked
+                if (this.checked) {
+                    checkboxes.forEach(otherCheckbox => {
+                        if (otherCheckbox !== this) {
+                            otherCheckbox.checked = false;
+                        }
+                    });
+                }
+                updateActionButtons();
+            });
+        });
+
+        // Add event listener for clicking on the table row to select the checkbox
+        const tableRows = document.querySelectorAll('tbody tr');
+        tableRows.forEach(row => {
+            row.addEventListener('click', function(event) {
+                // Prevent clicking on checkbox or link from triggering row selection
+                if (event.target.tagName === 'INPUT' || event.target.tagName === 'A' || event.target.closest('a') || event.target.closest('label')) {
+                    return; 
+                }
+
+                const checkbox = this.querySelector('.individual-checkbox');
+                if (checkbox) {
+                    // Toggle the checkbox state
+                    checkbox.checked = !checkbox.checked;
+
+                    // Deselect all other checkboxes if this one is now checked
+                    if (checkbox.checked) {
+                        checkboxes.forEach(otherCheckbox => {
+                            if (otherCheckbox !== checkbox) {
+                                otherCheckbox.checked = false;
+                            }
+                        });
+                    }
+                    updateActionButtons();
+                }
+            });
+        });
+
+        // Initial call to set button state on page load
+        updateActionButtons();
     });
 </script>
 {% endblock %}

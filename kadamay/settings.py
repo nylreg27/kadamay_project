@@ -31,7 +31,7 @@ INSTALLED_APPS = [
     'apps.payment',
     'apps.account',
     'apps.report',
-    'apps.chat',   
+    'apps.chat',
     'apps.issues',
     'tailwind',
     'theme',
@@ -139,3 +139,5 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = 'noreply@kadamay.org'
 
 LOGOUT_REDIRECT_URL = '/login/'
+
+DEBUG = True

@@ -6,19 +6,19 @@
     <title>{% block title %}Kadamay Mortuary System{% endblock %}</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@4.10.1/dist/full.min.css" />
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://unpkg.com/feather-icons"></script> 
+    
     {% block extra_css %}{% endblock %}
 </head>
 
 <body class="bg-base-200 text-base-content min-h-screen flex flex-col">
 
-    {# Mobile Header (visible only on small screens) #}
-    <header class="lg:hidden navbar bg-base-100 shadow-md z-50">
+    {# Mobile Header (visible only on small screens) - NOW FIXED #}
+    <header class="lg:hidden navbar bg-base-100 shadow-md z-50 fixed top-0 w-full"> {# Added fixed, top-0, w-full #}
         <div class="flex-1">
             <a class="btn btn-ghost normal-case text-xl">Kadamay Mortuary System</a>
         </div>
         <div class="flex-none">
-            {# Button to open the mobile drawer #}
             <button class="btn btn-square btn-ghost" onclick="document.getElementById('drawer-toggle').checked = true;">
                 <i data-feather="menu"></i>
             </button>
@@ -26,32 +26,25 @@
     </header>
 
     {# Main Drawer Container #}
-    {# Added `lg:drawer-open` to make the sidebar open by default on large screens. #}
-    {# `lg:relative` to ensure proper positioning context for children on desktop. #}
-    <div class="drawer lg:drawer-open z-40"> 
+    {# Added pt-16 (or higher, depending on header height) to drawer-content to push content below fixed header #}
+    <div class="drawer z-40 flex-grow pt-16"> {# flex-grow to ensure drawer content takes up space, pt-16 for header clearance #}
         <input id="drawer-toggle" type="checkbox" class="drawer-toggle" />
 
-        {# This is the main content area that pushes when sidebar is open on large screens #}
-        {# DaisyUI's `drawer-content` already handles the responsive width. #}
+        {# Main content area #}
         <div class="drawer-content flex flex-col">
-            {# Sidebar trigger for desktop auto-hide/show #}
-            {# No longer fixed to left:0 for auto-hide; the drawer itself manages position. #}
-            {# This div is mainly for the hover trigger *outside* the permanent sidebar #}
-            {# For a fixed sidebar, the trigger might not be needed or would be a toggle button #}
             
-            {# If you want a *permanent* sidebar on large screens and the main content to shrink, #}
-            {# you don't need `sidebar-trigger` to explicitly open it. DaisyUI's `lg:drawer-open` handles it. #}
-            {# If you still want the auto-hide functionality on desktop, the drawer-toggle needs to be managed for desktop separately. #}
-            
-            {# Desktop Header (visible only on large screens) #}
-            <header class="hidden lg:flex navbar bg-base-100 shadow-md">
+            {# Desktop Header (visible only on large screens) - NOW FIXED #}
+            <header class="hidden lg:flex navbar bg-base-100 shadow-md z-50 fixed top-0 w-full"> {# Added fixed, top-0, w-full #}
                 <div class="flex-1">
+                    <button class="btn btn-square btn-ghost mr-2" onclick="document.getElementById('drawer-toggle').checked = !document.getElementById('drawer-toggle').checked;">
+                        <i data-feather="menu"></i>
+                    </button>
                     <a class="btn btn-ghost text-xl">Kadamay Mortuary System</a>
                 </div>
                 <div class="flex-none gap-2">
                     <div class="dropdown dropdown-end">
                         <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
-                            <div class="w-10 rounded-full">
+                            <div class="w-10 rounded-full"> 
                                 {% if user.profile.profile_picture %}
                                     <img alt="User avatar" src="{{ user.profile.profile_picture.url }}" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/initials/svg?seed={{ user.username }}';"/>
                                 {% else %}
@@ -71,7 +64,7 @@
                 </div>
             </header>
 
-            <main class="flex-grow p-4">
+            <main class="flex-grow p-4"> {# main content area #}
                 {# Flash messages from Django's messages framework (integrated with toast) #}
                 <div id="django_messages_container" style="display: none;">
                     {% if messages %}
@@ -85,7 +78,8 @@
                 <p>This is the main content area. Extend `base.html` and override the `content` block.</p>
                 {% endblock %}
             </main>
-
+            
+            {#sidebar footer#}
             <footer class="footer footer-center p-4 bg-base-300 text-base-content text-sm">
                 <aside>
                     <p>&copy; 2025 Kadamay Mortuary System. All rights reserved.</p>
@@ -93,12 +87,13 @@
             </footer>
         </div>
 
-        {# This is the actual sidebar content #}
+        {# This is the actual sidebar content (drawer-side) #}
         <div class="drawer-side" id="drawer-menu">
+            {# The overlay to close the drawer when clicked outside on mobile #}
             <label for="drawer-toggle" class="drawer-overlay"></label>
             <ul class="menu p-4 w-80 min-h-full bg-base-100 text-base-content">
-                {# Close button for mobile drawer #}
-                <li class="lg:hidden mb-4">
+                {# Close button for mobile drawer - now also visible on desktop when drawer is open #}
+                <li class="mb-4">
                     <button class="btn btn-ghost btn-circle" onclick="document.getElementById('drawer-toggle').checked = false;">
                         <i data-feather="x"></i>
                     </button>
@@ -106,7 +101,7 @@
                 </li>
                 
                 {% if user.is_authenticated %}
-                <li class="lg:hidden mb-4">
+                <li class="lg:hidden mb-4"> {# Keep this only for mobile header if you want #}
                     <div class="flex items-center p-2">
                         <div class="w-10 rounded-full mr-3">
                             {% if user.profile.profile_picture %}
@@ -124,10 +119,14 @@
                 {% endif %}
                 
                 {# Navigation links #}
-                <li><a href="{% url 'report:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><i data-feather="home"></i> Dashboard</a></li>
-                <li><a href="{% url 'individual:individual_list' %}" class="{% if 'individual' in request.resolver_match.app_names %}active{% endif %}"><i data-feather="users"></i> Members</a></li>
+                <li><a href="{% url 'report:dashboard' %}" class="{% if 'report' in request.resolver_match.app_names and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><i data-feather="home"></i> Dashboard</a></li>
+                
+                {# Individual Dashboard link #}
+                <li><a href="{% url 'individual:individual_dashboard' %}" class="{% if 'individual' in request.resolver_match.app_names and request.resolver_match.url_name == 'individual_dashboard' %}active{% endif %}"><i data-feather="activity"></i> Individual Dashboard</a></li>
+
+                <li><a href="{% url 'individual:individual_list' %}" class="{% if 'individual' in request.resolver_match.app_names and request.resolver_match.url_name == 'individual_list' %}active{% endif %}"><i data-feather="users"></i> Members List</a></li>
                 <li><a href="{% url 'family:family_list' %}" class="{% if 'family' in request.resolver_match.app_names %}active{% endif %}"><i data-feather="user-check"></i> Families</a></li>
-                <li><a href="{% url 'church:church_list' %}" class="{% if 'church' in request.resolver_match.app_names %}active{% endif %}"><i data-feather="activity"></i> Churches</a></li>
+                <li><a href="{% url 'church:church_list' %}" class="{% if 'church' in request.resolver_match.app_names %}active{% endif %}"><i data-feather="layout"></i> Churches</a></li>
                 <li><a href="{% url 'payment:payment_list' %}" class="{% if 'payment' in request.resolver_match.app_names %}active{% endif %}"><i data-feather="credit-card"></i> Payments</a></li>
                 <li><a href="{% url 'report:dashboard' %}" class="{% if 'report' in request.resolver_match.app_names %}active{% endif %}"><i data-feather="file-text"></i> Reports</a></li>
                 {% if church %}
@@ -161,9 +160,20 @@
     {# Toast Notification Container #}
     <div id="toast_container" class="toast toast-end z-[999]"></div>
 
+    {# Feather Icons initialization needs to be here, outside of extra_js block #}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof feather !== 'undefined') { // Check if feather object exists
+                feather.replace();
+            } else {
+                console.warn("Feather Icons library not loaded or 'feather' object is undefined.");
+            }
+        });
+    </script>
+
     {% block extra_js %}
     <script>
-        // Theme Management (from previous discussions)
+        // Theme Management
         function setTheme(themeName) {
             localStorage.setItem('theme', themeName);
             document.documentElement.setAttribute('data-theme', themeName);
@@ -185,15 +195,7 @@
             }
         });
 
-        // Initialize Feather Icons AFTER the entire page has loaded, including the script.
-        // Using `window.onload` is generally safe for this, but `DOMContentLoaded` is usually enough
-        // if the script tag is at the end of the <body> or deferred.
-        // For Feather, it's best to call `feather.replace()` after the DOM is ready.
-        document.addEventListener('DOMContentLoaded', function() {
-            feather.replace();
-        });
-
-        // Close the mobile drawer when a menu item is clicked
+        // Close the drawer when a menu item is clicked
         document.querySelectorAll('.drawer-side ul.menu li a').forEach(item => {
             item.addEventListener('click', () => {
                 const drawerToggle = document.getElementById('drawer-toggle');
@@ -201,53 +203,6 @@
                     drawerToggle.checked = false; // Uncheck to close drawer
                 }
             });
-        });
-
-        // --- Auto-hiding Sidebar Logic (for desktop only) ---
-        // This attempts to replicate the "hover to reveal" behavior for the drawer.
-        // Note: DaisyUI's `lg:drawer-open` already means the sidebar is open by default on large screens.
-        // If you want it to *auto-hide* on desktop and only show on hover, you need to manage `drawer-open` class.
-        // This revised logic will make the sidebar appear on hover on desktop, and disappear after a delay.
-        // On mobile, it's purely toggleable via the menu button.
-
-        const drawerToggle = document.getElementById('drawer-toggle');
-        const drawerMenu = document.getElementById('drawer-menu'); // The drawer-side div
-        let autoHideTimeout;
-        const HIDE_DELAY = 1000; // 1 second
-
-        function showDesktopSidebar() {
-            // Only apply on desktop (lg breakpoint and above)
-            if (window.innerWidth >= 1024 && drawerToggle) {
-                drawerToggle.checked = true; // Open the drawer
-                clearTimeout(autoHideTimeout);
-            }
-        }
-
-        function hideDesktopSidebar() {
-            // Only apply on desktop (lg breakpoint and above)
-            if (window.innerWidth >= 1024 && drawerToggle) {
-                autoHideTimeout = setTimeout(() => {
-                    drawerToggle.checked = false; // Close the drawer
-                }, HIDE_DELAY);
-            }
-        }
-
-        // Add event listeners for desktop sidebar hover
-        if (drawerMenu) {
-            // Mouse enters the drawer area
-            drawerMenu.addEventListener('mouseenter', showDesktopSidebar);
-            // Mouse leaves the drawer area
-            drawerMenu.addEventListener('mouseleave', hideDesktopSidebar);
-        }
-
-        // Handle initial state on page load for desktop
-        document.addEventListener('DOMContentLoaded', function() {
-            if (window.innerWidth >= 1024 && drawerToggle) {
-                // If you want it *initially closed* on desktop and only opens on hover
-                // drawerToggle.checked = false; 
-                // If you want it initially open and auto-hide on mouse leave:
-                // hideDesktopSidebar(); // Start auto-hide if mouse isn't over it
-            }
         });
 
         // --- Reusable Modal Functions ---
@@ -305,18 +260,22 @@
                 <button class="btn btn-ghost btn-xs" onclick="this.closest('.alert').remove()"><i data-feather="x" class="w-4 h-4"></i></button>
             `;
 
-            const iconSpan = toastDiv.querySelector('span.mr-2');
-            let iconName = '';
-            let iconColor = '';
-            switch (type) {
-                case 'success': iconName = 'check-circle'; iconColor = 'text-white'; break;
-                case 'error': iconName = 'x-circle'; iconColor = 'text-white'; break;
-                case 'warning': iconName = 'alert-triangle'; iconColor = 'text-white'; break;
-                case 'info': default: iconName = 'info'; iconColor = 'text-white'; break;
-            }
-            if (iconName) {
-                const iconElement = feather.icons[iconName].toSvg({'class': `w-5 h-5 ${iconColor}`});
-                iconSpan.innerHTML = iconElement;
+            if (typeof feather !== 'undefined' && feather.icons) {
+                const iconSpan = toastDiv.querySelector('span.mr-2');
+                let iconName = '';
+                let iconColor = '';
+                switch (type) {
+                    case 'success': iconName = 'check-circle'; iconColor = 'text-white'; break;
+                    case 'error': iconName = 'x-circle'; iconColor = 'text-white'; break;
+                    case 'warning': iconName = 'alert-triangle'; iconColor = 'text-white'; break;
+                    case 'info': default: iconName = 'info'; iconColor = 'text-white'; break;
+                }
+                if (iconName) {
+                    const iconElement = feather.icons[iconName].toSvg({'class': `w-5 h-5 ${iconColor}`});
+                    iconSpan.innerHTML = iconElement;
+                }
+            } else {
+                console.warn("Feather Icons not available for toast icons.");
             }
 
             toastContainer.appendChild(toastDiv);
@@ -352,7 +311,6 @@
                 djangoMessagesContainer.remove(); // Clean up original Django messages
             }
         });
-
     </script>
     {% endblock %}
 </body>

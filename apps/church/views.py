@@ -8,9 +8,11 @@ from django.shortcuts import get_object_or_404, render
 
 from .models import Church
 from apps.family.models import Family
-from apps.individual.models import Individual # Import Individual model
+from apps.individual.models import Individual  # Import Individual model
 
-# --- Church List View ---
+# --- Church List View (NO CHANGES) ---
+
+
 class ChurchListView(LoginRequiredMixin, ListView):
     model = Church
     template_name = 'church/church_list.html'
@@ -36,7 +38,7 @@ class ChurchListView(LoginRequiredMixin, ListView):
         return context
 
 
-# --- Church Detail View ---
+# --- Church Detail View (MODIFIED) ---
 class ChurchDetailView(LoginRequiredMixin, DetailView):
     model = Church
     template_name = 'church/church_detail.html'
@@ -44,14 +46,13 @@ class ChurchDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        church = self.get_object() # Get the current Church object
+        church = self.get_object()  # Get the current Church object
 
-        # FIXED: Access families using the related_name 'families'
         # Calculate counts for Quick Stats
-        context['total_families_count'] = church.families.count() # Changed from family_set.count()
-        context['total_members_count'] = Individual.objects.filter(family__church=church).count()
-        
-        # Count active and deceased members correctly
+        context['total_families_count'] = church.families.count()
+        context['total_members_count'] = Individual.objects.filter(
+            family__church=church).count()
+
         context['active_members_count'] = Individual.objects.filter(
             family__church=church,
             is_active_member=True,
@@ -63,16 +64,20 @@ class ChurchDetailView(LoginRequiredMixin, DetailView):
         ).count()
 
         # Get recent families (e.g., first 5)
-        # FIXED: Access families using 'families' and order by 'id'
-        context['recent_families'] = church.families.all().order_by('-id')[:5] # Changed from family_set.all() and -date_created
+        # Using the correct related_name 'families' and ordering for recency
+        # >>> FIXED HERE: ASSIGN TO CONTEXT <<<
+        context['recent_families'] = church.families.order_by(
+            '-id')[:5]  # Orders by most recently added ID
 
         # Get recent members through families belonging to this church (e.g., first 5)
-        context['recent_members'] = Individual.objects.filter(family__church=church).order_by('-date_added')[:5]
+        context['recent_members'] = Individual.objects.filter(
+            # Orders by most recently added ID of Individual
+            family__church=church).order_by('-id')[:5]
 
         return context
 
 
-# --- Church Create View ---
+# --- Church Create View (NO CHANGES) ---
 class ChurchCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Church
     fields = ['name', 'address', 'district', 'in_charge', 'is_active']
@@ -88,15 +93,17 @@ class ChurchCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         return context
 
     def form_valid(self, form):
-        messages.success(self.request, f"Church '{form.instance.name}' created successfully!")
+        messages.success(
+            self.request, f"Church '{form.instance.name}' created successfully!")
         return super().form_valid(form)
 
     def form_invalid(self, form):
-        messages.error(self.request, "There was an error creating the church. Please check the form.")
+        messages.error(
+            self.request, "There was an error creating the church. Please check the form.")
         return super().form_invalid(form)
 
 
-# --- Church Update View ---
+# --- Church Update View (NO CHANGES) ---
 class ChurchUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Church
     fields = ['name', 'address', 'district', 'in_charge', 'is_active']
@@ -107,7 +114,8 @@ class ChurchUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         return self.request.user.is_superuser
 
     def get_success_url(self):
-        messages.success(self.request, f"Church '{self.object.name}' updated successfully!")
+        messages.success(
+            self.request, f"Church '{self.object.name}' updated successfully!")
         return reverse_lazy('church:church_detail', kwargs={'pk': self.object.pk})
 
     def get_context_data(self, **kwargs):
@@ -116,11 +124,12 @@ class ChurchUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         return context
 
     def form_invalid(self, form):
-        messages.error(self.request, "There was an error updating the church. Please check the form.")
+        messages.error(
+            self.request, "There was an error updating the church. Please check the form.")
         return super().form_invalid(form)
 
 
-# --- Church Delete View ---
+# --- Church Delete View (NO CHANGES) ---
 class ChurchDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Church
     template_name = 'church/church_confirm_delete.html'
@@ -131,11 +140,12 @@ class ChurchDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         return self.request.user.is_superuser
 
     def form_valid(self, form):
-        messages.success(self.request, f"Church '{self.object.name}' deleted successfully!")
+        messages.success(
+            self.request, f"Church '{self.object.name}' deleted successfully!")
         return super().form_valid(form)
 
 
-# --- Family List in Church View ---
+# --- Family List in Church View (NO CHANGES) ---
 class FamilyListInChurchView(LoginRequiredMixin, ListView):
     model = Family
     template_name = 'family/family_list.html'
@@ -145,9 +155,9 @@ class FamilyListInChurchView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         church_id = self.kwargs.get('church_id')
         church = get_object_or_404(Church, pk=church_id)
-        
+
         queryset = Family.objects.filter(church=church)
-        
+
         search_query = self.request.GET.get('search')
         if search_query:
             queryset = queryset.filter(
@@ -168,7 +178,7 @@ class FamilyListInChurchView(LoginRequiredMixin, ListView):
         return context
 
 
-# --- Family Create in Church View ---
+# --- Family Create in Church View (NO CHANGES) ---
 class FamilyCreateInChurchView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Family
     fields = ['family_name', 'address', 'in_charge', 'is_active']
@@ -192,13 +202,15 @@ class FamilyCreateInChurchView(LoginRequiredMixin, UserPassesTestMixin, CreateVi
         context['title'] = f'Add Family to {church.name}'
         context['church'] = church
         return context
-    
+
     def get_success_url(self):
-        messages.success(self.request, f"Family '{self.object.family_name}' added to {self.object.church.name} successfully!")
+        messages.success(
+            self.request, f"Family '{self.object.family_name}' added to {self.object.church.name} successfully!")
         return reverse_lazy('church:church_detail', kwargs={'pk': self.kwargs['church_id']})
 
     def form_invalid(self, form):
-        messages.error(self.request, "There was an error adding the family. Please check the form.")
+        messages.error(
+            self.request, "There was an error adding the family. Please check the form.")
         return super().form_invalid(form)
 
 

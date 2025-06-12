@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+
+{% block title %}Kadamay Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-4 max-w-7xl">
+    <h1 class="text-3xl font-extrabold text-primary mb-4">Kadamay Members Dashboard</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 h-[80vh]"> {# Adjusted h-[80vh] as needed, e.g., h-screen #}
+
+        {# Left Sidebar: List of Members #}
+        <div class="md:col-span-1 bg-base-100 rounded-lg shadow-xl p-3 flex flex-col overflow-hidden"> {# Reduced p-4 to p-3 #}
+            <h2 class="text-lg font-bold text-secondary mb-3">List of Members</h2> {# Reduced text-xl to text-lg, mb-4 to mb-3 #}
+            {# Search Input #}
+            <div class="mb-3"> {# Reduced mb-4 to mb-3 #}
+                <label class="input input-bordered flex items-center gap-2 w-full rounded-md input-sm"> {# Added input-sm #}
+                    <input type="text" placeholder="Search members..." class="grow text-sm" id="dashboardSearchInput"/> {# Added text-sm #}
+                    <i data-feather="search" class="w-4 h-4"></i> {# Reduced w-5 h-5 to w-4 h-4 #}
+                </label>
+            </div>
+            {# Member List Box #}
+            <div class="overflow-y-auto flex-grow border border-base-300 rounded-md">
+                <ul class="menu p-1 bg-base-200 w-full rounded-md text-sm" id="memberList"> {# Reduced p-2 to p-1, added text-sm #}
+                    {# Members will be loaded here via AJAX or rendered initially by Django #}
+                    {% if individuals %}
+                        {% for individual in individuals %}
+                        <li class="member-list-item" data-individual-id="{{ individual.id }}">
+                            <a href="#" class="block hover:bg-base-300 {% if forloop.first %}active{% endif %} py-1 px-2"> {# Added py-1 px-2 for tighter padding #}
+                                {{ individual.surname|upper }}, {{ individual.given_name|upper }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    {% else %}
+                        <li><span class="text-xs text-base-content/60">No members found.</span></li> {# Reduced text-sm to text-xs #}
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+
+        {# Right Section: Only Payments #}
+        <div class="md:col-span-2 lg:col-span-3 flex flex-col gap-4">
+
+            {# List of Individual Payment (now flex-grow to fill remaining height) #}
+            <div class="bg-base-100 rounded-lg shadow-xl p-3 flex-grow flex flex-col overflow-hidden">
+                {# NEW: Flex container for title and buttons #}
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-lg font-bold text-secondary">List of Individual Payment</h2>
+                    <div class="flex gap-2"> {# Container for the buttons #}
+                        {# Add Payment Button - No more {% url %} here, JS will set href #}
+                        <a href="#" id="addPaymentButton" class="btn btn-sm btn-primary" disabled>
+                            <i data-feather="plus"></i> Add Payment
+                        </a>
+                        {# Print Individual Button - No more {% url %} here, JS will set href #}
+                        <a href="#" id="printIndividualButton" class="btn btn-sm btn-outline btn-info" disabled>
+                            <i data-feather="printer"></i> Print Individual
+                        </a>
+                    </div>
+                </div>
+                {# Table container for payments #}
+                <div class="overflow-auto flex-grow border border-base-300 rounded-md">
+                    <table class="table table-zebra w-full table-sm">
+                        <thead>
+                            <tr>
+                                <th class="text-xs font-semibold uppercase">Date</th>
+                                <th class="text-xs font-semibold uppercase">Description</th>
+                                <th class="text-xs font-semibold uppercase">Amount</th>
+                                <th class="text-xs font-semibold uppercase">Receipt No.</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paymentListBody">
+                            <tr><td colspan="4" class="text-center text-xs text-base-content/60 py-1">Select a member to view payments.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace(); // Initialize Feather icons
+
+        // Get DOM elements
+        const memberList = document.getElementById('memberList');
+        const paymentListBody = document.getElementById('paymentListBody');
+        const dashboardSearchInput = document.getElementById('dashboardSearchInput');
+        const printIndividualButton = document.getElementById('printIndividualButton');
+        const addPaymentButton = document.getElementById('addPaymentButton');
+
+        // --- Helper Function to Update Action Buttons (Enable/Disable/Set Hrefs) ---
+        function updateActionButtons(individualId = null) {
+            console.log('updateActionButtons called with ID:', individualId);
+            if (addPaymentButton && printIndividualButton) {
+                if (individualId) {
+                    console.log('BEFORE removing attribute: addPaymentButton.hasAttribute("disabled") is', addPaymentButton.hasAttribute('disabled'));
+                    // debugger; // You can keep this here if you want to verify this specific step
+                    
+                    // --- CRITICAL CHANGE FOR ADD PAYMENT BUTTON ---
+                    addPaymentButton.removeAttribute('disabled'); // Use removeAttribute
+                    
+                    // --- CRITICAL CHANGE FOR PRINT INDIVIDUAL BUTTON ---
+                    printIndividualButton.removeAttribute('disabled'); // Use removeAttribute
+        
+                    console.log('AFTER removing attribute: addPaymentButton.hasAttribute("disabled") is', addPaymentButton.hasAttribute('disabled'));
+        
+        
+                    addPaymentButton.href = `/payment/individual/${individualId}/payments/create/`;
+                    printIndividualButton.href = `/individual/${individualId}/print_payments/`;
+                    console.log('Buttons ENABLED. Add Payment href:', addPaymentButton.href);
+                } else {
+                    // Re-add the attribute if no ID
+                    addPaymentButton.setAttribute('disabled', '');
+                    printIndividualButton.setAttribute('disabled', '');
+                    addPaymentButton.href = '#';
+                    printIndividualButton.href = '#';
+                    console.log('Buttons DISABLED (no individualId).');
+                }
+            } else {
+                console.warn('Action buttons (Add Payment or Print Individual) not found in DOM.');
+            }
+        }
+
+        // --- Function to Load Member Details (Payments) via AJAX ---
+        async function loadMemberDetails(individualId) {
+            console.log('loadMemberDetails called for ID:', individualId); // Debugging
+            updateActionButtons(individualId); // Always update buttons when details are loaded/attempted
+
+            try {
+                // Fetch member details (including payments) from your Django API endpoint
+                const response = await fetch(`/individual/${individualId}/details/`);
+                if (!response.ok) {
+                    // If response is not OK (e.g., 404, 500), throw an error
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json(); // Parse JSON response
+                console.log('AJAX response data for details:', data); // Debugging
+
+                // Populate Payments section table body
+                paymentListBody.innerHTML = ''; // Clear existing rows
+                if (data.payments && data.payments.length > 0) {
+                    data.payments.forEach(payment => {
+                        const row = `<tr class="text-xs">
+                                        <td>${payment.date || 'N/A'}</td>
+                                        <td>${payment.description || 'N/A'}</td>
+                                        <td>${payment.amount || 'N/A'}</td>
+                                        <td>${payment.receipt_no || 'N/A'}</td>
+                                    </tr>`;
+                        paymentListBody.insertAdjacentHTML('beforeend', row);
+                    });
+                } else {
+                    paymentListBody.innerHTML = '<tr><td colspan="4" class="text-center text-xs text-base-content/60 py-1">No payments found.</td></tr>';
+                }
+
+            } catch (error) {
+                console.error('AJAX Error in loadMemberDetails:', error); // Log any AJAX errors
+                paymentListBody.innerHTML = '<tr><td colspan="4" class="text-center text-error text-xs py-1">Error loading payments.</td></tr>';
+                updateActionButtons(null); // Disable buttons on error
+            }
+        }
+
+        // --- Event Listener for Member List Clicks ---
+        // Uses event delegation on the parent 'memberList' to handle clicks on dynamically added/filtered items
+        memberList.addEventListener('click', function(event) {
+            // Find the closest parent <li> element with class 'member-list-item'
+            const listItem = event.target.closest('.member-list-item'); 
+            
+            if (listItem) { // If a member list item was clicked
+                // Remove 'active' class from previously active links within member-list-item li's
+                memberList.querySelectorAll('.member-list-item a.active').forEach(item => {
+                    item.classList.remove('active');
+                });
+                
+                // Add 'active' class to the <a> tag INSIDE the clicked <li> for styling
+                listItem.querySelector('a').classList.add('active');
+
+                // Retrieve the individual ID from the data-individual-id attribute of the <li>
+                const individualId = listItem.dataset.individualId; 
+                console.log('Clicked member. Retrieved ID from listItem:', individualId); // Debugging
+
+                if (individualId) { // If a valid ID is retrieved
+                    loadMemberDetails(individualId); // Load details for this member
+                } else {
+                    // Log a warning if the ID is missing (shouldn't happen with correct HTML)
+                    console.warn('Clicked member-list-item has no individual ID. Check data-individual-id attribute on the <li>.');
+                    updateActionButtons(null); // Disable buttons
+                }
+            }
+        });
+
+        // --- Live Search/Filter for Dashboard Search Input ---
+        if (dashboardSearchInput) {
+            dashboardSearchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                let firstVisibleMemberId = null; // To store the ID of the first visible member after filtering
+                
+                // Get all member list items (these are static after initial Django render)
+                const allMemberListItems = Array.from(memberList.querySelectorAll('.member-list-item'));
+                
+                // Get the currently active member's ID before filtering
+                const currentActiveLink = memberList.querySelector('.member-list-item a.active');
+                const activeMemberId = currentActiveLink ? currentActiveLink.closest('.member-list-item').dataset.individualId : null;
+
+                allMemberListItems.forEach(item => {
+                    const memberName = item.querySelector('a').textContent.toLowerCase();
+                    if (memberName.includes(searchTerm)) {
+                        item.style.display = ''; // Show item
+                        if (firstVisibleMemberId === null) {
+                            firstVisibleMemberId = item.dataset.individualId; // Set first visible ID
+                        }
+                    } else {
+                        item.style.display = 'none'; // Hide item
+                        // If the currently hidden item was active, remove its active class
+                        if (item.dataset.individualId === activeMemberId) {
+                            item.querySelector('a').classList.remove('active');
+                        }
+                    }
+                });
+
+                // --- Handle selection after search/filter ---
+                // 1. Check if the currently active member is still visible
+                const newActiveLink = memberList.querySelector('.member-list-item a.active');
+                if (newActiveLink && newActiveLink.offsetParent !== null) { // offsetParent !== null checks if element is visible
+                    const newActiveListItem = newActiveLink.closest('.member-list-item');
+                    updateActionButtons(newActiveListItem.dataset.individualId); // Keep buttons active for the visible active member
+                } 
+                // 2. If no active member or active member is now hidden, select the first visible member
+                else if (firstVisibleMemberId) {
+                    const firstVisibleListItem = memberList.querySelector(`.member-list-item[data-individual-id="${firstVisibleMemberId}"]`);
+                    if (firstVisibleListItem) {
+                        firstVisibleListItem.querySelector('a').classList.add('active'); // Add active class to its link
+                        loadMemberDetails(firstVisibleMemberId); // Load details for the newly selected first visible member
+                    }
+                } 
+                // 3. If no members match the search at all
+                else {
+                    paymentListBody.innerHTML = '<tr><td colspan="4" class="text-center text-base-content/60 text-xs py-1">No payments found.</td></tr>';
+                    updateActionButtons(null); // Disable buttons
+                }
+            });
+        }
+        
+        // --- Initial Load of First Member's Details (on page load) ---
+        const firstMemberListItem = memberList.querySelector('.member-list-item'); // Get the first <li> element
+        if (firstMemberListItem) {
+            const initialIndividualId = firstMemberListItem.dataset.individualId; // Get ID from <li>
+            console.log('Initial load. First member ID:', initialIndividualId); // Debugging
+            firstMemberListItem.querySelector('a').classList.add('active'); // Set 'active' class on its <a> tag
+            loadMemberDetails(initialIndividualId); // Load details for the first member
+        } else {
+            console.log('No members found on initial page load. Disabling buttons.'); // Debugging
+            updateActionButtons(null); // Disable buttons if no members are rendered
+        }
+    });
+</script>
+{% endblock %}

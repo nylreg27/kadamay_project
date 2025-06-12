@@ -4,26 +4,30 @@
 {% block title %}Churches — Kadamay Mortuary System{% endblock %}
 
 {% block content %}
-<div class="card bg-base-100 shadow-xl p-4 md:p-8 text-base-content rounded-xl my-6 mx-auto max-w-7xl"> {# Broader max-width #}
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8"> {# Increased bottom margin #}
+{# Reduced max-w from 7xl to 6xl and slightly reduced vertical margin #}
+<div class="card bg-base-100 shadow-xl p-4 md:p-6 text-base-content rounded-xl my-4 mx-auto max-w-6xl"> 
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6"> {# Reduced gap and bottom margin #}
         <div>
-            <h1 class="text-3xl font-extrabold text-primary">List of Churches</h1> {# Larger, primary color title #}
-            <p class="text-base-content/70 mt-1">Manage all registered churches in the system.</p> {# Subtitle #}
+            {# Slightly smaller title #}
+            <h1 class="text-2xl font-extrabold text-primary">List of Churches</h1> 
+            {# Reduced margin-top for subtitle #}
+            <p class="text-base-content/70 mt-0.5">Manage all registered churches in the system.</p> 
         </div>
-        <div class="flex flex-wrap justify-end items-center gap-3">
-            <form method="get" class="flex items-center"> {# Added items-center for better alignment #}
+        <div class="flex flex-wrap justify-end items-center gap-2"> {# Reduced gap #}
+            <form method="get" class="flex items-center">
+                {# Slightly smaller input width #}
                 <input type="text" name="search" placeholder="Search churches..." value="{{ request.GET.search }}"
-                       class="input input-bordered w-48 md:w-64 rounded-r-none uppercase transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                       class="input input-bordered w-40 md:w-56 rounded-r-none uppercase text-sm transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
                 <button type="submit"
-                        class="btn btn-primary rounded-l-none transition-all duration-300 hover:scale-105">
-                    <i data-feather="search" class="w-5 h-5"></i> {# Added w-5 h-5 for explicit icon sizing #}
+                        class="btn btn-primary btn-sm rounded-l-none transition-all duration-300 hover:scale-105"> {# Added btn-sm #}
+                    <i data-feather="search" class="w-4 h-4"></i> {# Reduced icon size #}
                 </button>
             </form>
 
             {% if user.is_superuser %}
             <a href="{% url 'church:church_create' %}"
-               class="btn btn-success flex items-center gap-2 transition-all duration-300 hover:scale-105">
-                <i data-feather="plus-circle" class="w-5 h-5"></i> {# Used plus-circle for better visual, added sizing #}
+               class="btn btn-success btn-sm flex items-center gap-1 transition-all duration-300 hover:scale-105"> {# Added btn-sm, reduced gap #}
+                <i data-feather="plus-circle" class="w-4 h-4"></i> {# Reduced icon size #}
                 <span>Add Church</span>
             </a>
             {% endif %}
@@ -31,50 +35,51 @@
     </div>
 
     {% if churches %}
-    <div class="hidden md:block overflow-x-auto rounded-lg shadow-md"> {# Added shadow and rounded-lg #}
-        <table class="table w-full">
-            <thead class="bg-primary text-primary-content"> {# Primary background for header #}
+    {# Added table-sm for default compact table, reduced overall padding in cells #}
+    <div class="hidden md:block overflow-x-auto rounded-lg shadow-md border border-base-300"> 
+        <table class="table table-sm w-full"> 
+            <thead class="bg-primary text-primary-content">
                 <tr>
-                    <th class="px-6 py-3 text-left text-sm font-semibold uppercase tracking-wider">Name</th> {# Adjusted font size and weight #}
-                    <th class="px-6 py-3 text-left text-sm font-semibold uppercase tracking-wider">Address</th>
-                    <th class="px-6 py-3 text-left text-sm font-semibold uppercase tracking-wider">District</th>
-                    <th class="px-6 py-3 text-left text-sm font-semibold uppercase tracking-wider">In-Charge</th>
-                    <th class="px-6 py-3 text-left text-sm font-semibold uppercase tracking-wider">Status</th>
-                    <th class="px-6 py-3 text-left text-sm font-semibold uppercase tracking-wider">Actions</th>
+                    <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider">Name</th> {# Reduced padding and font size #}
+                    <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider">Address</th>
+                    <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider">District</th>
+                    <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider">In-Charge</th>
+                    <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider">Status</th>
+                    <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for church in churches %}
-                <tr class="border-b border-base-200 hover:bg-base-200 transition-colors duration-200"> {# Added subtle border and transition #}
-                    <td class="px-6 py-4 whitespace-nowrap">
+                <tr class="border-b border-base-200 hover:bg-base-200 transition-colors duration-200">
+                    <td class="px-4 py-2 whitespace-nowrap"> {# Reduced padding #}
                         <a href="{% url 'church:church_detail' church.id %}"
-                           class="link link-hover link-primary font-medium text-base"> {# Slightly larger text #}
-                            {{ church.name|upper }} {# Ensure name is uppercase #}
+                           class="link link-hover link-primary font-medium text-sm"> {# Reduced font size #}
+                            {{ church.name|upper }}
                         </a>
                     </td>
-                    <td class="px-6 py-4">{{ church.address|truncatechars:40|upper }}</td> {# Uppercase and truncate #}
-                    <td class="px-6 py-4">{{ church.district.name|default:"N/A"|upper }}</td> {# Uppercase #}
-                    <td class="px-6 py-4">{{ church.in_charge.username|default:"N/A"|upper }}</td> {# Uppercase #}
-                    <td class="px-6 py-4">
+                    <td class="px-4 py-2 text-xs">{{ church.address|truncatechars:30|upper }}</td> {# Reduced truncate and font size #}
+                    <td class="px-4 py-2 text-xs">{{ church.district.name|default:"N/A"|upper }}</td> {# Reduced font size #}
+                    <td class="px-4 py-2 text-xs">{{ church.in_charge.username|default:"N/A"|upper }}</td> {# Reduced font size #}
+                    <td class="px-4 py-2"> {# Reduced padding #}
                         <span class="badge
-                                     {% if church.is_active %}badge-success{% else %}badge-error{% endif %} badge-lg font-semibold"> {# Larger badge #}
-                            {% if church.is_active %}ACTIVE{% else %}INACTIVE{% endif %} {# Uppercase status text #}
+                                     {% if church.is_active %}badge-success{% else %}badge-error{% endif %} badge-md font-semibold"> {# Reduced badge size to md #}
+                            {% if church.is_active %}ACTIVE{% else %}INACTIVE{% endif %}
                         </span>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="flex gap-2"> {# Reduced gap for action buttons #}
+                    <td class="px-4 py-2 whitespace-nowrap"> {# Reduced padding #}
+                        <div class="flex gap-1"> {# Reduced gap for action buttons #}
                             <a href="{% url 'church:church_detail' church.id %}"
-                               class="btn btn-sm btn-info btn-square tooltip" data-tip="View Details"> {# Changed to btn-info, added tooltip #}
-                                <i data-feather="eye" class="w-5 h-5"></i>
+                               class="btn btn-xs btn-info btn-square tooltip" data-tip="View Details"> {# Changed to btn-xs #}
+                                <i data-feather="eye" class="w-4 h-4"></i> {# Reduced icon size #}
                             </a>
                             {% if user.is_superuser %}
                             <a href="{% url 'church:church_update' church.id %}"
-                               class="btn btn-sm btn-warning btn-square tooltip" data-tip="Edit Church"> {# Changed to btn-warning #}
-                                <i data-feather="edit" class="w-5 h-5"></i>
+                               class="btn btn-xs btn-warning btn-square tooltip" data-tip="Edit Church"> {# Changed to btn-xs #}
+                                <i data-feather="edit" class="w-4 h-4"></i> {# Reduced icon size #}
                             </a>
                             <a href="{% url 'church:church_delete' church.id %}"
-                               class="btn btn-sm btn-error btn-square tooltip" data-tip="Delete Church"> {# Changed to btn-error #}
-                                <i data-feather="trash-2" class="w-5 h-5"></i>
+                               class="btn btn-xs btn-error btn-square tooltip" data-tip="Delete Church"> {# Changed to btn-xs #}
+                                <i data-feather="trash-2" class="w-4 h-4"></i> {# Reduced icon size #}
                             </a>
                             {% endif %}
                         </div>
@@ -85,24 +90,25 @@
         </table>
     </div>
 
-    <div class="md:hidden space-y-4">
+    {# Mobile view cards #}
+    <div class="md:hidden space-y-3"> {# Reduced space-y #}
         {% for church in churches %}
-        <div class="card bg-base-200 shadow-lg p-6 rounded-lg border border-base-300"> {# Enhanced card styling #}
-            <div class="flex justify-between items-start mb-3">
-                <h2 class="text-xl font-bold text-primary">
+        <div class="card bg-base-200 shadow-lg p-4 rounded-lg border border-base-300"> {# Reduced padding #}
+            <div class="flex justify-between items-start mb-2"> {# Reduced bottom margin #}
+                <h2 class="text-lg font-bold text-primary"> {# Reduced font size #}
                     <a href="{% url 'church:church_detail' church.id %}" class="link link-hover">
                         {{ church.name|upper }}
                     </a>
                 </h2>
                 <span class="badge
-                              {% if church.is_active %}badge-success{% else %}badge-error{% endif %} badge-lg font-semibold">
+                             {% if church.is_active %}badge-success{% else %}badge-error{% endif %} badge-md font-semibold"> {# Reduced badge size #}
                     {% if church.is_active %}ACTIVE{% else %}INACTIVE{% endif %}
                 </span>
             </div>
 
-            <div class="space-y-2 text-base"> {# Increased spacing and text size #}
+            <div class="space-y-1 text-sm"> {# Reduced spacing and text size #}
                 <p>
-                    <span class="font-medium text-base-content/80">Address:</span> {{ church.address|truncatechars:50|upper }}
+                    <span class="font-medium text-base-content/80">Address:</span> {{ church.address|truncatechars:40|upper }} {# Reduced truncate #}
                 </p>
                 <p>
                     <span class="font-medium text-base-content/80">District:</span> {{ church.district.name|default:"N/A"|upper }}
@@ -112,18 +118,18 @@
                 </p>
             </div>
 
-            <div class="card-actions justify-end mt-4"> {# Increased top margin #}
+            <div class="card-actions justify-end mt-3"> {# Reduced top margin #}
                 <a href="{% url 'church:church_detail' church.id %}"
-                   class="btn btn-sm btn-info">
+                   class="btn btn-sm btn-info"> {# btn-sm for mobile #}
                     <i data-feather="eye" class="w-4 h-4"></i> View
                 </a>
                 {% if user.is_superuser %}
                 <a href="{% url 'church:church_update' church.id %}"
-                   class="btn btn-sm btn-warning">
+                   class="btn btn-sm btn-warning"> {# btn-sm for mobile #}
                     <i data-feather="edit" class="w-4 h-4"></i> Edit
                 </a>
                 <a href="{% url 'church:church_delete' church.id %}"
-                   class="btn btn-sm btn-error">
+                   class="btn btn-sm btn-error"> {# btn-sm for mobile #}
                     <i data-feather="trash-2" class="w-4 h-4"></i> Delete
                 </a>
                 {% endif %}
@@ -133,31 +139,31 @@
     </div>
 
     {% if is_paginated %}
-    <div class="mt-8 flex justify-center"> {# Increased top margin #}
-        <div class="join shadow-md rounded-lg"> {# Added shadow and rounded to join #}
+    <div class="mt-6 flex justify-center"> {# Reduced top margin #}
+        <div class="join shadow-md rounded-lg">
             {% if page_obj.has_previous %}
             <a href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}"
-               class="join-item btn btn-primary btn-outline"> {# Primary outline for nav buttons #}
-                <i data-feather="chevrons-left" class="w-5 h-5"></i> First
+               class="join-item btn btn-primary btn-outline btn-sm"> {# Added btn-sm #}
+                <i data-feather="chevrons-left" class="w-4 h-4"></i> First {# Reduced icon size #}
             </a>
             <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}"
-               class="join-item btn btn-primary btn-outline">
-                <i data-feather="chevron-left" class="w-5 h-5"></i> Previous
+               class="join-item btn btn-primary btn-outline btn-sm"> {# Added btn-sm #}
+                <i data-feather="chevron-left" class="w-4 h-4"></i> Previous {# Reduced icon size #}
             </a>
             {% endif %}
 
-            <span class="join-item btn btn-primary font-bold"> {# Active button style #}
+            <span class="join-item btn btn-primary btn-sm font-bold"> {# Added btn-sm #}
                 Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
             </span>
 
             {% if page_obj.has_next %}
             <a href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}"
-               class="join-item btn btn-primary btn-outline">
-                Next <i data-feather="chevron-right" class="w-5 h-5"></i>
+               class="join-item btn btn-primary btn-outline btn-sm"> {# Added btn-sm #}
+                Next <i data-feather="chevron-right" class="w-4 h-4"></i> {# Reduced icon size #}
             </a>
             <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}"
-               class="join-item btn btn-primary btn-outline">
-                Last <i data-feather="chevrons-right" class="w-5 h-5"></i>
+               class="join-item btn btn-primary btn-outline btn-sm"> {# Added btn-sm #}
+                Last <i data-feather="chevrons-right" class="w-4 h-4"></i> {# Reduced icon size #}
             </a>
             {% endif %}
         </div>
@@ -165,15 +171,15 @@
     {% endif %}
 
     {% else %}
-    <div class="hero bg-base-200 rounded-lg p-10 text-center shadow-lg"> {# Enhanced empty state #}
+    <div class="hero bg-base-200 rounded-lg p-8 text-center shadow-lg"> {# Reduced padding #}
         <div class="hero-content flex flex-col items-center">
-            <i data-feather="archive" class="w-20 h-20 text-base-content/50 mb-4"></i> {# Icon #}
-            <h2 class="text-2xl font-bold mb-3 text-base-content">No Churches Found</h2>
-            <p class="mb-6 text-lg text-base-content/80">It looks like there are no churches registered yet. Add one to get started!</p>
+            <i data-feather="archive" class="w-16 h-16 text-base-content/50 mb-3"></i> {# Reduced icon size and margin #}
+            <h2 class="text-xl font-bold mb-2 text-base-content">No Churches Found</h2> {# Reduced font size and margin #}
+            <p class="mb-5 text-base text-base-content/80">It looks like there are no churches registered yet. Add one to get started!</p> {# Reduced font size and margin #}
             {% if user.is_superuser %}
             <a href="{% url 'church:church_create' %}"
-               class="btn btn-primary btn-lg flex items-center gap-2 transition-all duration-300 hover:scale-105"> {# Larger button #}
-                <i data-feather="plus" class="w-5 h-5"></i> {# Added sizing #}
+               class="btn btn-primary btn-md flex items-center gap-1 transition-all duration-300 hover:scale-105"> {# Reduced button size #}
+                <i data-feather="plus" class="w-4 h-4"></i> {# Reduced icon size #}
                 <span>Add First Church</span>
             </a>
             {% endif %}
