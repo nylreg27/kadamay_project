@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Payment Details{% endblock %}
+{% block content %}
+<div class="card bg-base-100 shadow-xl p-6 md:p-8 text-base-content rounded-xl my-6 mx-auto max-w-xl">
+    <h1 class="text-3xl font-extrabold text-primary mb-6">Payment Details</h1>
+    {% if payment %}
+        <p>Receipt No: {{ payment.receipt_no }}</p>
+        <p>Amount: ₱{{ payment.amount|floatformat:2 }}</p>
+        <p>Date Paid: {{ payment.date_paid|date:"F d, Y" }}</p>
+        <p>Paid By: {{ payment.individual.full_name }}</p>
+        <p>Contribution Type: {{ payment.contribution_type.name }}</p>
+        {% if payment.deceased_member %}
+        <p>Share For Deceased: {{ payment.deceased_member.full_name }}</p>
+        {% endif %}
+        <p>Remarks: {{ payment.remarks|default:"N/A" }}</p>
+
+        {% if covered_members %}
+        <h2 class="text-xl font-bold mt-4">Covered Members:</h2>
+        <ul>
+        {% for member in covered_members %}
+            <li>{{ member.full_name }}</li>
+        {% endfor %}
+        </ul>
+        {% endif %}
+
+        <div class="mt-6 flex space-x-2">
+            <a href="{% url 'payment:payment_update' payment.id %}" class="btn btn-warning">Edit</a>
+            <a href="{% url 'payment:payment_list' %}" class="btn btn-primary">Back to List</a>
+        </div>
+
+    {% else %}
+        <p>No payment found.</p>
+    {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}

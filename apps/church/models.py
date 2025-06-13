@@ -1,4 +1,5 @@
-# apps/church/models.py
+# apps/church/models.py (Full and Corrected Version)
+
 from django.db import models
 # Kung ang User model ay ginagamit for in_charge
 from django.contrib.auth import get_user_model

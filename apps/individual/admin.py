@@ -1,86 +1,77 @@
 # apps/individual/admin.py
+
 from django.contrib import admin
-from .models import Individual # Import Individual model
+from .models import Individual
+
 
 @admin.register(Individual)
 class IndividualAdmin(admin.ModelAdmin):
-    # FIXED: Pinalitan ang 'members_serial' at 'church' ng tamang fields/methods
     list_display = (
-        'surname',
-        'given_name',
-        'middle_name',
-        'get_family_name', # Custom method para ipakita ang family name
-        'get_church_name', # Custom method para ipakita ang church name
-        'sex', # Idinagdag ang sex
-        'civil_status', # Idinagdag ang civil_status
-        'is_active_member',
-        'is_alive',
-    )
-    # FIXED: Pinalitan ang 'church' at 'gender'
-    list_filter = (
-        'is_active_member',
-        'is_alive',
+        'id',
+        'membership_id',  # Changed from 'code' to 'membership_id'
+        'full_name',
         'relationship',
-        'sex', # Gumamit ng 'sex' imbes na 'gender'
-        'civil_status', # Idinagdag ang civil_status
-        'family__church', # Filter by church name through family
+        'sex',             # Added 'sex'
+        'civil_status',    # Added 'civil_status'
+        'is_alive',
+        'is_active_member',
+        'membership_status',
+        'family',          # Good to display the family
+        'date_added',      # Good to display date added
     )
-    # FIXED: Pinalitan ang 'church' ng 'family__church'
-    autocomplete_fields = ('family',) # Para sa Family field, pwedeng mag-autocomplete
-
-
-    # FIXED: Tinanggal ang 'date_joined' at pinalitan ng 'date_added'
-    date_hierarchy = 'date_added' # Para mag-filter ng data by date
-
-    # FIXED: Tinanggal ang 'readonly_fields' kung walang specific na gusto mong i-readonly
-    # Kung gusto mo may readonly fields, tiyakin na field ng model ito o method sa admin
-    # Halimbawa: readonly_fields = ('date_added',)
-    
-    # Mga field na pwedeng hanapin
+    list_filter = (
+        'is_alive',
+        'is_active_member',
+        'relationship',
+        'membership_status',
+        'sex',             # Added 'sex' filter
+        'civil_status',    # Added 'civil_status' filter
+        'family',          # Filter by family
+        'family__church',  # Filter by church through family
+    )
     search_fields = (
-        'surname',
         'given_name',
+        'surname',
         'middle_name',
-        'family__family_name', # Search by family name
-        'family__church__name', # Search by church name
+        'suffix_name',      # Added suffix_name to search
+        'membership_id',    # Changed from 'code' to 'membership_id'
+        'contact_number',   # Added contact_number to search
+        'email_address',    # Added email_address to search
+        'address',          # Added individual's own address to search
+        'family__family_name',  # Search by related family name
+        'family__church__name',  # Search by related church name
     )
 
-    # Order ng mga field sa admin form
+    date_hierarchy = 'date_added'  # Uncommented as 'date_added' exists
+
+    list_display_links = ('id', 'full_name',)
+
     fieldsets = (
-        ('Personal Information', {
+        (None, {
             'fields': (
-                ('surname', 'given_name', 'middle_name', 'suffix_name'),
+                ('given_name', 'middle_name', 'surname', 'suffix_name'),
+                'membership_id',  # Changed from 'code' to 'membership_id'
+                'family'
+            )
+        }),
+        ('Personal Information', {  # Re-added this fieldset
+            'fields': (
                 ('sex', 'civil_status'),
                 'birth_date',
-                ('contact_number', 'email_address'),
+                'contact_number',
+                'email_address',
+                'address',  # Added individual's own address
             )
         }),
-        ('Membership Information', {
-            'fields': (
-                'family',
-                'relationship',
-                ('is_active_member', 'is_alive'),
-            )
+        ('Membership Status', {  # Renamed from 'Status' for clarity
+            # Included relationship here
+            'fields': ('membership_status', 'is_active_member', 'is_alive', 'relationship')
         }),
+        ('Timestamps', {  # New fieldset for date_added
+            'fields': ('date_added',),
+            'classes': ('collapse',),  # Optional: make it collapsible
+        })
     )
 
-    # Custom methods for list_display
-    @admin.display(description='Family Name')
-    def get_family_name(self, obj):
-        return obj.family.family_name if obj.family else '-'
-    
-    @admin.display(description='Church')
-    def get_church_name(self, obj):
-        return obj.family.church.name if obj.family and obj.family.church else '-'
-    
-    # Ginawa ang save_model override para masiguro na nilalagyan ng default value ang church
-    # kung wala pang family ang individual, at para auto-assign ng church mula sa family
-    def save_model(self, request, obj, form, change):
-        if obj.family and not obj.family.church:
-            # Optionally, prompt user or use a default church if family has no church
-            # For now, let's assume family always has a church if family is selected
-            pass # Django will handle the ForeignKey relation naturally
-
-        super().save_model(request, obj, form, change)
-
-
+    # Optional: If you want to make date_added read-only in admin
+    readonly_fields = ('date_added',)

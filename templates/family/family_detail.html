@@ -1,254 +1,186 @@
-{# family_detail.html #}
+{# apps/family/templates/family/family_detail.html #}
 {% extends 'base.html' %}
-
-{% block title %}{{ family.family_name|upper }} - Kadamay Mortuary System{% endblock %}
+{% load static %}
 
 {% block content %}
-<div class="card bg-base-100 shadow-xl p-4 md:p-6 text-base-content rounded-xl my-4 mx-auto max-w-5xl">
-    <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-3">
-        <h1 class="text-2xl md:text-3xl font-extrabold text-primary">{{ family.family_name|upper }}</h1>
-        
-        <div class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 items-stretch md:items-center w-full md:w-auto">
-            <a href="{% url 'family:family_list' %}" class="btn btn-ghost btn-sm md:btn-md flex items-center gap-1 transition-all duration-300 hover:scale-105">
-                <i data-feather="arrow-left" class="w-4 h-4 md:w-5 md:h-5"></i> Back to List
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-base-content">{{ family.family_name }} Details</h1>
+        <div class="space-x-2">
+            <a href="{% url 'family:family_update' family.pk %}" class="btn btn-warning btn-outline btn-sm">
+                <i data-feather="edit" class="w-4 h-4"></i> Edit Family
             </a>
-            
-            <a href="{% url 'family:family_update' family.id %}" class="btn btn-info btn-sm md:btn-md flex items-center gap-1 transition-all duration-300 hover:scale-105">
-                <i data-feather="edit-3" class="w-4 h-4 md:w-5 md:h-5"></i> Edit
+            <a href="{% url 'family:family_list' %}" class="btn btn-ghost btn-sm">
+                <i data-feather="arrow-left" class="w-4 h-4"></i> Back to List
             </a>
-            
-            <a href="{% url 'individual:family_individual_create' family.id %}" class="btn btn-success btn-sm md:btn-md flex items-center gap-1 transition-all duration-300 hover:scale-105">
-                <i data-feather="user-plus" class="w-4 h-4 md:w-5 md:h-5"></i> Add Member
-            </a>
-            
-            <form action="{% url 'family:family_delete' family.id %}" method="POST" id="delete-family-form">
-                {% csrf_token %}
-                <button type="button" onclick="confirmDeleteFamily()" class="btn btn-error btn-sm md:btn-md flex items-center gap-1 transition-all duration-300 hover:scale-105 w-full">
-                    <i data-feather="trash-2" class="w-4 h-4 md:w-5 md:h-5"></i> Delete
-                </button>
-            </form>
         </div>
-    </header>
-    
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <section class="card bg-base-200 shadow-md p-5">
-            <h2 class="text-xl md:text-2xl font-semibold mb-5 border-b-2 border-base-300 pb-2 text-base-content/90">Family Details</h2>
-            <div class="space-y-3">
-                <div>
-                    <h3 class="text-sm font-medium text-base-content/70">Family Name</h3>
-                    <p class="mt-0.5 text-lg font-semibold">{{ family.family_name|upper }}</p>
-                </div>
-                <div>
-                    <h3 class="text-sm font-medium text-base-content/70">Church</h3>
-                    <p class="mt-0.5">
-                        <a href="{% url 'church:church_detail' family.church.id %}" class="link link-primary font-semibold">
-                            {{ family.church.name|upper }}
-                        </a>
-                    </p>
-                </div>
-                <div>
-                    <h3 class="text-sm font-medium text-base-content/70">Address</h3>
-                    <p class="mt-0.5 text-lg">{{ family.address|upper }}</p>
-                </div>
-                <div>
-                    <h3 class="text-sm font-medium text-base-content/70">Status</h3>
-                    <p class="mt-0.5">
-                        {% if family.is_active %}
-                        <span class="badge badge-success badge-md font-semibold">Active</span>
-                        {% else %}
-                        <span class="badge badge-error badge-md font-semibold">Inactive</span>
-                        {% endif %}
-                    </p>
-                </div>
-            </div>
-        </section>
-        
-        <section class="card bg-base-200 shadow-md p-5">
-            <h2 class="text-xl md:text-2xl font-semibold mb-5 border-b-2 border-base-300 pb-2 text-base-content/90">Members Statistics</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-center">
-                {# --- START: MODIFIED STATS BOXES --- #}
-                <div class="stats stats-vertical sm:stats-horizontal shadow-md bg-info h-full">
-                    <div class="stat">
-                        <div class="stat-title text-xs uppercase text-white/90">Total Members</div>
-                        {# THIS IS THE FIX: Ensure you are displaying the correct context variable #}
-                        <div class="stat-value text-2xl font-extrabold text-white">{{ total_members_count }}</div> 
-                    </div>
-                </div>
-                
-                <div class="stats stats-vertical sm:stats-horizontal shadow-md bg-success h-full">
-                    <div class="stat">
-                        <div class="stat-title text-xs uppercase text-white/90">Active Members</div>
-                        <div class="stat-value text-2xl font-extrabold text-white">{{ active_members_count }}</div>
-                    </div>
-                </div>
-                
-                <div class="stats stats-vertical sm:stats-horizontal shadow-md bg-warning h-full">
-                    <div class="stat">
-                        <div class="stat-title text-xs uppercase text-black/90">Family Head</div>
-                        <div class="stat-value text-base font-semibold text-black">
-                            {% if family_head %}
-                                {{ family_head.surname|upper }}, {{ family_head.given_name|upper }}
-                            {% else %}
-                                <span class="text-black/70 text-xs italic">Not set</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="stats stats-vertical sm:stats-horizontal shadow-md bg-error h-full">
-                    <div class="stat">
-                        <div class="stat-title text-xs uppercase text-white/90">Deceased Members</div>
-                        {# THIS IS THE FIX: Ensure you are displaying the correct context variable #}
-                        <div class="stat-value text-2xl font-extrabold text-white">{{ deceased_members_count }}</div> 
-                    </div>
-                </div>
-                {# --- END: MODIFIED STATS BOXES --- #}
-            </div>
-        </section>
     </div>
-    
-    <div class="divider my-6"></div>
-    
-    {# Family Members #}
-    <section class="mb-8">
-        <div class="flex justify-between items-center mb-4 flex-wrap gap-3">
-            <h2 class="text-xl md:text-2xl font-semibold text-base-content/90">Family Members</h2>
-            <a href="{% url 'individual:family_individual_create' family.id %}" class="btn btn-success btn-sm md:btn-md flex items-center gap-1 transition-all duration-300 hover:scale-105">
-                <i data-feather="user-plus" class="w-4 h-4 md:w-5 md:h-5"></i> Add Member
-            </a>
-        </div>
-        
-        {% if family.individual_set.all %}
-        <div class="overflow-x-auto rounded-lg shadow-md border border-base-300">
-            <table class="table table-zebra table-sm w-full">
-                <thead>
-                    <tr>
-                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">ID</th>
-                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Name</th>
-                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Relationship</th>
-                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Birthdate</th>
-                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Status</th>
-                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for member in family.individual_set.all %}
-                    <tr>
-                        <td class="px-4 py-3 whitespace-nowrap font-mono text-info">{{ member.members_serial|default:"N/A" }}</td>
-                        <td class="px-4 py-3 whitespace-nowrap">
-                            <a href="{% url 'individual:individual_detail' member.id %}" class="link link-primary font-semibold">
-                                {{ member.surname|upper }}, {{ member.given_name|upper }} {{ member.middle_name|default:''|upper }}
-                            </a>
-                        </td>
-                        <td class="px-4 py-3 whitespace-nowrap">
-                            {% if member.relationship == 'HEAD' %} {# Changed 'H' to 'HEAD' based on DB screenshot #}
-                            <span class="badge badge-warning badge-md font-semibold">Head</span>
-                            {% else %}
-                            <span class="badge badge-info badge-md font-semibold">Member</span>
-                            {% endif %}
-                        </td>
-                        <td class="px-4 py-3 whitespace-nowrap text-base-content">{{ member.birthdate|date:"F d, Y"|default:"N/A" }}</td>
-                        <td class="px-4 py-3 whitespace-nowrap">
-                            {% if member.is_active_member and member.is_alive %}
-                            <span class="badge badge-success badge-md font-semibold">Active & Alive</span>
-                            {% elif member.is_alive == False %}
-                            <span class="badge badge-error badge-md font-semibold">Deceased</span>
-                            {% else %}
-                            <span class="badge badge-ghost badge-md font-semibold">Inactive</span>
-                            {% endif %}
-                        </td>
-                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium flex space-x-2">
-                            <a href="{% url 'individual:individual_update' member.id %}" class="btn btn-ghost btn-xs text-warning tooltip" data-tip="Edit Member">
-                                <i data-feather="edit" class="w-4 h-4"></i>
-                            </a>
-                            <a href="{% url 'individual:individual_delete' member.id %}" class="btn btn-ghost btn-xs text-error tooltip" data-tip="Delete Member" onclick="return confirm('Are you sure you want to delete {{ member.given_name }}?');">
-                                <i data-feather="trash-2" class="w-4 h-4"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="alert alert-info shadow-lg text-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            <span>No members have been added to this family yet.</span>
-        </div>
-        {% endif %}
-    </section>
-    
-    <div class="divider my-6"></div>
 
-    {# Payments Summary #}
-    <section>
-        <h2 class="text-xl md:text-2xl font-semibold mb-4 border-b-2 border-base-300 pb-2 text-base-content/90">Recent Payments</h2>
-        {% if family_payments %}
-        <div class="overflow-x-auto rounded-lg shadow-md border border-base-300">
-            <table class="table table-zebra table-sm w-full">
-                <thead>
-                    <tr>
-                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Date Paid</th>
-                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Individual</th>
-                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Amount</th>
-                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Payment Type</th>
-                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for payment in family_payments %}
-                    <tr>
-                        <td class="px-4 py-3 whitespace-nowrap text-base-content">{{ payment.date_paid|date:"M d, Y" }}</td>
-                        <td class="px-4 py-3 whitespace-nowrap link link-primary">
-                            <a href="{% url 'individual:individual_detail' payment.individual.id %}">{{ payment.individual.get_full_name|upper }}</a>
-                        </td>
-                        <td class="px-4 py-3 whitespace-nowrap font-semibold text-success">₱{{ payment.amount|floatformat:2 }}</td>
-                        <td class="px-4 py-3 whitespace-nowrap text-base-content">{{ payment.payment_type|upper }}</td>
-                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium flex space-x-2">
-                            <a href="{% url 'payment:payment_detail' payment.id %}" class="btn btn-ghost btn-xs text-info tooltip" data-tip="View Payment">
-                                <i data-feather="eye" class="w-4 h-4"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    {% if messages %}
+        <div class="mb-4">
+            {% for message in messages %}
+                <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %} shadow-lg">
+                    <div>
+                        <i data-feather="{% if message.tags == 'success' %}check-circle{% else %}alert-circle{% endif %}" class="w-6 h-6"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                </div>
+            {% endfor %}
         </div>
-        {% else %}
-        <div class="alert alert-info shadow-lg text-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            <span>No payments have been recorded for this family yet.</span>
+    {% endif %}
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title text-primary">Family Information</h2>
+                <div class="text-base-content/80">
+                    <p class="mb-2"><strong class="text-base-content">Name:</strong> {{ family.family_name }}</p>
+                    <p class="mb-2"><strong class="text-base-content">Address:</strong> {{ family.address }}</p>
+                    <p class="mb-2"><strong class="text-base-content">Church:</strong> <a href="{% url 'church:church_detail' family.church.pk %}" class="link link-hover link-info">{{ family.church.name }}</a></p>
+                    <p class="mb-2"><strong class="text-base-content">Status:</strong>
+                        <span class="badge {% if family.is_active %}badge-success{% else %}badge-error{% endif %} badge-md">
+                            {% if family.is_active %}Active{% else %}Inactive{% endif %}
+                        </span>
+                    </p>
+                    {% if family.in_charge %}
+                        <p class="mb-2"><strong class="text-base-content">In Charge:</strong> {{ family.in_charge.full_name }}</p>
+                    {% else %}
+                        <p class="mb-2"><strong class="text-base-content">In Charge:</strong> Not assigned</p>
+                    {% endif %}
+                </div>
+            </div>
         </div>
-        {% endif %}
-    </section>
+
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title text-primary">Key Metrics</h2>
+                <div class="stats stats-vertical lg:stats-horizontal shadow mb-6">
+                    <div class="stat">
+                        <div class="stat-title">Total Members</div>
+                        <div class="stat-value">{{ total_members_count }}</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-title">Active Members</div>
+                        <div class="stat-value text-success">{{ active_members_count }}</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-title">Deceased Members</div>
+                        <div class="stat-value text-error">{{ deceased_members_count }}</div>
+                    </div>
+                </div>
+
+                {% if family_head %}
+                    <p class="text-lg font-semibold mb-4">Family Head: <span class="text-primary">{{ family_head.given_name }} {{ family_head.surname }}</span></p>
+                {% else %}
+                    <p class="text-base-content/70 mb-4">No Family Head designated yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-xl mb-8">
+        <div class="card-body">
+            <h2 class="card-title text-primary">Family Members</h2>
+            {% if total_members_count > 0 %}
+                <div class="overflow-x-auto">
+                    <table class="table w-full">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Relationship</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for individual in all_individuals %}
+                                <tr>
+                                    <td><a href="{% url 'individual:individual_detail' individual.pk %}" class="link link-hover link-primary">{{ individual.full_name }}</a></td>
+                                    <td>{{ individual.get_relationship_display_value }}</td> {# Use the display value #}
+                                    <td>
+                                        <span class="badge {% if individual.is_active_member %}badge-success{% else %}badge-error{% endif %} badge-md">
+                                            {% if individual.is_active_member %}ACTIVE{% else %}INACTIVE{% endif %}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="flex gap-1">
+                                            <a href="{% url 'individual:individual_detail' individual.pk %}" class="btn btn-xs btn-info btn-square tooltip" data-tip="View Member">
+                                                <i data-feather="eye" class="w-4 h-4"></i>
+                                            </a>
+                                            <a href="{% url 'individual:individual_update' individual.pk %}" class="btn btn-xs btn-warning btn-square tooltip" data-tip="Edit Member">
+                                                <i data-feather="edit-3" class="w-4 h-4"></i>
+                                            </a>
+                                            {# Add delete button if needed #}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-4 text-right">
+                    <a href="{% url 'individual:family_individual_create' family.pk %}" class="btn btn-primary btn-md">
+                        <i data-feather="plus-circle" class="w-5 h-5"></i> Add New Member
+                    </a>
+                </div>
+            {% else %}
+                <div class="alert alert-info shadow-lg mt-6">
+                    <div>
+                        <i data-feather="info" class="w-6 h-6"></i>
+                        <span>This family currently has no registered members.</span>
+                    </div>
+                </div>
+                <div class="mt-4 text-center">
+                    <a href="{% url 'individual:family_individual_create' family.pk %}" class="btn btn-primary btn-md">
+                        <i data-feather="plus-circle" class="w-5 h-5"></i> Add First Member
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title text-primary">Recent Payments by Family Members</h2>
+            {% if family_payments %}
+                <div class="overflow-x-auto">
+                    <table class="table w-full">
+                        <thead>
+                            <tr>
+                                <th>Individual</th>
+                                <th>Amount</th>
+                                <th>Date Paid</th>
+                                <th>Payment Type</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in family_payments %}
+                                <tr>
+                                    <td><a href="{% url 'individual:individual_detail' payment.individual.pk %}" class="link link-hover link-primary">{{ payment.individual.full_name }}</a></td>
+                                    <td>{{ payment.amount|floatformat:2 }}</td>
+                                    <td>{{ payment.date_paid|date:"M j, Y" }}</td>
+                                    <td>{{ payment.get_payment_type_display }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-warning shadow-lg mt-6">
+                    <div>
+                        <i data-feather="alert-triangle" class="w-6 h-6"></i>
+                        <span>No recent payments found for this family.</span>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
 </div>
-
-{# Modal for delete confirmation #}
-<dialog id="delete_family_modal" class="modal">
-    <div class="modal-box bg-base-100 text-base-content">
-        <h3 class="font-bold text-lg text-warning">Confirm Deletion!</h3>
-        <p class="py-4">Are you absolutely sure you want to delete the family "{{ family.family_name|upper }}"?</p>
-        <p class="font-semibold text-error">This action cannot be undone and will also delete all associated members and payments.</p>
-        <div class="modal-action">
-            <form method="dialog">
-                <button class="btn btn-ghost btn-sm md:btn-md">Cancel</button>
-            </form>
-            <button class="btn btn-error btn-sm md:btn-md" onclick="document.getElementById('delete-family-form').submit();">Delete</button>
-        </div>
-    </div>
-</dialog>
 
 {% endblock %}
 
 {% block extra_js %}
-{{ block.super }}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        feather.replace();
-    });
-
-    function confirmDeleteFamily() {
-        document.getElementById('delete_family_modal').showModal();
-    }
+    feather.replace();
 </script>
 {% endblock %}

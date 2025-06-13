@@ -1,24 +1,38 @@
+# apps/payment/urls.py
+
 from django.urls import path
 from . import views
 
 app_name = 'payment'
 
 urlpatterns = [
-    # Contribution type URLs
-    path('contribution-types/', views.ContributionTypeListView.as_view(), name='contribution_type_list'),
-    path('contribution-types/create/', views.ContributionTypeCreateView.as_view(), name='contribution_type_create'),
-    path('contribution-types/<int:pk>/', views.ContributionTypeDetailView.as_view(), name='contribution_type_detail'),
-    path('contribution-types/<int:pk>/update/', views.ContributionTypeUpdateView.as_view(), name='contribution_type_update'),
-    path('contribution-types/<int:pk>/delete/', views.ContributionTypeDeleteView.as_view(), name='contribution_type_delete'),
-    
-    # Payment URLs
-    path('payments/', views.PaymentListView.as_view(), name='payment_list'),
-    path('payments/create/', views.PaymentCreateView.as_view(), name='payment_create'),
-    path('payments/<int:pk>/', views.PaymentDetailView.as_view(), name='payment_detail'),
-    path('payments/<int:pk>/update/', views.PaymentUpdateView.as_view(), name='payment_update'),
-    path('payments/<int:pk>/delete/', views.PaymentDeleteView.as_view(), name='payment_delete'),
-    
-    # Individual-specific payment URLs
-    path('individual/<int:individual_id>/payments/', views.PaymentListView.as_view(), name='individual_payments'),
-    path('individual/<int:individual_id>/payments/create/', views.PaymentCreateView.as_view(), name='individual_payment_create'),
+    # API endpoint to get contribution type details (e.g., default amount)
+    path('api/contribution_type/<int:pk>/',
+         views.contribution_type_detail_api, name='contribution_type_detail_api'),
+
+    # NEW API endpoint: To fetch family members and related info for an individual dynamically
+    path('api/individual/<int:individual_id>/family_details/',
+         views.get_individual_family_details_api, name='get_individual_family_details_api'),
+
+    # List all payments
+    path('list/', views.PaymentListView.as_view(), name='payment_list'),
+
+    # --- MAIN PAYMENT CREATION FORM DISPLAY (Handles GET request from dashboard) ---
+    # This URL will display the payment form for a specific individual.
+    path('individual/<int:individual_id>/create/',  # Renamed from /payments/create/ to just /create/ for clarity
+         # <--- This view handles the GET request to display the form
+         views.payment_create_full_form_view,
+         name='payment_create_for_individual'),
+
+    # --- PAYMENT FORM SUBMISSION (Handles POST request from the form) ---
+    # This URL receives the submitted form data.
+    path('add/',
+         # <--- This view handles the POST request (form submission)
+         views.payment_create_view,
+         name='add_payment'),
+
+    # --- Existing Payment Detail, Update, Delete Views ---
+    path('<int:pk>/detail/', views.payment_detail_view, name='payment_detail'),
+    path('<int:pk>/update/', views.payment_update_view, name='payment_update'),
+    path('<int:pk>/delete/', views.payment_delete_view, name='payment_delete'),
 ]

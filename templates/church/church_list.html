@@ -1,4 +1,4 @@
-{# church_list.html #}
+{# apps/church/templates/church/church_list.html #}
 {% extends 'base.html' %}
 
 {% block title %}Churches — Kadamay Mortuary System{% endblock %}
@@ -14,7 +14,7 @@
             <p class="text-base-content/70 mt-0.5">Manage all registered churches in the system.</p> 
         </div>
         <div class="flex flex-wrap justify-end items-center gap-2"> {# Reduced gap #}
-            <form method="get" class="flex items-center">
+            <form method="get" class="flex items-center" action="{% url 'church:church_list' %}"> {# Added action attribute #}
                 {# Slightly smaller input width #}
                 <input type="text" name="search" placeholder="Search churches..." value="{{ request.GET.search }}"
                        class="input input-bordered w-40 md:w-56 rounded-r-none uppercase text-sm transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
@@ -23,6 +23,14 @@
                     <i data-feather="search" class="w-4 h-4"></i> {# Reduced icon size #}
                 </button>
             </form>
+
+            {# REFRESH BUTTON ADDED HERE #}
+            {# Using <a> tag styled as a button with DaisyUI classes for consistency #}
+            <a href="{% url 'church:church_list' %}"
+               class="btn btn-outline btn-sm flex items-center gap-1 transition-all duration-300 hover:scale-105">
+                <i data-feather="refresh-cw" class="w-4 h-4"></i> {# Using refresh icon #}
+                <span>Refresh</span>
+            </a>
 
             {% if user.is_superuser %}
             <a href="{% url 'church:church_create' %}"
@@ -33,6 +41,25 @@
             {% endif %}
         </div>
     </div>
+
+    {# Messages from Django messages framework #}
+    {% if messages %}
+        <div class="mb-4">
+            {% for message in messages %}
+                <div class="alert 
+                    {% if message.tags == 'success' %}alert-success
+                    {% elif message.tags == 'warning' %}alert-warning
+                    {% elif message.tags == 'error' %}alert-error
+                    {% else %}alert-info
+                    {% endif %} shadow-lg mb-2">
+                    <div>
+                        <i data-feather="info" class="w-6 h-6"></i> {# Default icon, adjust based on message type #}
+                        <span>{{ message }}</span>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
 
     {% if churches %}
     {# Added table-sm for default compact table, reduced overall padding in cells #}
@@ -59,7 +86,16 @@
                     </td>
                     <td class="px-4 py-2 text-xs">{{ church.address|truncatechars:30|upper }}</td> {# Reduced truncate and font size #}
                     <td class="px-4 py-2 text-xs">{{ church.district.name|default:"N/A"|upper }}</td> {# Reduced font size #}
-                    <td class="px-4 py-2 text-xs">{{ church.in_charge.username|default:"N/A"|upper }}</td> {# Reduced font size #}
+                    <td class="px-4 py-2 text-xs">
+                        {% if church.in_charge %}
+                            {{ church.in_charge.first_name|default:'' }} {{ church.in_charge.last_name|default:'' }}
+                            {% if not church.in_charge.first_name and not church.in_charge.last_name %}
+                                ({{ church.in_charge.username|upper }})
+                            {% endif %}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
                     <td class="px-4 py-2"> {# Reduced padding #}
                         <span class="badge
                                      {% if church.is_active %}badge-success{% else %}badge-error{% endif %} badge-md font-semibold"> {# Reduced badge size to md #}
@@ -114,7 +150,15 @@
                     <span class="font-medium text-base-content/80">District:</span> {{ church.district.name|default:"N/A"|upper }}
                 </p>
                 <p>
-                    <span class="font-medium text-base-content/80">In-Charge:</span> {{ church.in_charge.username|default:"N/A"|upper }}
+                    <span class="font-medium text-base-content/80">In-Charge:</span> 
+                    {% if church.in_charge %}
+                        {{ church.in_charge.first_name|default:'' }} {{ church.in_charge.last_name|default:'' }}
+                        {% if not church.in_charge.first_name and not church.in_charge.last_name %}
+                            ({{ church.in_charge.username|upper }})
+                        {% endif %}
+                    {% else %}
+                        N/A
+                    {% endif %}
                 </p>
             </div>
 

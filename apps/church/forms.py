@@ -1,6 +1,11 @@
+# apps/church/forms.py (Full and Corrected Version)
+
 from django import forms
 from .models import Church, District
-from apps.individual.models import Individual
+# Import get_user_model for in_charge field
+from django.contrib.auth import get_user_model
+
+User = get_user_model()  # Get the active user model
 
 
 class ChurchForm(forms.ModelForm):
@@ -10,12 +15,12 @@ class ChurchForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['district'].queryset = District.objects.all()
-
-        # For dropdowns, use queryset from DB
-        self.fields['district'].queryset = District.objects.all()
+        self.fields['district'].queryset = District.objects.all().order_by(
+            'name')  # Order districts
         self.fields['district'].label_from_instance = lambda obj: obj.name
 
-        self.fields['in_charge'].queryset = Individual.objects.filter(
-            is_active_member=True)
-        self.fields['in_charge'].label_from_instance = lambda obj: f"{obj.given_name} {obj.surname}"
+        # Ensure that 'in_charge' uses Django's built-in User model
+        self.fields['in_charge'].queryset = User.objects.all().order_by(
+            'last_name', 'first_name')
+        # Display full name of the user, or username if names are empty
+        self.fields['in_charge'].label_from_instance = lambda obj: f"{obj.first_name} {obj.last_name}" if obj.first_name or obj.last_name else obj.username

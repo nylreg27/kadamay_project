@@ -4,17 +4,14 @@ from django.urls import reverse_lazy
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib import messages
-from django.db.models import Q  # Para sa search functionality
-from django.db.models import F  # Para sa mas efficient na filtering
+from django.db.models import Q
+from django.db.models import F
 
 from .models import Family
-from apps.church.models import Church  # Import Church model
-# IMPORT INDIVIDUAL AND PAYMENT MODELS KUNG WALA PA (ASSUMING NASA APPS/INDIVIDUAL at APPS/PAYMENT SILA)
-from apps.individual.models import Individual  # Import Individual model
-from apps.payment.models import Payment  # Import Payment model
+from apps.church.models import Church
+from apps.individual.models import Individual
+from apps.payment.models import Payment
 from .forms import FamilyForm
-
-# --- Family List View (NO CHANGES HERE) ---
 
 
 class FamilyListView(LoginRequiredMixin, ListView):
@@ -47,8 +44,9 @@ class FamilyListView(LoginRequiredMixin, ListView):
         context['selected_church'] = self.request.GET.get('church', '')
         return context
 
-
 # --- Family Detail View (MODIFIED) ---
+
+
 class FamilyDetailView(LoginRequiredMixin, DetailView):
     model = Family
     template_name = 'family/family_detail.html'
@@ -58,17 +56,9 @@ class FamilyDetailView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         family = self.get_object()
 
-        # Optimize queries by prefetching related data
-        # Use select_related for ForeignKey relationships and prefetch_related for ManyToMany or reverse ForeignKeys
-        # For Individual and Payment, it's a reverse ForeignKey, so prefetch_related is correct.
-        # But for counting, direct filtering on individual_set is efficient enough.
-
-        # Calculate active and deceased members related to this family
-        # Assuming Individual model has a ForeignKey to Family named 'family'
-        # and has 'is_active_member' and 'is_alive' boolean fields.
-
         # All individuals related to this family
-        all_individuals = family.individual_set.all()
+        # FIXED: Changed family.individual_set.all() to family.members.all()
+        all_individuals = family.members.all()
 
         context['total_members_count'] = all_individuals.count()
 
@@ -79,31 +69,21 @@ class FamilyDetailView(LoginRequiredMixin, DetailView):
             is_alive=False).count()
 
         # Get Family Head
-        # Assuming 'relationship' field in Individual model defines 'HEAD'
-        # Use .first() to get a single object or None if not found
+        # Corrected to use 'HEAD' as per Individual model choices
         context['family_head'] = all_individuals.filter(
-            relationship='H').first()
-        # Note: Make sure 'H' matches the exact value in your Individual model for Family Head.
-        # You might need to change 'H' to 'HEAD' if that's what's stored in your database.
-        # Based on your image, it looks like 'HEAD' is stored. So, let's change this to 'HEAD'.
-        # Correction: Looking at image_21c96d.png, the relationship column actually says 'HEAD' directly.
-        # So, change 'H' to 'HEAD' to match your database.
-
-        context['family_head'] = all_individuals.filter(
-            relationship='HEAD').first()  # Corrected based on DB screenshot
+            relationship='HEAD').first()
 
         # Get recent payments for this family's members
-        # Assuming Payment model has a ForeignKey to Individual, and Individual has a ForeignKey to Family
-        # We want payments related to *any* individual within this family.
         context['family_payments'] = Payment.objects.filter(
             individual__family=family
-            # Get latest 10 payments, adjust as needed
         ).order_by('-date_paid')[:10]
+
+        # Also pass all_individuals to the context for use in the template
+        context['all_individuals'] = all_individuals
 
         return context
 
 
-# --- Family Create View (General) (NO CHANGES HERE) ---
 class FamilyCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Family
     form_class = FamilyForm
@@ -129,7 +109,6 @@ class FamilyCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         return super().form_invalid(form)
 
 
-# --- Family Create View (In Church Context) (NO CHANGES HERE) ---
 class FamilyCreateInChurchView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Family
     form_class = FamilyForm
@@ -165,7 +144,6 @@ class FamilyCreateInChurchView(LoginRequiredMixin, UserPassesTestMixin, CreateVi
         return super().form_invalid(form)
 
 
-# --- Family Update View (NO CHANGES HERE) ---
 class FamilyUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Family
     form_class = FamilyForm
@@ -191,7 +169,6 @@ class FamilyUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         return super().form_invalid(form)
 
 
-# --- Family Delete View (NO CHANGES HERE) ---
 class FamilyDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Family
     template_name = 'family/family_confirm_delete.html'
@@ -207,7 +184,6 @@ class FamilyDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         return super().form_valid(form)
 
 
-# --- NEW: Family List by Church View (NO CHANGES HERE) ---
 class FamilyListInChurchView(LoginRequiredMixin, ListView):
     model = Family
     template_name = 'family/family_list.html'
