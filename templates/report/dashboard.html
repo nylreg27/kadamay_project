@@ -1,193 +1,294 @@
 {% extends "base.html" %}
-{% load static %}
-{% block title %}Dashboard{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto py-6 px-4 bg-base-100 min-h-screen text-base-content"> {# Adjusted padding and changed bg-gray-900 to bg-base-100, text-gray-300 to text-base-content #}
+<div class="container mx-auto p-4 mt-8 lg:mt-4"> {# Adjusted mt for fixed header #}
+    <h1 class="text-3xl font-bold mb-6 text-base-content">{{ title }}</h1>
 
-    <h1 class="text-2xl font-bold mb-4 text-primary flex items-center gap-2"> {# Changed text-3xl to text-2xl, mb-6 to mb-4, text-white to text-primary, gap-3 to gap-2 #}
-        <i data-feather="activity" class="w-6 h-6 text-secondary"></i> Church Dashboard {# Changed w-8 h-8 to w-6 h-6, text-blue-400 to text-secondary #}
-    </h1>
-
-    <hr class="border-base-300 my-4"> {# Replaced "---" with proper hr and adjusted margin #}
-
-    <div class="card bg-base-200 p-4 rounded-lg shadow-md mb-6"> {# Changed bg-gray-800 to bg-base-200, adjusted padding, and shadow #}
-        <form method="get" class="flex flex-col md:flex-row items-center gap-3"> {# Adjusted gap #}
-            <label for="church" class="text-base-content/70 font-semibold flex-shrink-0 text-sm">Filter by Church:</label> {# Changed text-gray-400 to text-base-content/70, added text-sm #}
-            <select name="church" id="church" class="select select-bordered select-sm bg-base-300 border-base-300 rounded-md text-base-content focus:outline-none focus:ring-1 focus:ring-primary flex-grow"> {# Added select-sm, adjusted colors #}
-                <option value="" class="text-base-content">All Churches</option>
-                {% for church in churches %}
-                    <option value="{{ church.id }}" {% if selected_church == church.id|stringformat:"s" %}selected{% endif %} class="text-base-content">{{ church.name }}</option>
+    <div class="mb-6 flex flex-col md:flex-row items-start md:items-center gap-4">
+        <form action="{% url 'report:dashboard' %}" method="get" class="flex flex-col md:flex-row items-start md:items-center gap-2 w-full">
+            <label for="church-select" class="text-lg font-medium whitespace-nowrap">Filter by Church:</label>
+            <select name="church" id="church-select" class="select select-bordered w-full md:w-auto flex-grow" onchange="this.form.submit()">
+                <option value="">All Churches</option>
+                {% for church_obj in churches %}
+                <option value="{{ church_obj.id }}" {% if selected_church|safe == church_obj.id|stringformat:"s" %}selected{% endif %}>
+                    {{ church_obj.name }}
+                </option>
                 {% endfor %}
             </select>
-            <button type="submit" class="btn btn-primary btn-sm px-4 py-2 transition duration-200 ease-in-out transform hover:scale-105"> {# Added btn-sm, adjusted px/py #}
-                <i data-feather="filter" class="w-4 h-4 mr-1"></i> Apply {# Adjusted icon size and mr #}
-            </button>
+            <button type="submit" class="btn btn-primary w-full md:w-auto">Apply Filter</button>
         </form>
     </div>
 
-    <hr class="border-base-300 my-4"> {# Replaced "---" with proper hr and adjusted margin #}
-
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6"> {# Adjusted gaps and margin #}
-        <div class="card bg-base-200 p-4 rounded-lg shadow-md border-t-4 border-blue-500"> {# Changed bg-gray-800 to bg-base-200, adjusted padding, and shadow #}
-            <h2 class="text-xs text-base-content/70 mb-1">Total Members</h2> {# Changed text-sm to text-xs, mb-2 to mb-1 #}
-            <p class="text-3xl font-extrabold text-blue-400">{{ total_members }}</p> {# Changed text-4xl to text-3xl #}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <div class="card bg-primary text-primary-content shadow-md">
+            <div class="card-body items-center text-center">
+                <h2 class="card-title text-xl"><i class="fas fa-church"></i> Total Churches</h2>
+                <p class="text-4xl font-bold">{{ total_churches }}</p>
+            </div>
         </div>
-
-        <div class="card bg-base-200 p-4 rounded-lg shadow-md border-t-4 border-green-500"> {# Same adjustments #}
-            <h2 class="text-xs text-base-content/70 mb-1">Active Members</h2>
-            <p class="text-3xl font-extrabold text-green-400">{{ active_members }}</p>
+        <div class="card bg-success text-success-content shadow-md">
+            <div class="card-body items-center text-center">
+                <h2 class="card-title text-xl"><i class="fas fa-users"></i> Total Families</h2>
+                <p class="text-4xl font-bold">{{ total_families }}</p>
+            </div>
         </div>
-
-        <div class="card bg-base-200 p-4 rounded-lg shadow-md border-t-4 border-purple-500"> {# Same adjustments #}
-            <h2 class="text-xs text-base-content/70 mb-1">Total Families</h2>
-            <p class="text-3xl font-extrabold text-purple-400">{{ total_families }}</p>
+        <div class="card bg-info text-info-content shadow-md">
+            <div class="card-body items-center text-center">
+                <h2 class="card-title text-xl"><i class="fas fa-user-friends"></i> Total Members</h2>
+                <p class="text-4xl font-bold">{{ total_members }}</p>
+            </div>
         </div>
-
-        <div class="card bg-base-200 p-4 rounded-lg shadow-md border-t-4 border-red-500"> {# Same adjustments #}
-            <h2 class="text-xs text-base-content/70 mb-1">Inactive Members <span class="tooltip tooltip-bottom tooltip-xs" data-tip="Includes both inactive (alive) and deceased members."><i data-feather="info" class="inline-block w-2.5 h-2.5 ml-0.5"></i></span></h2> {# Changed text-xs tooltip to tooltip-xs, w-3 h-3 to w-2.5 h-2.5, ml-1 to ml-0.5 #}
-            <p class="text-3xl font-extrabold text-red-400">{{ inactive_alive|add:inactive_deceased }}</p>
+        <div class="card bg-warning text-warning-content shadow-md">
+            <div class="card-body items-center text-center">
+                <h2 class="card-title text-xl"><i class="fas fa-hand-holding-usd"></i> Total Contributions</h2>
+                <p class="text-4xl font-bold">₱ {{ total_payments|floatformat:2 }}</p>
+            </div>
         </div>
     </div>
 
-    <hr class="border-base-300 my-4"> {# Replaced "---" with proper hr and adjusted margin #}
-
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4"> {# Adjusted gap #}
-        <div class="card bg-base-200 p-4 rounded-lg shadow-md"> {# Changed bg-gray-800 to bg-base-200, adjusted padding and shadow #}
-            <h2 class="text-base font-semibold mb-3 text-primary flex items-center gap-2"> {# Changed text-lg to text-base, mb-4 to mb-3, text-white to text-primary #}
-                <i data-feather="trending-up" class="w-5 h-5 text-secondary"></i> Monthly Contributions (₱) {# Changed w-6 h-6 to w-5 h-5, text-blue-400 to text-secondary #}
-            </h2>
-            {% if contributions %}
-                <canvas id="monthlyContributionsChart" height="150"></canvas> {# Reduced height #}
-            {% else %}
-                <div class="flex items-center justify-center h-40 bg-base-300 rounded-lg"> {# Reduced height, changed bg-gray-700 to bg-base-300 #}
-                    <p class="text-base-content/60 text-base">No contribution data available.</p> {# Changed text-gray-500 to text-base-content/60, text-lg to text-base #}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div class="lg:col-span-1">
+            <div class="card bg-base-100 shadow-md h-full">
+                <div class="card-header bg-base-200 text-base-content p-4 font-semibold rounded-t-lg">
+                    Member Status
                 </div>
-            {% endif %}
+                <ul class="menu p-4">
+                    <li>
+                        <div class="flex justify-between items-center px-2 py-1">
+                            <span>Active Members</span>
+                            <span class="badge badge-primary">{{ active_members }}</span>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="flex justify-between items-center px-2 py-1">
+                            <span>Inactive (Alive)</span>
+                            <span class="badge badge-info">{{ inactive_alive }}</span>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="flex justify-between items-center px-2 py-1">
+                            <span>Deceased Members</span>
+                            <span class="badge badge-neutral">{{ inactive_deceased }}</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
         </div>
 
-        <div class="card bg-base-200 p-4 rounded-lg shadow-md"> {# Changed bg-gray-800 to bg-base-200, adjusted padding and shadow #}
-            <h2 class="text-base font-semibold mb-3 text-primary flex items-center gap-2"> {# Changed text-lg to text-base, mb-4 to mb-3, text-white to text-primary #}
-                <i data-feather="users" class="w-5 h-5 text-secondary"></i> Families per Church {# Changed w-6 h-6 to w-5 h-5, text-purple-400 to text-secondary #}
-            </h2>
-            {% if family_counts %}
-                <canvas id="familyChart" height="150"></canvas> {# Reduced height #}
-            {% else %}
-                <div class="flex items-center justify-center h-40 bg-base-300 rounded-lg"> {# Reduced height, changed bg-gray-700 to bg-base-300 #}
-                    <p class="text-base-content/60 text-base">No family data available for churches.</p> {# Changed text-gray-500 to text-base-content/60, text-lg to text-base #}
+        <div class="lg:col-span-2">
+            <div class="card bg-base-100 shadow-md h-full">
+                <div class="card-header bg-base-200 text-base-content p-4 font-semibold rounded-t-lg">
+                    Recent Members Added
                 </div>
-            {% endif %}
+                <div class="card-body">
+                    {% if recent_members %}
+                    <ul class="menu p-4">
+                        {% for member in recent_members %}
+                        <li>
+                            <a href="{% url 'individual:individual_detail' member.pk %}" class="flex justify-between items-center">
+                                <span>{{ member.full_name }}</span>
+                                <span class="badge badge-ghost">{{ member.date_added|date:"M d, Y" }}</span>
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-center text-base-content/70">No recent members to display.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <div class="card bg-base-100 shadow-md h-full">
+            <div class="card-header bg-base-200 text-base-content p-4 font-semibold rounded-t-lg">
+                Families per Church
+            </div>
+            <div class="card-body">
+                <canvas id="familyChart"></canvas>
+                <p class="text-center mt-4 text-base-content/70" id="noFamilyDataMessage" style="display: none;">No family data available for churches.</p>
+            </div>
+        </div>
+        <div class="card bg-base-100 shadow-md h-full">
+            <div class="card-header bg-base-200 text-base-content p-4 font-semibold rounded-t-lg">
+                Monthly Contributions
+            </div>
+            <div class="card-body">
+                <canvas id="monthlyContributionsChart"></canvas>
+                <p class="text-center mt-4 text-base-content/70" id="noContributionsDataMessage" style="display: none;">No contribution data available for the last 12 months.</p>
+            </div>
         </div>
     </div>
 
 </div>
 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-Fo3rlDk+4Wv1I/c6B1vR0l40p/Q6E02n1Jm1q+a5K11s+j6+zQ/g+A/f/2t/W+a1P00P20S1B/g+tQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://unpkg.com/feather-icons"></script>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        feather.replace(); // Initialize Feather Icons
+    // --- Families per Church Chart ---
+    const churchNames = JSON.parse('{{ church_names|safe }}');
+    const familyCounts = JSON.parse('{{ family_counts|safe }}');
 
-        // Monthly Contributions
-        const months = {{ months|safe }};
-        const contributions = {{ contributions|safe }};
+    const familyChartCanvas = document.getElementById("familyChart");
+    const noFamilyDataMessage = document.getElementById("noFamilyDataMessage");
 
-        if (months.length > 0 && contributions.length > 0) {
-            new Chart(document.getElementById("monthlyContributionsChart"), {
-                type: 'line',
-                data: {
-                    labels: months,
-                    datasets: [{
-                        label: '₱ Contributions',
-                        data: contributions,
-                        backgroundColor: 'rgba(59, 130, 246, 0.2)', // blue-500 with opacity
-                        borderColor: '#3B82F6', // blue-500
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.3 // Adds slight curve to line
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false, // Allow height to be controlled by CSS
-                    plugins: {
-                        legend: { labels: { color: '#a0a7af' } }, // Adjusted for base-content/70 in DaisyUI dark themes
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return `₱${context.raw.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-                                }
-                            }
+    if (churchNames.length > 0 && familyCounts.length > 0) {
+        new Chart(familyChartCanvas, {
+            type: 'bar',
+            data: {
+                labels: churchNames,
+                datasets: [{
+                    label: 'Number of Families',
+                    data: familyCounts,
+                    backgroundColor: 'hsl(var(--p))', // DaisyUI primary color
+                    borderColor: 'hsl(var(--p))',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Families',
+                            color: 'hsl(var(--bc))' // base-content color
+                        },
+                        ticks: {
+                            callback: function(value) { if (value % 1 === 0) return value; }, // Show only whole numbers
+                            color: 'hsl(var(--bc))'
+                        },
+                        grid: {
+                            color: 'hsl(var(--b2) / 0.5)' // base-200 with transparency for grid lines
                         }
                     },
-                    scales: {
-                        x: {
-                            ticks: { color: '#a0a7af' }, // Adjusted for base-content/70 in DaisyUI dark themes
-                            grid: { color: '#4a515f', drawBorder: false } // Adjusted for base-300 equivalent in DaisyUI dark themes
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Church',
+                            color: 'hsl(var(--bc))'
                         },
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                color: '#a0a7af', // Adjusted for base-content/70 in DaisyUI dark themes
-                                callback: function(value, index, values) {
-                                    return '₱' + value.toLocaleString();
+                        ticks: {
+                            color: 'hsl(var(--bc))'
+                        },
+                        grid: {
+                            color: 'hsl(var(--b2) / 0.5)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false,
+                        labels: {
+                            color: 'hsl(var(--bc))'
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
                                 }
-                            },
-                            grid: { color: '#4a515f', drawBorder: false } // Adjusted for base-300 equivalent in DaisyUI dark themes
+                                label += context.raw + ' families';
+                                return label;
+                            }
                         }
                     }
                 }
-            });
-        }
+            }
+        });
+        noFamilyDataMessage.style.display = 'none'; // Hide message if graph is shown
+    } else {
+        familyChartCanvas.style.display = 'none'; // Hide canvas if no data
+        noFamilyDataMessage.style.display = 'block'; // Show message if no data
+    }
 
-        // Families per Church
-        const churchNames = {{ church_names|safe }};
-        const familyCounts = {{ family_counts|safe }};
 
-        if (churchNames.length > 0 && familyCounts.length > 0) {
-            new Chart(document.getElementById("familyChart"), {
-                type: 'bar',
-                data: {
-                    labels: churchNames,
-                    datasets: [{
-                        label: 'Family Count',
-                        data: familyCounts,
-                        backgroundColor: '#10B981', // green-500
-                        borderColor: '#059669', // green-600
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false, // Allow height to be controlled by CSS
-                    plugins: {
-                        legend: { labels: { color: '#a0a7af' } }, // Adjusted for base-content/70 in DaisyUI dark themes
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return `${context.raw} Families`;
-                                }
-                            }
+    // --- Monthly Contributions Chart ---
+    const months = JSON.parse('{{ months|safe }}');
+    const contributions = JSON.parse('{{ contributions|safe }}');
+
+    const monthlyContributionsCanvas = document.getElementById("monthlyContributionsChart");
+    const noContributionsDataMessage = document.getElementById("noContributionsDataMessage");
+
+    if (months.length > 0 && contributions.length > 0 && contributions.some(amount => amount > 0)) {
+        new Chart(monthlyContributionsCanvas, {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [{
+                    label: 'Total Contributions (₱)',
+                    data: contributions,
+                    borderColor: 'hsl(var(--a))', // DaisyUI accent color
+                    backgroundColor: 'hsl(var(--a) / 0.2)', // Accent color with transparency
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Amount (₱)',
+                            color: 'hsl(var(--bc))'
+                        },
+                        ticks: {
+                            color: 'hsl(var(--bc))'
+                        },
+                        grid: {
+                            color: 'hsl(var(--b2) / 0.5)'
                         }
                     },
-                    scales: {
-                        x: {
-                            ticks: { color: '#a0a7af' }, // Adjusted for base-content/70 in DaisyUI dark themes
-                            grid: { color: '#4a515f', drawBorder: false } // Adjusted for base-300 equivalent in DaisyUI dark themes
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Month',
+                            color: 'hsl(var(--bc))'
                         },
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                color: '#a0a7af', // Adjusted for base-content/70 in DaisyUI dark themes
-                                precision: 0 // Ensure whole numbers for family counts
-                            },
-                            grid: { color: '#4a515f', drawBorder: false } // Adjusted for base-300 equivalent in DaisyUI dark themes
+                        ticks: {
+                            color: 'hsl(var(--bc))'
+                        },
+                        grid: {
+                            color: 'hsl(var(--b2) / 0.5)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            color: 'hsl(var(--bc))'
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                label += '₱ ' + context.raw.toFixed(2);
+                                return label;
+                            }
                         }
                     }
                 }
-            });
-        }
-    });
+            }
+        });
+        noContributionsDataMessage.style.display = 'none'; // Hide message if graph is shown
+    } else {
+        monthlyContributionsCanvas.style.display = 'none'; // Hide canvas if no data
+        noContributionsDataMessage.style.display = 'block'; // Show message if no data
+    }
 </script>
-{% endblock %}
+{% endblock content %}
