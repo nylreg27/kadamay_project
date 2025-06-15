@@ -1,170 +1,328 @@
-{# family_list.html #}
 {% extends 'base.html' %}
 
-{% block title %}Families - Kadamay Mortuary System{% endblock %}
+{% block title %}Family List - Kadamay Mortuary System{% endblock %}
 
 {% block content %}
-<div class="card bg-base-100 shadow-xl p-4 md:p-6 text-base-content rounded-xl my-4 mx-auto max-w-7xl"> {# Adjusted padding and margin #}
-    <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-3"> {# Adjusted margin and gap #}
-        <h1 class="text-2xl font-extrabold text-primary">Families</h1> {# Changed text-3xl to text-2xl #}
+<div class="card bg-base-100 shadow-xl p-4 md:p-6 text-base-content rounded-xl my-4 mx-auto max-w-6xl">
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-3">
+        <h1 class="text-2xl font-extrabold text-primary">Families</h1>
         
-        <div class="flex flex-col md:flex-row items-stretch md:items-center gap-2 w-full md:w-auto"> {# Adjusted gap #}
-            <form method="get" class="flex flex-grow md:flex-grow-0">
-                <input 
-                    type="text" 
-                    name="search" 
-                    placeholder="Search families..." 
-                    value="{{ request.GET.search }}" 
-                    class="input input-bordered input-sm w-full rounded-r-none" {# Added input-sm #}
+        <div class="flex flex-col md:flex-row items-stretch md:items-center gap-2 w-full md:w-auto">
+            <form action="{% url 'family:family_list' %}" method="GET" class="flex flex-grow md:flex-grow-0" id="searchForm">
+                <input
+                    type="text"
+                    name="search"
+                    placeholder="Search families..."
+                    value="{{ request.GET.search }}"
+                    class="input input-bordered input-sm w-full rounded-r-none"
+                    id="searchInput"
                     aria-label="Search families"
+                />
+                <button
+                    type="submit"
+                    class="btn btn-primary btn-sm rounded-l-none"
+                    aria-label="Submit search"
                 >
-                <button 
-                    type="submit" 
-                    class="btn btn-primary btn-sm rounded-l-none" {# Added btn-sm #}
-                    aria-label="Search"
-                >
-                    <i data-feather="search" class="w-4 h-4"></i> {# Reduced icon size #}
+                    <i data-feather="search" class="w-4 h-4"></i>
                 </button>
             </form>
             
-            {# NEW: Refresh Button #}
-            {# Check if any search or filter is active to conditionally show the refresh button #}
-            {% if request.GET.search or request.GET.church %}
-            <a href="{% url 'family:family_list' %}" class="btn btn-ghost btn-sm tooltip tooltip-bottom" data-tip="Clear Search & Filters"> {# Added btn-sm, tooltip-bottom #}
-                <i data-feather="refresh-cw" class="w-4 h-4"></i> {# Reduced icon size #}
+            {% if request.GET.search %}
+            <a href="{% url 'family:family_list' %}"
+               class="btn btn-outline btn-primary btn-sm flex items-center gap-2 tooltip tooltip-bottom" {# Updated classes here #}
+               data-tip="Clear Search"
+               aria-label="Clear search and refresh list"
+            >
+                <i data-feather="refresh-cw" class="w-4 h-4"></i> Refresh {# Added text #}
             </a>
             {% endif %}
 
-            <a href="{% url 'family:family_create' %}" class="btn btn-primary btn-sm w-full md:w-auto flex items-center gap-2 transition-all duration-300 hover:scale-105"> {# Added btn-sm #}
-                <i data-feather="plus" class="w-4 h-4"></i> Add Family {# Reduced icon size #}
+            {% if user.is_superuser %}
+            <a href="{% url 'family:family_create' %}"
+               class="btn btn-primary btn-sm w-full md:w-auto flex items-center gap-2 transition-all duration-300 hover:scale-105"
+               aria-label="Add new family"
+            >
+              <i data-feather="plus" class="w-4 h-4"></i> Add Family
             </a>
+            {% endif %}
         </div>
     </header>
-    
-    <div class="mb-4 flex flex-col md:flex-row items-start md:items-center gap-2"> {# Adjusted margin and gap #}
-        <label for="church-filter" class="text-base-content/70 text-xs font-semibold">Filter by Church:</label> {# Changed text-sm to text-xs #}
-        <select 
-            id="church-filter" 
-            class="select select-bordered select-sm w-full max-w-xs" {# Added select-sm #}
-            aria-label="Filter by Church"
-        >
-            <option value="">All Churches</option>
-            {% for church in churches %}
-            <option value="{{ church.id }}" {% if request.GET.church == church.id|stringformat:"s" %}selected{% endif %}>{{ church.name }}</option>
+
+    {% if messages %}
+        <div class="mb-4">
+            {% for message in messages %}
+                <div class="alert 
+                    {% if message.tags == 'success' %}alert-success
+                    {% elif message.tags == 'warning' %}alert-warning
+                    {% elif message.tags == 'error' %}alert-error
+                    {% else %}alert-info
+                    {% endif %} shadow-lg mb-2">
+                    <div>
+                        <i data-feather="info" class="w-6 h-6"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                </div>
             {% endfor %}
-        </select>
-    </div>
-    
-    {% if families %}
-    <div class="overflow-x-auto rounded-lg shadow-md border border-base-300">
-        <table class="table table-zebra table-sm w-full"> {# Added table-sm for compact table #}
-            <thead class="bg-base-200">
-                <tr>
-                    <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Family Name</th> {# Adjusted px/py and text-xs #}
-                    <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Church</th> {# Adjusted px/py and text-xs #}
-                    <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Address</th> {# Adjusted px/py and text-xs #}
-                    <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Members</th> {# Adjusted px/py and text-xs #}
-                    <th scope="col" class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Status</th> {# Adjusted px/py and text-xs #}
-                    <th scope="col" class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Actions</th> {# Adjusted px/py and text-xs #}
-                </tr>
-            </thead>
-            <tbody class="bg-base-100">
-                {% for family in families %}
-                <tr class="hover:bg-base-200 transition-colors duration-200">
-                    <td class="px-4 py-2 whitespace-nowrap text-sm"> {# Adjusted px/py, added text-sm #}
-                        <a href="{% url 'family:family_detail' family.id %}" class="link link-primary font-semibold">{{ family.family_name|upper }}</a>
-                    </td>
-                    <td class="px-4 py-2 whitespace-nowrap text-sm"> {# Adjusted px/py, added text-sm #}
-                        <a href="{% url 'church:church_detail' family.church.id %}" class="link link-primary font-semibold">{{ family.church.name|upper }}</a>
-                    </td>
-                    <td class="px-4 py-2 text-base-content text-sm">{{ family.address|truncatechars:30|upper }}</td> {# Adjusted px/py, text-sm, reduced truncatechars #}
-                    <td class="px-4 py-2 whitespace-nowrap text-base-content font-medium text-sm">{{ family.individual_count }}</td> {# <-- UPDATED LINE HERE #}
-                    <td class="px-4 py-2 whitespace-nowrap"> {# Adjusted px/py #}
-                        {% if family.is_active %}
-                        <span class="badge badge-success badge-sm font-semibold">Active</span> {# Changed badge-lg to badge-sm #}
-                        {% else %}
-                        <span class="badge badge-error badge-sm font-semibold">Inactive</span> {# Changed badge-lg to badge-sm #}
-                        {% endif %}
-                    </td>
-                    <td class="px-4 py-2 whitespace-nowrap text-sm font-medium flex space-x-1"> {# Adjusted px/py and space-x #}
-                        <a href="{% url 'family:family_detail' family.id %}" class="btn btn-ghost btn-xs text-info tooltip tooltip-bottom" data-tip="View Family"> {# Added tooltip-bottom #}
-                            <i data-feather="eye" class="w-3.5 h-3.5"></i> {# Reduced icon size #}
-                        </a>
-                        <a href="{% url 'family:family_update' family.id %}" class="btn btn-ghost btn-xs text-warning tooltip tooltip-bottom" data-tip="Edit Family"> {# Added tooltip-bottom #}
-                            <i data-feather="edit" class="w-3.5 h-3.5"></i> {# Reduced icon size #}
-                        </a>
-                        <a href="{% url 'family:family_delete' family.id %}" class="btn btn-ghost btn-xs text-error tooltip tooltip-bottom" data-tip="Delete Family"> {# Added tooltip-bottom #}
-                            <i data-feather="trash-2" class="w-3.5 h-3.5"></i> {# Reduced icon size #}
-                        </a>
-                        <a href="{% url 'individual:family_individual_create' family.id %}" class="btn btn-ghost btn-xs text-success tooltip tooltip-bottom" data-tip="Add Member"> {# Added tooltip-bottom #}
-                            <i data-feather="user-plus" class="w-3.5 h-3.5"></i> {# Reduced icon size #}
-                        </a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-    {% if is_paginated %}
-    <div class="flex justify-center mt-4"> {# Adjusted margin #}
-        <div class="join">
-            {% if page_obj.has_previous %}
-            <a href="{% url 'family:family_list' %}?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.church %}&church={{ request.GET.church }}{% endif %}" class="join-item btn btn-sm">First</a> {# Changed btn-md to btn-sm #}
-            <a href="{% url 'family:family_list' %}?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.church %}&church={{ request.GET.church }}{% endif %}" class="join-item btn btn-sm">«</a> {# Changed btn-md to btn-sm #}
-            {% endif %}
-
-            <button class="join-item btn btn-sm btn-active">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</button> {# Changed btn-md to btn-sm #}
-
-            {% if page_obj.has_next %}
-            <a href="{% url 'family:family_list' %}?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.church %}&church={{ request.GET.church }}{% endif %}" class="join-item btn btn-sm">»</a> {# Changed btn-md to btn-sm #}
-            <a href="{% url 'family:family_list' %}?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.church %}&church={{ request.GET.church }}{% endif %}" class="join-item btn btn-sm">Last</a> {# Changed btn-md to btn-sm #}
-            {% endif %}
         </div>
-    </div>
     {% endif %}
 
-    {% else %}
-    <div class="hero bg-base-200 rounded-lg p-6 text-center shadow-md"> {# Adjusted padding and shadow #}
-        <div class="hero-content flex flex-col items-center">
-            <i data-feather="folder-open" class="w-16 h-16 text-base-content/50 mb-3"></i> {# Reduced icon size, adjusted mb #}
-            <p class="text-lg font-bold mb-3 text-base-content">No families found matching your criteria.</p> {# Changed text-xl to text-lg, mb-4 to mb-3 #}
-            <a href="{% url 'family:family_create' %}" class="btn btn-primary btn-sm flex items-center gap-2 transition-all duration-300 hover:scale-105"> {# Added btn-sm #}
-                <i data-feather="plus" class="w-4 h-4"></i> Add New Family {# Reduced icon size #}
-            </a>
-        </div>
+    <div class="flex gap-2 mb-4">
+        <a href="#" id="viewFamilyBtn" class="btn btn-info btn-square tooltip btn-sm" data-tip="View Selected" aria-label="View selected family" disabled>
+            <i data-feather="eye" class="w-4 h-4"></i>
+        </a>
+        {% if user.is_superuser %}
+        <a href="#" id="editFamilyBtn" class="btn btn-warning btn-square tooltip btn-sm" data-tip="Edit Selected" aria-label="Edit selected family" disabled>
+            <i data-feather="edit" class="w-4 h-4"></i>
+        </a>
+        <a href="#" id="deleteFamilyBtn" class="btn btn-error btn-square tooltip btn-sm" data-tip="Delete Selected" aria-label="Delete selected family" disabled>
+            <i data-feather="trash-2" class="w-4 h-4"></i>
+        </a>
+        {% endif %}
     </div>
+
+    {% if families %}
+        <div class="hidden md:block overflow-x-auto rounded-lg shadow-md border border-base-300">
+            <table class="table table-zebra w-full table-sm">
+                <thead>
+                    <tr>
+                        <th class="w-8"></th>
+                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Family Name</th>
+                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Head of Family</th>
+                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Church</th>
+                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Address</th>
+                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Contact Number</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for family in families %}
+                    <tr class="hover:bg-base-200 cursor-pointer" data-family-id="{{ family.id }}">
+                        <td class="w-8">
+                            <label class="label cursor-pointer justify-center p-0">
+                                <input type="checkbox" name="selected_family" value="{{ family.id }}" class="checkbox checkbox-primary checkbox-xs family-checkbox" />
+                            </label>
+                        </td>
+                        <td class="whitespace-nowrap text-xs">
+                            <a href="{% url 'family:family_detail' family.id %}" class="link link-hover link-primary font-medium">
+                                {{ family.family_name|upper }}
+                            </a>
+                        </td>
+                        <td class="whitespace-nowrap text-xs">
+                            {% if family.head_of_family %}
+                                <a href="{% url 'individual:individual_detail' family.head_of_family.id %}" class="link link-hover link-secondary">
+                                    {{ family.head_of_family.surname|upper }}, {{ family.head_of_family.given_name|upper }}
+                                </a>
+                            {% else %}
+                                <span class="italic text-base-content/60">- None -</span>
+                            {% endif %}
+                        </td>
+                        <td class="whitespace-nowrap text-xs">
+                            {% if family.church %}
+                                <a href="{% url 'church:church_detail' family.church.id %}" class="link link-hover link-accent">
+                                    {{ family.church.name|upper }}
+                                </a>
+                            {% else %}
+                                <span class="italic text-base-content/60">- No Church -</span>
+                            {% endif %}
+                        </td>
+                        <td class="whitespace-nowrap text-xs">{{ family.address|default:"N/A" }}</td>
+                        <td class="whitespace-nowrap text-xs">{{ family.contact_number|default:"N/A" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {# Mobile View (Updated for selection) #}
+        <div class="md:hidden space-y-3">
+            <div class="flex gap-2 mb-4">
+                <a href="#" id="viewFamilyBtnMobile" class="btn btn-info btn-square tooltip btn-sm" data-tip="View Selected" aria-label="View selected family" disabled>
+                    <i data-feather="eye" class="w-4 h-4"></i>
+                </a>
+                {% if user.is_superuser %}
+                <a href="#" id="editFamilyBtnMobile" class="btn btn-warning btn-square tooltip btn-sm" data-tip="Edit Selected" aria-label="Edit selected family" disabled>
+                    <i data-feather="edit" class="w-4 h-4"></i>
+                </a>
+                <a href="#" id="deleteFamilyBtnMobile" class="btn btn-error btn-square tooltip btn-sm" data-tip="Delete Selected" aria-label="Delete selected family" disabled>
+                    <i data-feather="trash-2" class="w-4 h-4"></i>
+                </a>
+                {% endif %}
+            </div>
+            {% for family in families %}
+            <div class="card bg-base-100 shadow-md rounded-lg p-3 flex items-center">
+                <label class="label cursor-pointer justify-center p-0 mr-3">
+                    <input type="checkbox" name="selected_family" value="{{ family.id }}" class="checkbox checkbox-primary checkbox-xs family-checkbox" />
+                </label>
+                <div class="flex-grow">
+                    <h2 class="text-base font-semibold text-primary mb-1">
+                        <a href="{% url 'family:family_detail' family.id %}" class="link link-hover">
+                            {{ family.family_name|upper }}
+                        </a>
+                    </h2>
+                    <div class="text-xs text-base-content/80 space-y-0.5">
+                        <p><strong>Head:</strong> 
+                            {% if family.head_of_family %}
+                            <a href="{% url 'individual:individual_detail' family.head_of_family.id %}" class="link link-hover link-secondary">
+                                {{ family.head_of_family.surname|upper }}, {{ family.head_of_family.given_name|upper }}
+                            </a>
+                            {% else %}
+                            <span class="italic text-base-content/60">- None -</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Church:</strong>
+                            {% if family.church %}
+                                <a href="{% url 'church:church_detail' family.church.id %}" class="link link-hover link-accent">
+                                    {{ family.church.name|upper }}
+                                </a>
+                            {% else %}
+                                <span class="italic text-base-content/60">- No Church -</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Address:</strong> {{ family.address|default:"N/A" }}</p>
+                        <p><strong>Contact:</strong> {{ family.contact_number|default:"N/A" }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if is_paginated %}
+        <div class="flex justify-center mt-4">
+            <div class="join join-sm">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="join-item btn btn-sm">«</a>
+                {% else %}
+                <button class="join-item btn btn-sm btn-disabled">«</button>
+                {% endif %}
+
+                <button class="join-item btn btn-sm">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</button>
+
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="join-item btn btn-sm">»</a>
+                {% else %}
+                <button class="join-item btn btn-sm btn-disabled">»</button>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+    {% else %}
+        <div class="hero bg-base-200 rounded-lg p-8 text-center shadow-lg border border-base-300">
+            <div class="hero-content flex flex-col items-center">
+                <i data-feather="users" class="w-16 h-16 text-base-content/50 mb-4"></i>
+                <p class="text-lg font-bold mb-2 text-base-content">No families found.</p>
+                <p class="text-sm text-base-content/80 mb-4">It looks like there are no families in the system yet. You can add one by clicking the button below.</p>
+                {% if user.is_superuser %}
+                <a href="{% url 'family:family_create' %}" class="btn btn-primary flex items-center gap-2 btn-sm">
+                    <i data-feather="plus" class="w-4 h-4"></i> Add First Family
+                </a>
+                {% endif %}
+            </div>
+        </div>
     {% endif %}
 </div>
 {% endblock %}
 
 {% block extra_js %}
+{{ block.super }}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         feather.replace();
 
-        // FIX FOR "Filter by Church"
-        const churchFilter = document.getElementById('church-filter');
-        if (churchFilter) {
-            churchFilter.addEventListener('change', function() {
-                const selectedChurchId = this.value;
-                const url = new URL(window.location.href);
-                
-                // Clear existing 'page' parameter if changing filter/search
-                url.searchParams.delete('page');
+        const searchInput = document.getElementById('searchInput');
+        const searchForm = document.getElementById('searchForm');
 
-                if (selectedChurchId) {
-                    url.searchParams.set('church', selectedChurchId);
-                } else {
-                    url.searchParams.delete('church'); // Remove parameter if "All Churches" is selected
+        if (searchInput && searchForm) {
+            searchInput.addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    searchForm.submit();
                 }
-
-                // Preserve existing search term if any (already handled by Django's template rendering, but good practice for client-side JS)
-                // const currentSearch = url.searchParams.get('search'); // No need to re-add, it's already there or not.
-
-                window.location.href = url.toString();
             });
         }
+
+        // --- Handle Row Selection for Action Buttons ---
+        const checkboxes = document.querySelectorAll('.family-checkbox');
+        
+        // Desktop Buttons
+        const viewBtn = document.getElementById('viewFamilyBtn');
+        const editBtn = document.getElementById('editFamilyBtn');
+        const deleteBtn = document.getElementById('deleteFamilyBtn');
+
+        // Mobile Buttons
+        const viewBtnMobile = document.getElementById('viewFamilyBtnMobile');
+        const editBtnMobile = document.getElementById('editFamilyBtnMobile');
+        const deleteBtnMobile = document.getElementById('deleteFamilyBtnMobile');
+
+        function updateActionButtons() {
+            const checkedBoxes = document.querySelectorAll('.family-checkbox:checked');
+            const selectedFamilyId = checkedBoxes.length === 1 ? checkedBoxes[0].value : null;
+
+            const viewUrl = selectedFamilyId ? `{% url 'family:family_detail' 0 %}`.replace('0', selectedFamilyId) : '#';
+            const editUrl = selectedFamilyId ? `{% url 'family:family_update' 0 %}`.replace('0', selectedFamilyId) : '#';
+            const deleteUrl = selectedFamilyId ? `{% url 'family:family_delete' 0 %}`.replace('0', selectedFamilyId) : '#';
+
+            function applyButtonState(viewB, editB, deleteB, isSuperuser) {
+                if (viewB) {
+                    if (selectedFamilyId) {
+                        viewB.removeAttribute('disabled');
+                        viewB.href = viewUrl;
+                        
+                        if (isSuperuser) {
+                            if (editB) { editB.removeAttribute('disabled'); editB.href = editUrl; }
+                            if (deleteB) { deleteB.removeAttribute('disabled'); deleteB.href = deleteUrl; }
+                        }
+                    } else {
+                        viewB.setAttribute('disabled', 'disabled');
+                        viewB.href = '#';
+                        
+                        if (isSuperuser) {
+                            if (editB) { editB.setAttribute('disabled', 'disabled'); editB.href = '#'; }
+                            if (deleteB) { deleteB.setAttribute('disabled', 'disabled'); deleteB.href = '#'; }
+                        }
+                    }
+                }
+            }
+
+            applyButtonState(viewBtn, editBtn, deleteBtn, {% if user.is_superuser %}true{% else %}false{% endif %});
+            applyButtonState(viewBtnMobile, editBtnMobile, deleteBtnMobile, {% if user.is_superuser %}true{% else %}false{% endif %});
+        }
+
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    checkboxes.forEach(otherCheckbox => {
+                        if (otherCheckbox !== this) {
+                            otherCheckbox.checked = false;
+                        }
+                    });
+                }
+                updateActionButtons();
+            });
+        });
+
+        const tableRows = document.querySelectorAll('tbody tr');
+        tableRows.forEach(row => {
+            row.addEventListener('click', function(event) {
+                if (event.target.tagName === 'INPUT' || event.target.tagName === 'A' || event.target.closest('a') || event.target.closest('label')) {
+                    return; 
+                }
+
+                const checkbox = this.querySelector('.family-checkbox');
+                if (checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    if (checkbox.checked) {
+                        checkboxes.forEach(otherCheckbox => {
+                            if (otherCheckbox !== checkbox) {
+                                otherCheckbox.checked = false;
+                            }
+                        });
+                    }
+                    updateActionButtons();
+                }
+            });
+        });
+
+        updateActionButtons();
     });
 </script>
 {% endblock %}

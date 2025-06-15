@@ -1,48 +1,53 @@
-{# apps/church/templates/church/church_list.html #}
 {% extends 'base.html' %}
 
-{% block title %}Churches — Kadamay Mortuary System{% endblock %}
+{% block title %}Church List - Kadamay Mortuary System{% endblock %}
 
 {% block content %}
-{# Reduced max-w from 7xl to 6xl and slightly reduced vertical margin #}
-<div class="card bg-base-100 shadow-xl p-4 md:p-6 text-base-content rounded-xl my-4 mx-auto max-w-6xl"> 
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6"> {# Reduced gap and bottom margin #}
-        <div>
-            {# Slightly smaller title #}
-            <h1 class="text-2xl font-extrabold text-primary">List of Churches</h1> 
-            {# Reduced margin-top for subtitle #}
-            <p class="text-base-content/70 mt-0.5">Manage all registered churches in the system.</p> 
-        </div>
-        <div class="flex flex-wrap justify-end items-center gap-2"> {# Reduced gap #}
-            <form method="get" class="flex items-center" action="{% url 'church:church_list' %}"> {# Added action attribute #}
-                {# Slightly smaller input width #}
-                <input type="text" name="search" placeholder="Search churches..." value="{{ request.GET.search }}"
-                       class="input input-bordered w-40 md:w-56 rounded-r-none uppercase text-sm transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
-                <button type="submit"
-                        class="btn btn-primary btn-sm rounded-l-none transition-all duration-300 hover:scale-105"> {# Added btn-sm #}
-                    <i data-feather="search" class="w-4 h-4"></i> {# Reduced icon size #}
+<div class="card bg-base-100 shadow-xl p-4 md:p-6 text-base-content rounded-xl my-4 mx-auto max-w-6xl">
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-3">
+        <h1 class="text-2xl font-extrabold text-primary">Churches</h1>
+        
+        <div class="flex flex-col md:flex-row items-stretch md:items-center gap-2 w-full md:w-auto">
+            <form action="{% url 'church:church_list' %}" method="GET" class="flex flex-grow md:flex-grow-0" id="searchForm">
+                <input
+                    type="text"
+                    name="search"
+                    placeholder="Search churches..."
+                    value="{{ request.GET.search }}"
+                    class="input input-bordered input-sm w-full rounded-r-none"
+                    id="searchInput"
+                    aria-label="Search churches"
+                />
+                <button
+                    type="submit"
+                    class="btn btn-primary btn-sm rounded-l-none"
+                    aria-label="Submit search"
+                >
+                    <i data-feather="search" class="w-4 h-4"></i>
                 </button>
             </form>
-
-            {# REFRESH BUTTON ADDED HERE #}
-            {# Using <a> tag styled as a button with DaisyUI classes for consistency #}
+            
+            {% if request.GET.search %}
             <a href="{% url 'church:church_list' %}"
-               class="btn btn-outline btn-sm flex items-center gap-1 transition-all duration-300 hover:scale-105">
-                <i data-feather="refresh-cw" class="w-4 h-4"></i> {# Using refresh icon #}
-                <span>Refresh</span>
+               class="btn btn-outline btn-primary btn-sm flex items-center gap-2 tooltip tooltip-bottom" {# Updated classes here #}
+               data-tip="Clear Search"
+               aria-label="Clear search and refresh list"
+            >
+                <i data-feather="refresh-cw" class="w-4 h-4"></i> Refresh {# Added text #}
             </a>
+            {% endif %}
 
             {% if user.is_superuser %}
             <a href="{% url 'church:church_create' %}"
-               class="btn btn-success btn-sm flex items-center gap-1 transition-all duration-300 hover:scale-105"> {# Added btn-sm, reduced gap #}
-                <i data-feather="plus-circle" class="w-4 h-4"></i> {# Reduced icon size #}
-                <span>Add Church</span>
+               class="btn btn-primary btn-sm w-full md:w-auto flex items-center gap-2 transition-all duration-300 hover:scale-105"
+               aria-label="Add new church"
+            >
+              <i data-feather="plus" class="w-4 h-4"></i> Add Church
             </a>
             {% endif %}
         </div>
-    </div>
+    </header>
 
-    {# Messages from Django messages framework #}
     {% if messages %}
         <div class="mb-4">
             {% for message in messages %}
@@ -53,7 +58,7 @@
                     {% else %}alert-info
                     {% endif %} shadow-lg mb-2">
                     <div>
-                        <i data-feather="info" class="w-6 h-6"></i> {# Default icon, adjust based on message type #}
+                        <i data-feather="info" class="w-6 h-6"></i>
                         <span>{{ message }}</span>
                     </div>
                 </div>
@@ -61,174 +66,123 @@
         </div>
     {% endif %}
 
-    {% if churches %}
-    {# Added table-sm for default compact table, reduced overall padding in cells #}
-    <div class="hidden md:block overflow-x-auto rounded-lg shadow-md border border-base-300"> 
-        <table class="table table-sm w-full"> 
-            <thead class="bg-primary text-primary-content">
-                <tr>
-                    <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider">Name</th> {# Reduced padding and font size #}
-                    <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider">Address</th>
-                    <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider">District</th>
-                    <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider">In-Charge</th>
-                    <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider">Status</th>
-                    <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for church in churches %}
-                <tr class="border-b border-base-200 hover:bg-base-200 transition-colors duration-200">
-                    <td class="px-4 py-2 whitespace-nowrap"> {# Reduced padding #}
-                        <a href="{% url 'church:church_detail' church.id %}"
-                           class="link link-hover link-primary font-medium text-sm"> {# Reduced font size #}
-                            {{ church.name|upper }}
-                        </a>
-                    </td>
-                    <td class="px-4 py-2 text-xs">{{ church.address|truncatechars:30|upper }}</td> {# Reduced truncate and font size #}
-                    <td class="px-4 py-2 text-xs">{{ church.district.name|default:"N/A"|upper }}</td> {# Reduced font size #}
-                    <td class="px-4 py-2 text-xs">
-                        {% if church.in_charge %}
-                            {{ church.in_charge.first_name|default:'' }} {{ church.in_charge.last_name|default:'' }}
-                            {% if not church.in_charge.first_name and not church.in_charge.last_name %}
-                                ({{ church.in_charge.username|upper }})
-                            {% endif %}
-                        {% else %}
-                            N/A
-                        {% endif %}
-                    </td>
-                    <td class="px-4 py-2"> {# Reduced padding #}
-                        <span class="badge
-                                     {% if church.is_active %}badge-success{% else %}badge-error{% endif %} badge-md font-semibold"> {# Reduced badge size to md #}
-                            {% if church.is_active %}ACTIVE{% else %}INACTIVE{% endif %}
-                        </span>
-                    </td>
-                    <td class="px-4 py-2 whitespace-nowrap"> {# Reduced padding #}
-                        <div class="flex gap-1"> {# Reduced gap for action buttons #}
-                            <a href="{% url 'church:church_detail' church.id %}"
-                               class="btn btn-xs btn-info btn-square tooltip" data-tip="View Details"> {# Changed to btn-xs #}
-                                <i data-feather="eye" class="w-4 h-4"></i> {# Reduced icon size #}
-                            </a>
-                            {% if user.is_superuser %}
-                            <a href="{% url 'church:church_update' church.id %}"
-                               class="btn btn-xs btn-warning btn-square tooltip" data-tip="Edit Church"> {# Changed to btn-xs #}
-                                <i data-feather="edit" class="w-4 h-4"></i> {# Reduced icon size #}
-                            </a>
-                            <a href="{% url 'church:church_delete' church.id %}"
-                               class="btn btn-xs btn-error btn-square tooltip" data-tip="Delete Church"> {# Changed to btn-xs #}
-                                <i data-feather="trash-2" class="w-4 h-4"></i> {# Reduced icon size #}
-                            </a>
-                            {% endif %}
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="flex gap-2 mb-4">
+        <a href="#" id="viewChurchBtn" class="btn btn-info btn-square tooltip btn-sm" data-tip="View Selected" aria-label="View selected church" disabled>
+            <i data-feather="eye" class="w-4 h-4"></i>
+        </a>
+        {% if user.is_superuser %}
+        <a href="#" id="editChurchBtn" class="btn btn-warning btn-square tooltip btn-sm" data-tip="Edit Selected" aria-label="Edit selected church" disabled>
+            <i data-feather="edit" class="w-4 h-4"></i>
+        </a>
+        <a href="#" id="deleteChurchBtn" class="btn btn-error btn-square tooltip btn-sm" data-tip="Delete Selected" aria-label="Delete selected church" disabled>
+            <i data-feather="trash-2" class="w-4 h-4"></i>
+        </a>
+        {% endif %}
     </div>
 
-    {# Mobile view cards #}
-    <div class="md:hidden space-y-3"> {# Reduced space-y #}
-        {% for church in churches %}
-        <div class="card bg-base-200 shadow-lg p-4 rounded-lg border border-base-300"> {# Reduced padding #}
-            <div class="flex justify-between items-start mb-2"> {# Reduced bottom margin #}
-                <h2 class="text-lg font-bold text-primary"> {# Reduced font size #}
-                    <a href="{% url 'church:church_detail' church.id %}" class="link link-hover">
-                        {{ church.name|upper }}
-                    </a>
-                </h2>
-                <span class="badge
-                             {% if church.is_active %}badge-success{% else %}badge-error{% endif %} badge-md font-semibold"> {# Reduced badge size #}
-                    {% if church.is_active %}ACTIVE{% else %}INACTIVE{% endif %}
-                </span>
-            </div>
+    {% if churches %}
+        <div class="hidden md:block overflow-x-auto rounded-lg shadow-md border border-base-300">
+            <table class="table table-zebra w-full table-sm">
+                <thead>
+                    <tr>
+                        <th class="w-8"></th>
+                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Church Name</th>
+                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Address</th>
+                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Contact Number</th>
+                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Email</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for church in churches %}
+                    <tr class="hover:bg-base-200 cursor-pointer" data-church-id="{{ church.id }}">
+                        <td class="w-8">
+                            <label class="label cursor-pointer justify-center p-0">
+                                <input type="checkbox" name="selected_church" value="{{ church.id }}" class="checkbox checkbox-primary checkbox-xs church-checkbox" />
+                            </label>
+                        </td>
+                        <td class="whitespace-nowrap text-xs">
+                            <a href="{% url 'church:church_detail' church.id %}" class="link link-hover link-primary font-medium">
+                                {{ church.name|upper }}
+                            </a>
+                        </td>
+                        <td class="whitespace-nowrap text-xs">{{ church.address|default:"N/A" }}</td>
+                        <td class="whitespace-nowrap text-xs">{{ church.contact_number|default:"N/A" }}</td>
+                        <td class="whitespace-nowrap text-xs">{{ church.email|default:"N/A" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
-            <div class="space-y-1 text-sm"> {# Reduced spacing and text size #}
-                <p>
-                    <span class="font-medium text-base-content/80">Address:</span> {{ church.address|truncatechars:40|upper }} {# Reduced truncate #}
-                </p>
-                <p>
-                    <span class="font-medium text-base-content/80">District:</span> {{ church.district.name|default:"N/A"|upper }}
-                </p>
-                <p>
-                    <span class="font-medium text-base-content/80">In-Charge:</span> 
-                    {% if church.in_charge %}
-                        {{ church.in_charge.first_name|default:'' }} {{ church.in_charge.last_name|default:'' }}
-                        {% if not church.in_charge.first_name and not church.in_charge.last_name %}
-                            ({{ church.in_charge.username|upper }})
-                        {% endif %}
-                    {% else %}
-                        N/A
-                    {% endif %}
-                </p>
-            </div>
-
-            <div class="card-actions justify-end mt-3"> {# Reduced top margin #}
-                <a href="{% url 'church:church_detail' church.id %}"
-                   class="btn btn-sm btn-info"> {# btn-sm for mobile #}
-                    <i data-feather="eye" class="w-4 h-4"></i> View
+        {# Mobile View (Updated for selection) #}
+        <div class="md:hidden space-y-3">
+            <div class="flex gap-2 mb-4">
+                <a href="#" id="viewChurchBtnMobile" class="btn btn-info btn-square tooltip btn-sm" data-tip="View Selected" aria-label="View selected church" disabled>
+                    <i data-feather="eye" class="w-4 h-4"></i>
                 </a>
                 {% if user.is_superuser %}
-                <a href="{% url 'church:church_update' church.id %}"
-                   class="btn btn-sm btn-warning"> {# btn-sm for mobile #}
-                    <i data-feather="edit" class="w-4 h-4"></i> Edit
+                <a href="#" id="editChurchBtnMobile" class="btn btn-warning btn-square tooltip btn-sm" data-tip="Edit Selected" aria-label="Edit selected church" disabled>
+                    <i data-feather="edit" class="w-4 h-4"></i>
                 </a>
-                <a href="{% url 'church:church_delete' church.id %}"
-                   class="btn btn-sm btn-error"> {# btn-sm for mobile #}
-                    <i data-feather="trash-2" class="w-4 h-4"></i> Delete
+                <a href="#" id="deleteChurchBtnMobile" class="btn btn-error btn-square tooltip btn-sm" data-tip="Delete Selected" aria-label="Delete selected church" disabled>
+                    <i data-feather="trash-2" class="w-4 h-4"></i>
+                </a>
+                {% endif %}
+            </div>
+            {% for church in churches %}
+            <div class="card bg-base-100 shadow-md rounded-lg p-3 flex items-center">
+                <label class="label cursor-pointer justify-center p-0 mr-3">
+                    <input type="checkbox" name="selected_church" value="{{ church.id }}" class="checkbox checkbox-primary checkbox-xs church-checkbox" />
+                </label>
+                <div class="flex-grow">
+                    <h2 class="text-base font-semibold text-primary mb-1">
+                        <a href="{% url 'church:church_detail' church.id %}" class="link link-hover">
+                            {{ church.name|upper }}
+                        </a>
+                    </h2>
+                    <div class="text-xs text-base-content/80 space-y-0.5">
+                        <p><strong>Address:</strong> {{ church.address|default:"N/A" }}</p>
+                        <p><strong>Contact:</strong> {{ church.contact_number|default:"N/A" }}</p>
+                        <p><strong>Email:</strong> {{ church.email|default:"N/A" }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if is_paginated %}
+        <div class="flex justify-center mt-4">
+            <div class="join join-sm">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="join-item btn btn-sm">«</a>
+                {% else %}
+                <button class="join-item btn btn-sm btn-disabled">«</button>
+                {% endif %}
+
+                <button class="join-item btn btn-sm">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</button>
+
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="join-item btn btn-sm">»</a>
+                {% else %}
+                <button class="join-item btn btn-sm btn-disabled">»</button>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+    {% else %}
+        <div class="hero bg-base-200 rounded-lg p-8 text-center shadow-lg border border-base-300">
+            <div class="hero-content flex flex-col items-center">
+                <i data-feather="home" class="w-16 h-16 text-base-content/50 mb-4"></i>
+                <p class="text-lg font-bold mb-2 text-base-content">No churches found.</p>
+                <p class="text-sm text-base-content/80 mb-4">It looks like there are no churches in the system yet. You can add one by clicking the button below.</p>
+                {% if user.is_superuser %}
+                <a href="{% url 'church:church_create' %}" class="btn btn-primary flex items-center gap-2 btn-sm">
+                    <i data-feather="plus" class="w-4 h-4"></i> Add First Church
                 </a>
                 {% endif %}
             </div>
         </div>
-        {% endfor %}
-    </div>
-
-    {% if is_paginated %}
-    <div class="mt-6 flex justify-center"> {# Reduced top margin #}
-        <div class="join shadow-md rounded-lg">
-            {% if page_obj.has_previous %}
-            <a href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}"
-               class="join-item btn btn-primary btn-outline btn-sm"> {# Added btn-sm #}
-                <i data-feather="chevrons-left" class="w-4 h-4"></i> First {# Reduced icon size #}
-            </a>
-            <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}"
-               class="join-item btn btn-primary btn-outline btn-sm"> {# Added btn-sm #}
-                <i data-feather="chevron-left" class="w-4 h-4"></i> Previous {# Reduced icon size #}
-            </a>
-            {% endif %}
-
-            <span class="join-item btn btn-primary btn-sm font-bold"> {# Added btn-sm #}
-                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-            </span>
-
-            {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}"
-               class="join-item btn btn-primary btn-outline btn-sm"> {# Added btn-sm #}
-                Next <i data-feather="chevron-right" class="w-4 h-4"></i> {# Reduced icon size #}
-            </a>
-            <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}"
-               class="join-item btn btn-primary btn-outline btn-sm"> {# Added btn-sm #}
-                Last <i data-feather="chevrons-right" class="w-4 h-4"></i> {# Reduced icon size #}
-            </a>
-            {% endif %}
-        </div>
-    </div>
-    {% endif %}
-
-    {% else %}
-    <div class="hero bg-base-200 rounded-lg p-8 text-center shadow-lg"> {# Reduced padding #}
-        <div class="hero-content flex flex-col items-center">
-            <i data-feather="archive" class="w-16 h-16 text-base-content/50 mb-3"></i> {# Reduced icon size and margin #}
-            <h2 class="text-xl font-bold mb-2 text-base-content">No Churches Found</h2> {# Reduced font size and margin #}
-            <p class="mb-5 text-base text-base-content/80">It looks like there are no churches registered yet. Add one to get started!</p> {# Reduced font size and margin #}
-            {% if user.is_superuser %}
-            <a href="{% url 'church:church_create' %}"
-               class="btn btn-primary btn-md flex items-center gap-1 transition-all duration-300 hover:scale-105"> {# Reduced button size #}
-                <i data-feather="plus" class="w-4 h-4"></i> {# Reduced icon size #}
-                <span>Add First Church</span>
-            </a>
-            {% endif %}
-        </div>
-    </div>
     {% endif %}
 </div>
 {% endblock %}
@@ -238,6 +192,102 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         feather.replace();
+
+        const searchInput = document.getElementById('searchInput');
+        const searchForm = document.getElementById('searchForm');
+
+        if (searchInput && searchForm) {
+            searchInput.addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    searchForm.submit();
+                }
+            });
+        }
+
+        // --- Handle Row Selection for Action Buttons ---
+        const checkboxes = document.querySelectorAll('.church-checkbox');
+        
+        // Desktop Buttons
+        const viewBtn = document.getElementById('viewChurchBtn');
+        const editBtn = document.getElementById('editChurchBtn');
+        const deleteBtn = document.getElementById('deleteChurchBtn');
+
+        // Mobile Buttons
+        const viewBtnMobile = document.getElementById('viewChurchBtnMobile');
+        const editBtnMobile = document.getElementById('editChurchBtnMobile');
+        const deleteBtnMobile = document.getElementById('deleteChurchBtnMobile');
+
+        function updateActionButtons() {
+            const checkedBoxes = document.querySelectorAll('.church-checkbox:checked');
+            const selectedChurchId = checkedBoxes.length === 1 ? checkedBoxes[0].value : null;
+
+            const viewUrl = selectedChurchId ? `{% url 'church:church_detail' 0 %}`.replace('0', selectedChurchId) : '#';
+            const editUrl = selectedChurchId ? `{% url 'church:church_update' 0 %}`.replace('0', selectedChurchId) : '#';
+            const deleteUrl = selectedChurchId ? `{% url 'church:church_delete' 0 %}`.replace('0', selectedChurchId) : '#';
+
+            function applyButtonState(viewB, editB, deleteB, isSuperuser) {
+                if (viewB) {
+                    if (selectedChurchId) {
+                        viewB.removeAttribute('disabled');
+                        viewB.href = viewUrl;
+                        
+                        if (isSuperuser) {
+                            if (editB) { editB.removeAttribute('disabled'); editB.href = editUrl; }
+                            if (deleteB) { deleteB.removeAttribute('disabled'); deleteB.href = deleteUrl; }
+                        }
+                    } else {
+                        viewB.setAttribute('disabled', 'disabled');
+                        viewB.href = '#';
+                        
+                        if (isSuperuser) {
+                            if (editB) { editB.setAttribute('disabled', 'disabled'); editB.href = '#'; }
+                            if (deleteB) { deleteB.setAttribute('disabled', 'disabled'); deleteB.href = '#'; }
+                        }
+                    }
+                }
+            }
+
+            applyButtonState(viewBtn, editBtn, deleteBtn, {% if user.is_superuser %}true{% else %}false{% endif %});
+            applyButtonState(viewBtnMobile, editBtnMobile, deleteBtnMobile, {% if user.is_superuser %}true{% else %}false{% endif %});
+        }
+
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    checkboxes.forEach(otherCheckbox => {
+                        if (otherCheckbox !== this) {
+                            otherCheckbox.checked = false;
+                        }
+                    });
+                }
+                updateActionButtons();
+            });
+        });
+
+        const tableRows = document.querySelectorAll('tbody tr');
+        tableRows.forEach(row => {
+            row.addEventListener('click', function(event) {
+                if (event.target.tagName === 'INPUT' || event.target.tagName === 'A' || event.target.closest('a') || event.target.closest('label')) {
+                    return; 
+                }
+
+                const checkbox = this.querySelector('.church-checkbox');
+                if (checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    if (checkbox.checked) {
+                        checkboxes.forEach(otherCheckbox => {
+                            if (otherCheckbox !== checkbox) {
+                                otherCheckbox.checked = false;
+                            }
+                        });
+                    }
+                    updateActionButtons();
+                }
+            });
+        });
+
+        updateActionButtons();
     });
 </script>
 {% endblock %}
