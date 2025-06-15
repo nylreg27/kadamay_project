@@ -78,7 +78,7 @@
                         <a href="{% url 'church:church_detail' family.church.id %}" class="link link-primary font-semibold">{{ family.church.name|upper }}</a>
                     </td>
                     <td class="px-4 py-2 text-base-content text-sm">{{ family.address|truncatechars:30|upper }}</td> {# Adjusted px/py, text-sm, reduced truncatechars #}
-                    <td class="px-4 py-2 whitespace-nowrap text-base-content font-medium text-sm">{{ family.individual_set.count }}</td> {# Adjusted px/py, text-sm #}
+                    <td class="px-4 py-2 whitespace-nowrap text-base-content font-medium text-sm">{{ family.individual_count }}</td> {# <-- UPDATED LINE HERE #}
                     <td class="px-4 py-2 whitespace-nowrap"> {# Adjusted px/py #}
                         {% if family.is_active %}
                         <span class="badge badge-success badge-sm font-semibold">Active</span> {# Changed badge-lg to badge-sm #}
