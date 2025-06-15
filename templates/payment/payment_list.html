@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+
+{% block title %}Payments - Kadamay Mortuary System{% endblock %}
+
+{% block content %}
+<div class="card bg-base-100 shadow-xl p-6 md:p-8 text-base-content rounded-xl my-6 mx-auto max-w-7xl">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <h1 class="text-3xl font-extrabold text-primary flex items-center">
+            <i class="w-8 h-8 mr-3"></i> Payments
+        </h1>
+        <div class="flex items-center space-x-2">
+            {# CORRECTED LINK: Changed 'payment_create' to 'payment_create_intro' #}
+            <a href="{% url 'individual:individual_dashboard' %}" class="btn btn-primary btn-btn">
+                <i data-feather="plus" class="w-6 h-6 mr-2"></i> Add New Payment
+            </a>
+        </div>
+    </div>
+
+    ---
+
+    <div class="card bg-base-200 shadow-md p-6 rounded-lg mb-6"> {# DaisyUI card for filters #}
+        <h2 class="text-xl font-bold mb-4 text-secondary">Filter Payments</h2>
+        <form method="get" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+            <div>
+                <label for="contribution_type" class="block text-sm font-medium text-base-content/70 mb-1">Contribution Type</label>
+                <select name="contribution_type" id="contribution_type" class="select select-bordered w-full"> {# DaisyUI select #}
+                    <option value="">All Types</option>
+                    {% for type in contribution_types %}
+                    <option value="{{ type.id }}" {% if request.GET.contribution_type == type.id|stringformat:"s" %}selected{% endif %}>{{ type.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="start_date" class="block text-sm font-medium text-base-content/70 mb-1">Start Date</label>
+                <input type="date" name="start_date" id="start_date" value="{{ request.GET.start_date|default:'' }}" class="input input-bordered w-full"> {# DaisyUI input #}
+            </div>
+            <div>
+                <label for="end_date" class="block text-sm font-medium text-base-content/70 mb-1">End Date</label>
+                <input type="date" name="end_date" id="end_date" value="{{ request.GET.end_date|default:'' }}" class="input input-bordered w-full"> {# DaisyUI input #}
+            </div>
+            <div>
+                <button type="submit" class="btn btn-primary w-full flex items-center gap-2"> {# DaisyUI button #}
+                    <i data-feather="filter" class="w-5 h-5"></i> Apply Filters
+                </button>
+            </div>
+        </form>
+    </div>
+
+    ---
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="card bg-info text-info-content shadow-md p-6 rounded-lg"> {# DaisyUI card with theme #}
+            <h3 class="text-lg font-semibold mb-2">Total Payments</h3>
+            <p class="text-4xl font-extrabold">{{ payment.count }}</p>
+        </div>
+
+        <div class="card bg-success text-success-content shadow-md p-6 rounded-lg"> {# DaisyUI card with theme #}
+            <h3 class="text-lg font-semibold mb-2">Total Amount</h3>
+            <p class="text-4xl font-extrabold">₱{{ total_amount|floatformat:2 }}</p> {# Added currency formatting #}
+        </div>
+
+        <div class="card bg-warning text-warning-content shadow-md p-6 rounded-lg"> {# DaisyUI card with theme #}
+            <h3 class="text-lg font-semibold mb-2">Latest Payment Date</h3>
+            <p class="text-2xl font-bold">
+                {{ latest_payment.date_paid|date:"F d, Y"|default:"N/A" }}
+            </p>
+            {% if latest_payment %}
+            <p class="text-sm opacity-80 mt-1">
+                <span class="font-semibold">{{ latest_payment.individual.given_name }} {{ latest_payment.individual.surname }}</span> - ₱{{ latest_payment.amount|floatformat:2 }}
+            </p>
+            {% endif %}
+        </div>
+    </div>
+
+    ---
+
+    {% if payment %}
+    <div class="overflow-x-auto">
+        <table class="table w-full border-collapse"> {# DaisyUI table #}
+            <thead class="bg-base-200">
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-base-content uppercase tracking-wider">Member</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-base-content uppercase tracking-wider">Contribution Type</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-base-content uppercase tracking-wider">Amount</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-base-content uppercase tracking-wider">Date Paid</th>
+                    <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-base-content uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-base-100 divide-y divide-base-200">
+                {% for payment in payment %}
+                <tr class="hover:bg-base-200">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <a href="{% url 'individual:individual_detail' payment.individual.id %}" class="link link-hover link-primary">
+                            {{ payment.individual.surname|upper }}, {{ payment.individual.given_name|upper }}
+                        </a>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="font-medium text-base-content">{{ payment.contribution_type.name|upper }}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="font-bold text-success">₱{{ payment.amount|floatformat:2 }}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-base-content">
+                        {{ payment.date_paid|date:"F d, Y" }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                        <div class="flex items-center justify-center space-x-2">
+                            <a href="{% url 'payment:payment_detail' payment.id %}" class="btn btn-sm btn-ghost btn-circle text-info" title="View Details">
+                                <i data-feather="eye" class="w-5 h-5"></i>
+                            </a>
+                            <a href="{% url 'payment:payment_update' payment.id %}" class="btn btn-sm btn-ghost btn-circle text-warning" title="Edit Payment">
+                                <i data-feather="edit" class="w-5 h-5"></i>
+                            </a>
+                            <a href="{% url 'payment:payment_delete' payment.id %}" class="btn btn-sm btn-ghost btn-circle text-error" title="Delete Payment">
+                                <i data-feather="trash-2" class="w-5 h-5"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if is_paginated %}
+    <div class="flex justify-center mt-8">
+        <div class="join">
+            {% if page_obj.has_previous %}
+                <a href="?page=1{% if request.GET.contribution_type %}&contribution_type={{ request.GET.contribution_type }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}" class="join-item btn">First</a>
+                <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.contribution_type %}&contribution_type={{ request.GET.contribution_type }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}" class="join-item btn">Previous</a>
+            {% endif %}
+
+            <button class="join-item btn btn-active">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </button>
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if request.GET.contribution_type %}&contribution_type={{ request.GET.contribution_type }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}" class="join-item btn">Next</a>
+                <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.contribution_type %}&contribution_type={{ request.GET.contribution_type }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}" class="join-item btn">Last</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="text-center py-10 card bg-base-200 rounded-lg shadow-md">
+        <p class="text-xl text-base-content/70 mb-4">
+            <i data-feather="info" class="inline-block w-10 h-10 text-info mb-2"></i><br>
+            No payments found matching your criteria.
+        </p>
+        <p class="text-base-content/70 mb-6">
+            Try adjusting your filters or add a new payment to get started.
+        </p>
+        {# CORRECTED LINK: Changed 'payment_create' to 'payment_create_intro' #}
+        <a href="{% url 'individual:individual_dashboard' %}" class="btn btn-primary btn-lg">
+            <i data-feather="plus" class="w-6 h-6 mr-2"></i> Add New Payment
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace(); // Ensure Feather Icons are re-initialized
+    });
+</script>
+{% endblock %}

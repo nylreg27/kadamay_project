@@ -1,0 +1,82 @@
+{# PARTIAL/_USER_DROPDOWN.HTML #}
+
+{% comment %}
+    Assumes DaisyUI is installed and available.
+    Assumes Feather Icons are being used (or replace with your chosen icon library).
+{% endcomment %}
+
+<div class="dropdown dropdown-end"> {# DaisyUI dropdown component #}
+    <div tabindex="0" role="button" class="btn btn-ghost btn-sm lg:btn-md normal-case flex items-center space-x-2 focus:outline-none" aria-label="User menu">
+        {# User Avatar/Icon #}
+        {% if user.is_authenticated %}
+            {% comment %}
+                You could dynamically generate initials or use a profile picture here.
+                For simplicity, using a generic user icon from Feather.
+            {% endcomment %}
+            <div class="avatar placeholder">
+                <div class="bg-neutral text-neutral-content rounded-full w-8 h-8">
+                    <span class="text-sm">
+                        {% if user.get_full_name %}{{ user.get_full_name|make_list|first|upper }}{% else %}{{ user.username|first|upper }}{% endif %}
+                    </span>
+                </div>
+            </div>
+            <span class="hidden md:inline text-base-content font-semibold">
+                {{ user.get_full_name|default:user.username }}
+            </span>
+        {% else %}
+            <i data-feather="user" class="w-5 h-5 md:w-6 md:h-6"></i>
+            <span class="hidden md:inline text-base-content font-semibold">Guest</span>
+        {% endif %}
+        <i data-feather="chevron-down" class="w-4 h-4 text-base-content/70"></i> {# Consistent Feather Icon #}
+    </div>
+
+    <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
+        {% if user.is_authenticated %}
+            {# Optional: Display username/full name inside the dropdown for clarity #}
+            <li>
+                <div class="menu-title text-sm opacity-70">
+                    Signed in as <span class="font-bold">{{ user.get_full_name|default:user.username }}</span>
+                </div>
+            </li>
+            <li><hr class="my-1 bg-base-200"></li> {# Separator #}
+
+            {% if user.is_staff or user.is_superuser %} {# Conditional Admin link #}
+            <li><a href="{% url 'admin:index' %}">
+                <i data-feather="settings" class="w-4 h-4"></i> Admin Panel
+            </a></li>
+            {% endif %}
+
+            {% if user.is_superuser %} {# Conditional Create In-Charge link #}
+            <li><a href="{% url 'chat:create_incharge' %}">
+                <i data-feather="user-plus" class="w-4 h-4"></i> Create In-Charge
+            </a></li>
+            {% endif %}
+            
+            <li><a href="{% url 'password_change' %}">
+                <i data-feather="key" class="w-4 h-4"></i> Change Password
+            </a></li>
+
+            <li><hr class="my-1 bg-base-200"></li> {# Separator before logout #}
+            
+            <li><a href="{% url 'logout' %}" class="text-error">
+                <i data-feather="log-out" class="w-4 h-4"></i> Logout
+            </a></li>
+        {% else %}
+            {# If user is not authenticated, offer login/signup options #}
+            <li><a href="{% url 'login' %}">
+                <i data-feather="log-in" class="w-4 h-4"></i> Login
+            </a></li>
+            {# Assuming you have a signup/register URL #}
+            {% comment %} 
+            <li><a href="{% url 'signup' %}">
+                <i data-feather="user-plus" class="w-4 h-4"></i> Sign Up
+            </a></li> 
+            {% endcomment %}
+        {% endif %}
+    </ul>
+</div>
+
+{% comment %}
+    You would still need your feather.replace() call in your base.html
+    or wherever your main JavaScript is initialized.
+{% endcomment %}

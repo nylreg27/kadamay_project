@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Profile - {{ profile.user.username }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-6">
+    <div class="max-w-md mx-auto card bg-base-100 shadow-xl p-8 text-base-content rounded-xl">
+        <h2 class="text-3xl font-bold mb-6 text-error">Confirm Profile Deletion</h2> {# Changed text-2xl to 3xl and red-600 to text-error #}
+
+        <p class="mb-4">Are you sure you want to delete the profile for **{{ profile.user.username }}**?</p> {# Accessing username via profile.user.username #}
+        <p class="text-warning text-sm mb-6">This action cannot be undone.</p>
+
+        <form method="post" class="flex justify-end gap-3">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-error flex items-center gap-2"> {# Changed btn-danger to btn-error #}
+                <i data-feather="trash-2" class="w-5 h-5"></i> Yes, Delete
+            </button>
+            <a href="{% url 'account:profile_detail' profile.id %}" class="btn btn-ghost">Cancel</a> {# Changed btn-secondary to btn-ghost #}
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace();
+    });
+</script>
+{% endblock %}

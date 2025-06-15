@@ -1,0 +1,606 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {{ page_title }} - Kadamay Mortuary System
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Card styles for a subtle lift and shadow */
+    .card {
+        transition: all 0.2s ease-in-out;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    }
+    .card:hover {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.05);
+    }
+    /* Style for individual family member items in the list */
+    .family-member-item {
+        transition: background-color 0.15s;
+    }
+    .family-member-item:hover {
+        background-color: theme('colors.gray.50');
+    }
+    /* Highlight for the primary payer information card */
+    .highlight-card {
+        border-left: 4px solid theme('colors.blue.500');
+    }
+    /* Scrollable container for family members list */
+    .scroll-container {
+        max-height: 40vh; /* Limits height to 40% of viewport height */
+        overflow-y: auto; /* Enables vertical scrolling when content overflows */
+        border: 1px solid theme('colors.gray.200');
+        border-radius: theme('borderRadius.md');
+    }
+    /* Custom scrollbar styles for better aesthetics */
+    .scroll-container::-webkit-scrollbar {
+        width: 8px;
+    }
+    .scroll-container::-webkit-scrollbar-thumb {
+        background-color: theme('colors.gray.300');
+        border-radius: 4px;
+    }
+    .scroll-container::-webkit-scrollbar-track {
+        background-color: theme('colors.gray.100');
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">
+                {{ page_title }}
+            </h1>
+            <p class="text-gray-600 text-sm mt-1">Record new payments for family contributions</p>
+        </div>
+        <div class="flex space-x-2">
+            <a href="{% url 'payment:payment_list' %}" class="btn btn-sm btn-outline btn-neutral flex items-center gap-1">
+                <i data-feather="arrow-left" class="w-4 h-4"></i>
+                Back to Payments
+            </a>
+        </div>
+    </div>
+
+    {# Display Django messages (success, error, etc.) #}
+    {% if messages %}
+        <div class="mb-4">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} shadow-md mb-2 text-sm">
+                    <div>
+                        {# Dynamic icon based on message tag #}
+                        {% if message.tags == 'success' %}
+                            <i data-feather="check-circle" class="w-5 h-5"></i>
+                        {% elif message.tags == 'error' %}
+                            <i data-feather="alert-circle" class="w-5 h-5"></i>
+                        {% else %}
+                            <i data-feather="info" class="w-5 h-5"></i>
+                        {% endif %}
+                        <span>{{ message }}</span>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'payment:add_payment' %}" class="space-y-6" id="paymentForm">
+        {% csrf_token %}
+
+        {# Hidden input to store selected family member IDs for submission #}
+        <input type="hidden" name="selected_members_ids" id="selectedMembersIdsInput" value="">
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="flex flex-col gap-4">
+                {# Payer Information Card #}
+                <div class="card bg-base-100 rounded-lg p-5 highlight-card">
+                    <h2 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                        <i data-feather="user" class="w-4 h-4 text-blue-500"></i>
+                        Payer Information
+                    </h2>
+                    
+                    <div class="space-y-3">
+                        <div>
+                            <label for="{{ form.individual.id_for_label }}" class="block text-xs font-medium text-gray-700 mb-1">
+                                Payee (Head of Family)
+                                <span class="text-red-500">*</span>
+                            </label>
+                            <div class="relative">
+                                {# Render Django form field for individual/payee #}
+                                {{ form.individual }}
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                                    <i data-feather="chevron-down" class="w-3 h-3 text-gray-400"></i>
+                                </div>
+                            </div>
+                            {# Display field-specific errors #}
+                            {% if form.individual.errors %}
+                                <p class="text-red-600 text-xs mt-1">{{ form.individual.errors }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label for="{{ form.contribution_type.id_for_label }}" class="block text-xs font-medium text-gray-700 mb-1">
+                                    Contribution Type
+                                    <span class="text-red-500">*</span>
+                                </label>
+                                <div class="relative">
+                                    {# Render Django form field for contribution type #}
+                                    {{ form.contribution_type }}
+                                    <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                                        <i data-feather="chevron-down" class="w-3 h-3 text-gray-400"></i>
+                                    </div>
+                                </div>
+                                {% if form.contribution_type.errors %}
+                                    <p class="text-red-600 text-xs mt-1">{{ form.contribution_type.errors }}</p>
+                                {% endif %}
+                            </div>
+                            
+                            <div>
+                                <label for="{{ form.payment_method.id_for_label }}" class="block text-xs font-medium text-gray-700 mb-1">
+                                    Payment Method
+                                    <span class="text-red-500">*</span>
+                                </label>
+                                <div class="relative">
+                                    {# Render Django form field for payment method #}
+                                    {{ form.payment_method }}
+                                    <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                                        <i data-feather="chevron-down" class="w-3 h-3 text-gray-400"></i>
+                                    </div>
+                                </div>
+                                {% if form.payment_method.errors %}
+                                    <p class="text-red-600 text-xs mt-1">{{ form.payment_method.errors }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {# Payment Details Card #}
+                <div class="card bg-base-100 rounded-lg p-5">
+                    <h2 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                        <i data-feather="credit-card" class="w-4 h-4 text-green-500"></i>
+                        Payment Details
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label for="{{ form.receipt_no.id_for_label }}" class="block text-xs font-medium text-gray-700 mb-1">
+                                Receipt Number
+                                <span class="text-red-500">*</span>
+                            </label>
+                            {# Render Django form field for receipt number #}
+                            {{ form.receipt_no }}
+                            {% if form.receipt_no.errors %}
+                                <p class="text-red-600 text-xs mt-1">{{ form.receipt_no.errors }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            <label for="{{ form.date_paid.id_for_label }}" class="block text-xs font-medium text-gray-700 mb-1">
+                                Payment Date
+                                <span class="text-red-500">*</span>
+                            </label>
+                            <div class="relative">
+                                {# Render Django form field for payment date #}
+                                {{ form.date_paid }}
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                                    <i data-feather="calendar" class="w-3 h-3 text-gray-400"></i>
+                                </div>
+                            </div>
+                            {% if form.date_paid.errors %}
+                                <p class="text-red-600 text-xs mt-1">{{ form.date_paid.errors }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <label for="{{ form.deceased_member.id_for_label }}" class="block text-xs font-medium text-gray-700 mb-1">
+                            Remarks (Deceased Member) </label>
+                        <div class="relative">
+                            {# Render Django form field for deceased member remarks #}
+                            {{ form.deceased_member }}
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                                <i data-feather="chevron-down" class="w-3 h-3 text-gray-400"></i>
+                            </div>
+                        </div>
+                        {% if form.deceased_member.errors %}
+                            <p class="text-red-600 text-xs mt-1">{{ form.deceased_member.errors }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-4">
+                {# Family Details Card #}
+                <div class="card bg-base-100 rounded-lg p-5">
+                    <h2 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                        <i data-feather="users" class="w-4 h-4 text-purple-500"></i>
+                        Family Details
+                    </h2>
+                    
+                    <div class="bg-blue-50 rounded-md p-3 mb-3">
+                        <h3 class="font-semibold text-blue-800 text-center text-sm" id="familyNameLabel">
+                            Please select a Payee
+                        </h3>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div class="bg-gray-50 p-3 rounded-md">
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="font-medium text-gray-700 text-sm">Family Members for Contribution</h4>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="selectAllFamilyMembers" class="checkbox checkbox-sm">
+                                    <label for="selectAllFamilyMembers" class="ml-2 text-xs">Select All</label>
+                                </div>
+                            </div>
+                            
+                            <div class="scroll-container">
+                                <div id="familyMembersList" class="space-y-1">
+                                    {# Placeholder content for when no payee is selected #}
+                                    <div class="text-center py-6 text-gray-400">
+                                        <i data-feather="users" class="w-10 h-10 mx-auto"></i>
+                                        <p class="mt-1 text-sm">Select a payee to view family members</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {# Amount Calculation Card #}
+                <div class="card bg-base-100 rounded-lg p-5">
+                    <h2 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                        <i data-feather="dollar-sign" class="w-4 h-4 text-yellow-500"></i>
+                        Amount Calculation
+                    </h2>
+                    
+                    <div class="bg-gray-50 p-3 rounded-md">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="text-center">
+                                <p class="text-xs text-gray-600">Members Selected</p>
+                                <p id="selectedMembersCount" class="text-xl font-bold text-blue-600">0</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-xs text-gray-600">Per Member</p>
+                                <p id="perMemberAmount" class="text-xl font-bold text-green-600">₱0.00</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-3 mt-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">
+                                Family Contribution Amount (Calculated)
+                            </label>
+                            <div class="relative">
+                                <input type="text" id="family_amount_display"
+                                        class="input input-bordered input-sm w-full text-base font-bold text-green-700"
+                                        value="0.00" readonly>
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                                    <i data-feather="dollar-sign" class="w-3 h-3 text-gray-400"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label for="{{ form.amount.id_for_label }}" class="block text-xs font-medium text-gray-700 mb-1">
+                                Total Payment Amount
+                                <span class="text-red-500">*</span>
+                            </label>
+                            <div class="relative">
+                                {# Render Django form field for total amount #}
+                                {{ form.amount }}
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                                    <i data-feather="dollar-sign" class="w-3 h-3 text-gray-400"></i>
+                                </div>
+                            </div>
+                            {% if form.amount.errors %}
+                                <p class="text-red-600 text-xs mt-1">{{ form.amount.errors }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200">
+            <button type="reset" class="btn btn-sm btn-outline btn-neutral flex items-center gap-1">
+                <i data-feather="refresh-ccw" class="w-4 h-4"></i>
+                Reset Form
+            </button>
+            <button type="submit" class="btn btn-sm btn-success flex items-center gap-1">
+                <i data-feather="save" class="w-4 h-4"></i>
+                Save Payment Record
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Feather icons
+        feather.replace();
+        
+        // --- Element References ---
+        const payeeSelect = document.getElementById('id_individual');
+        const familyNameLabel = document.getElementById('familyNameLabel');
+        const familyMembersList = document.getElementById('familyMembersList');
+        const selectAllCheckbox = document.getElementById('selectAllFamilyMembers');
+        const familyAmountDisplay = document.getElementById('family_amount_display');
+        const mainAmountInput = document.getElementById('id_amount');
+        const contributionTypeSelect = document.getElementById('id_contribution_type');
+        const selectedMembersCount = document.getElementById('selectedMembersCount');
+        const perMemberAmount = document.getElementById('perMemberAmount');
+        const selectedMembersIdsInput = document.getElementById('selectedMembersIdsInput'); // Hidden input for selected member IDs
+
+        let defaultContributionAmount = 0; // Stores the per-member contribution amount
+
+        // --- Utility Functions ---
+
+        /**
+         * Updates the hidden input field with a JSON string of selected member IDs.
+         * This ensures selected members are sent with the form submission.
+         */
+        function updateSelectedMembersIdsInput() {
+            const selectedIds = Array.from(document.querySelectorAll('.member-checkbox:checked'))
+                                    .map(checkbox => checkbox.value);
+            selectedMembersIdsInput.value = JSON.stringify(selectedIds);
+        }
+
+        /**
+         * Fetches family details and populates the family members list
+         * based on the selected individual (payee).
+         * @param {string} individualId - The ID of the selected individual.
+         */
+        async function populateFamilyAndMembers(individualId) {
+            // Show loading state
+            familyMembersList.innerHTML = `
+                <div class="text-center py-6">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                    <p class="mt-2 text-gray-500 text-sm">Loading family data...</p>
+                </div>`;
+            
+            familyNameLabel.textContent = 'Family details loading...';
+            resetCalculationDisplays(); // Reset counts and amounts
+
+            if (!individualId) {
+                // Display placeholder if no individual is selected
+                familyMembersList.innerHTML = `
+                    <div class="text-center py-6 text-gray-400">
+                        <i data-feather="users" class="w-10 h-10 mx-auto"></i>
+                        <p class="mt-1 text-sm">Select a payee to view family members</p>
+                    </div>`;
+                familyNameLabel.textContent = 'Please select a Payee';
+                feather.replace(); // Re-render icons
+                updateSelectedMembersIdsInput(); // Clear hidden input
+                return;
+            }
+
+            try {
+                const response = await fetch(`/payment/api/individual/${individualId}/family_details/`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+
+                // Update family name label
+                familyNameLabel.textContent = data.family_name || 'No Family Assigned';
+                familyNameLabel.classList.toggle('text-red-500', !data.family_name); // Highlight if no family
+
+                // Populate Family Members checkboxes
+                familyMembersList.innerHTML = ''; // Clear previous list
+                if (data.family_members && data.family_members.length > 0) {
+                    data.family_members.forEach(member => {
+                        const memberDiv = document.createElement('div');
+                        memberDiv.className = 'family-member-item flex items-center p-2 border-b border-gray-100 last:border-b-0';
+                        memberDiv.innerHTML = `
+                            <div class="flex items-center w-full">
+                                <input type="checkbox" name="family_members_for_contribution" value="${member.id}" 
+                                    id="member_${member.id}" class="checkbox checkbox-sm member-checkbox mr-2">
+                                <label for="member_${member.id}" class="flex-1 min-w-0 cursor-pointer">
+                                    <div class="font-medium text-sm truncate">${member.full_name}</div>
+                                    <div class="flex text-xs text-gray-500 mt-0.5">
+                                        <span class="mr-2">${member.status || 'N/A'}</span>
+                                        <span>${member.relationship || 'N/A'}</span>
+                                    </div>
+                                </label>
+                            </div>
+                        `;
+                        familyMembersList.appendChild(memberDiv);
+                        
+                        // Add event listener to each new member checkbox
+                        const checkbox = memberDiv.querySelector('.member-checkbox');
+                        checkbox.addEventListener('change', () => {
+                            calculateFamilyAmount();
+                            updateSelectedMembersIdsInput();
+                            // If any individual checkbox is unchecked, uncheck the "Select All"
+                            if (!checkbox.checked && selectAllCheckbox.checked) {
+                                selectAllCheckbox.checked = false;
+                            }
+                        });
+                    });
+                } else {
+                    // Display message if no family members found
+                    familyMembersList.innerHTML = `
+                        <div class="text-center py-6 text-gray-400">
+                            <i data-feather="user-x" class="w-10 h-10 mx-auto"></i>
+                            <p class="mt-1 text-sm">No family members found for this payee</p>
+                        </div>`;
+                }
+                
+                calculateFamilyAmount(); // Initial calculation after populating members
+                updateSelectedMembersIdsInput(); // Update hidden input on successful load
+                feather.replace(); // Re-render icons after adding new elements
+
+            } catch (error) {
+                console.error('Error fetching family data:', error);
+                familyMembersList.innerHTML = `
+                    <div class="alert alert-error shadow-md text-sm">
+                        <div>
+                            <i data-feather="alert-triangle" class="w-5 h-5"></i>
+                            <span>Error loading family data. Please try again.</span>
+                        </div>
+                    </div>`;
+                familyNameLabel.textContent = 'Error loading family data!';
+                feather.replace();
+            }
+        }
+
+        /**
+         * Calculates the total family contribution amount based on selected members
+         * and the default contribution amount. Updates display fields.
+         */
+        function calculateFamilyAmount() {
+            const selectedCheckboxes = document.querySelectorAll('.member-checkbox:checked');
+            selectedMembersCount.textContent = selectedCheckboxes.length;
+            
+            const calculatedAmount = selectedCheckboxes.length * defaultContributionAmount;
+            familyAmountDisplay.value = calculatedAmount.toFixed(2);
+
+            // Automatically set the main amount input if it's currently zero
+            // or if it matches the previously calculated family amount.
+            // This allows manual override without being constantly reset.
+            const currentMainAmount = parseFloat(mainAmountInput.value || 0);
+            if (currentMainAmount === 0 || currentMainAmount.toFixed(2) === parseFloat(calculatedAmount.toFixed(2)).toFixed(2)) {
+                mainAmountInput.value = calculatedAmount.toFixed(2);
+            }
+        }
+
+        /**
+         * Fetches the default contribution amount for a selected contribution type.
+         * @param {string} contributionTypeId - The ID of the selected contribution type.
+         */
+        async function getContributionAmount(contributionTypeId) {
+            if (!contributionTypeId) {
+                defaultContributionAmount = 0;
+                perMemberAmount.textContent = '₱0.00';
+                calculateFamilyAmount();
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/payment/api/contribution_type/${contributionTypeId}/`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                defaultContributionAmount = parseFloat(data.amount || 0);
+                perMemberAmount.textContent = `₱${defaultContributionAmount.toFixed(2)}`;
+                calculateFamilyAmount(); // Recalculate family amount with new per-member rate
+                
+            } catch (error) {
+                console.error('Error fetching contribution amount:', error);
+                defaultContributionAmount = 0;
+                perMemberAmount.textContent = '₱0.00';
+                calculateFamilyAmount();
+            }
+        }
+
+        /**
+         * Resets the amount calculation display fields.
+         */
+        function resetCalculationDisplays() {
+            selectedMembersCount.textContent = '0';
+            perMemberAmount.textContent = '₱0.00';
+            familyAmountDisplay.value = '0.00';
+            selectAllCheckbox.checked = false;
+        }
+
+        // --- Event Listeners ---
+
+        // Listen for changes on the Payee select dropdown
+        payeeSelect.addEventListener('change', function() {
+            populateFamilyAndMembers(this.value);
+        });
+
+        // Listen for changes on the "Select All" family members checkbox
+        selectAllCheckbox.addEventListener('change', function() {
+            document.querySelectorAll('.member-checkbox').forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+            calculateFamilyAmount(); // Recalculate total amount
+            updateSelectedMembersIdsInput(); // Update hidden input
+        });
+
+        // Listen for changes on the Contribution Type select dropdown
+        contributionTypeSelect.addEventListener('change', function() {
+            getContributionAmount(this.value);
+        });
+
+        // Listen for manual input on the total payment amount field
+        mainAmountInput.addEventListener('input', function() {
+            // Allow only numbers and a single decimal point
+            this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+            if (this.value.startsWith('.')) this.value = '0' + this.value;
+            
+            // Remove error styling if input becomes valid
+            if (parseFloat(this.value) > 0 || this.value === '') { // Allow empty during typing
+                this.classList.remove('input-error');
+            }
+        });
+
+        // Listen for form reset event to clear dynamic fields
+        document.getElementById('paymentForm').addEventListener('reset', function() {
+            // Reset payee and contribution type selects to default state
+            payeeSelect.value = ''; 
+            contributionTypeSelect.value = '';
+            
+            // Trigger repopulation and recalculation to reset dynamic sections
+            populateFamilyAndMembers(''); 
+            getContributionAmount('');
+            mainAmountInput.classList.remove('input-error'); // Clear error class
+            // Reset default contribution amount explicitly
+            defaultContributionAmount = 0; 
+            perMemberAmount.textContent = '₱0.00';
+            familyAmountDisplay.value = '0.00';
+            mainAmountInput.value = '0.00'; // Ensure main amount is reset
+            updateSelectedMembersIdsInput(); // Clear hidden input
+        });
+
+        // Form submission handling to ensure amount is valid
+        document.getElementById('paymentForm').addEventListener('submit', function(event) {
+            const amount = parseFloat(mainAmountInput.value);
+            // Check if amount is not a number, or is zero/negative
+            if (isNaN(amount) || amount <= 0) {
+                event.preventDefault(); // Prevent form submission
+                mainAmountInput.classList.add('input-error'); // Add error styling
+                // Use a more user-friendly modal/toast for feedback instead of alert in production
+                alert('Please enter a valid payment amount greater than zero.'); 
+                mainAmountInput.focus(); // Focus on the problematic field
+            }
+        });
+
+        // --- Initialization on Load ---
+        const initializeForm = () => {
+            // If payee is pre-selected (e.g., on form error with initial data)
+            if (payeeSelect.value) {
+                populateFamilyAndMembers(payeeSelect.value);
+            } else {
+                // If no payee selected, ensure placeholder is displayed
+                familyNameLabel.textContent = 'Please select a Payee';
+                familyMembersList.innerHTML = `
+                    <div class="text-center py-6 text-gray-400">
+                        <i data-feather="users" class="w-10 h-10 mx-auto"></i>
+                        <p class="mt-1 text-sm">Select a payee to view family members</p>
+                    </div>`;
+            }
+
+            // If contribution type is pre-selected
+            if (contributionTypeSelect.value) {
+                getContributionAmount(contributionTypeSelect.value);
+            }
+            feather.replace(); // Ensure all icons are rendered
+        };
+
+        // Use a small timeout to ensure all form elements are fully rendered by Django
+        // This is a common practice for dynamic elements to avoid race conditions.
+        setTimeout(initializeForm, 50);
+
+    }); // End DOMContentLoaded
+</script>
+{% endblock %}

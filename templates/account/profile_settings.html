@@ -1,0 +1,129 @@
+{# apps/account/templates/account/profile_settings.html #}
+{% extends 'base.html' %}
+{% load widget_tweaks %} {# For easier application of CSS classes to form fields #}
+
+{% block title %}Profile Settings — Kadamay Mortuary System{% endblock %}
+
+{% block content %}
+<div class="card bg-base-100 shadow-xl p-4 md:p-6 text-base-content rounded-xl">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-3xl font-bold text-primary">Profile Settings for {{ user.username }}</h1> {# Changed text-2xl to text-3xl and added text-primary #}
+        <a href="{% url 'report:dashboard' %}" class="btn btn-ghost">
+            <i data-feather="arrow-left" class="w-5 h-5 mr-2"></i> Back to Dashboard {# Added size and margin to icon #}
+        </a>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="space-y-6">
+        {% csrf_token %}
+
+        {# Display non-field errors if any #}
+        {% if form.non_field_errors %}
+            <div class="alert alert-error">
+                <i data-feather="alert-circle" class="w-6 h-6"></i> {# Added size to icon #}
+                <span>
+                    {% for error in form.non_field_errors %}
+                        {{ error }}
+                    {% endfor %}
+                </span>
+            </div>
+        {% endif %}
+
+        {# Section for Theme Settings #}
+        <h2 class="text-2xl font-semibold border-b pb-2 mb-4 text-primary">Theme Settings</h2> {# Changed text-xl to text-2xl and added text-primary #}
+        <div class="form-control w-full max-w-xs">
+            <label class="label" for="{{ form.theme.id_for_label }}">
+                <span class="label-text text-base-content">Select Theme</span> {# Ensured label-text is theme-aware #}
+            </label>
+            {# Render the theme field with DaisyUI classes #}
+            {% render_field form.theme class="select select-bordered w-full max-w-xs" %}
+            {% if form.theme.help_text %}
+                <label class="label">
+                    <span class="label-text-alt text-sm text-base-content/70">{{ form.theme.help_text }}</span> {# Changed text-gray-500 to text-base-content/70 #}
+                </label>
+            {% endif %}
+            {% if form.theme.errors %}
+                <label class="label">
+                    <span class="label-text-alt text-error text-sm">{% for error in form.theme.errors %}{{ error }}{% endfor %}</span>
+                </label>
+            {% endif %}
+        </div>
+
+        {# Section for Other Profile Information #}
+        <h2 class="text-2xl font-semibold border-b pb-2 mb-4 mt-8 text-primary">Personal Information</h2> {# Changed text-xl to text-2xl and added text-primary #}
+        
+        {# Profile Picture #}
+        <div class="form-control w-full max-w-xs">
+            <label class="label" for="{{ form.profile_picture.id_for_label }}">
+                <span class="label-text text-base-content">Profile Picture</span> {# Ensured label-text is theme-aware #}
+            </label>
+            {% if user.profile.profile_picture %}
+                <div class="mb-2">
+                    <img src="{{ user.profile.profile_picture.url }}" alt="Current Profile Picture" class="w-24 h-24 rounded-full object-cover border border-base-content/20 shadow"> {# Added border and shadow for visual appeal #}
+                </div>
+            {% endif %}
+            {% render_field form.profile_picture class="file-input file-input-bordered w-full max-w-xs" %}
+            {% if form.profile_picture.help_text %}
+                <label class="label">
+                    <span class="label-text-alt text-sm text-base-content/70">{{ form.profile_picture.help_text }}</span> {# Changed text-gray-500 to text-base-content/70 #}
+                </label>
+            {% endif %}
+            {% if form.profile_picture.errors %}
+                <label class="label">
+                    <span class="label-text-alt text-error text-sm">{% for error in form.profile_picture.errors %}{{ error }}{% endfor %}</span>
+                </label>
+            {% endif %}
+        </div>
+
+        {# Iterate through the remaining fields if any, excluding 'theme' and 'profile_picture' which are handled #}
+        {% for field in form %}
+            {% if field.name != 'theme' and field.name != 'profile_picture' %}
+                <div class="form-control w-full">
+                    <label class="label" for="{{ field.id_for_label }}">
+                        <span class="label-text text-base-content font-semibold">{{ field.label }}</span>
+                        {% if field.field.required %}
+                            <span class="text-error ml-1">*</span>
+                        {% endif %}
+                    </label>
+                    {% if field.field.widget.input_type == 'checkbox' %}
+                        {# Special rendering for checkboxes #}
+                        <label class="label cursor-pointer justify-start gap-3">
+                            {{ field|add_class:"checkbox checkbox-primary" }}
+                            <span class="label-text">{{ field.label }}</span>
+                        </label>
+                    {% elif field.field.widget.input_type == 'textarea' %}
+                         {{ field|add_class:"textarea textarea-bordered h-24 w-full focus:outline-none focus:ring-2 focus:ring-primary" }}
+                    {% else %}
+                        {{ field|add_class:"input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-primary" }}
+                    {% endif %}
+                    
+                    {% if field.help_text %}
+                        <label class="label">
+                            <span class="label-text-alt text-base-content/70">{{ field.help_text }}</span>
+                        </label>
+                    {% endif %}
+                    {% if field.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ field.errors }}</span>
+                        </label>
+                    {% endif %}
+                </div>
+            {% endif %}
+        {% endfor %}
+
+        <div class="flex justify-end mt-6">
+            <button type="submit" class="btn btn-primary flex items-center gap-2">
+                <i data-feather="save" class="w-5 h-5"></i> Save Settings
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }} {# Include existing base.html extra_js #}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace();
+    });
+</script>
+{% endblock %}

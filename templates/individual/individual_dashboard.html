@@ -1,0 +1,275 @@
+{% extends 'base.html' %}
+
+{% block title %}Kadamay Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Custom visual class for disabled buttons, to work alongside the actual 'disabled' attribute */
+    .disabled-button-visual { 
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    /* DaisyUI 'active' class for menu items. Ensure it's visually distinct. */
+    .menu li > a.active {
+        background-color: oklch(var(--a)) !important; /* Accent color from DaisyUI theme */
+        color: oklch(var(--ac)) !important; /* Accent content color */
+    }
+</style>
+{{ block.super }}
+{% endblock extra_css %}
+
+{% block content %}
+<div class="container mx-auto p-4 max-w-7xl h-full flex flex-col">
+    <h1 class="text-3xl font-extrabold text-primary mb-4">Kadamay Members Dashboard</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 flex-grow">
+
+        {# Left Sidebar: List of Members #}
+        <div class="md:col-span-1 bg-base-100 rounded-lg shadow-xl p-3 flex flex-col overflow-hidden">
+            <h2 class="text-lg font-bold text-secondary mb-3">List of Members</h2>
+            <div class="mb-3">
+                <label class="input input-bordered flex items-center gap-2 w-full rounded-md input-sm">
+                    <input type="text" placeholder="Search members..." class="grow text-sm" id="dashboardSearchInput"/>
+                    <i data-feather="search" class="w-4 h-4"></i>
+                </label>
+            </div>
+            <div class="overflow-y-auto flex-grow h-0 border border-base-300 rounded-md">
+                <ul class="menu p-1 bg-base-200 w-full rounded-md text-sm" id="memberList">
+                    {% if individuals %}
+                        {% for individual in individuals %}
+                        <li class="member-list-item" data-individual-id="{{ individual.id }}">
+                            <a href="#" class="block hover:bg-base-300 {% if forloop.first %}active{% endif %} py-1 px-2">
+                                {{ individual.surname|upper }}, {{ individual.given_name|upper }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    {% else %}
+                        <li><span class="text-xs text-base-content/60">No members found.</span></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+
+        {# Right Section: Only Payments #}
+        <div class="md:col-span-2 lg:col-span-3 flex flex-col gap-4">
+
+            <div class="bg-base-100 rounded-lg shadow-xl p-3 flex-none">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-lg font-bold text-secondary">List of Individual Payment</h2>
+                    <div class="flex gap-2">
+                        <a href="#" id="addPaymentButton" class="btn btn-sm btn-primary" disabled>
+                            <i data-feather="plus"></i> Add Payment
+                        </a>
+                        <a href="#" id="printIndividualButton" class="btn btn-sm btn-outline btn-info" disabled>
+                            <i data-feather="printer"></i> Print Individual
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-base-100 rounded-lg shadow-xl p-3 flex-grow flex flex-col overflow-hidden">
+                <div class="overflow-y-auto flex-grow h-0 border border-base-300 rounded-md">
+                    <table class="table table-zebra w-full table-sm">
+                        <thead>
+                            <tr>
+                                <th class="text-xs font-semibold uppercase">Date</th>
+                                <th class="text-xs font-semibold uppercase">Description</th>
+                                <th class="text-xs font-semibold uppercase">Amount</th>
+                                <th class="text-xs font-semibold uppercase">Receipt No.</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paymentListBody">
+                            <tr><td colspan="4" class="text-center text-xs text-base-content/60 py-1">Select a member to view payments.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace();
+
+        const memberList = document.getElementById('memberList');
+        const paymentListBody = document.getElementById('paymentListBody');
+        const dashboardSearchInput = document.getElementById('dashboardSearchInput');
+        const printIndividualButton = document.getElementById('printIndividualButton');
+        const addPaymentButton = document.getElementById('addPaymentButton');
+
+        function updateActionButtons(individualId = null) {
+            console.log('updateActionButtons called with ID:', individualId);
+            if (addPaymentButton && printIndividualButton) {
+                if (individualId) {
+                    addPaymentButton.removeAttribute('disabled');
+                    addPaymentButton.classList.remove('disabled-button-visual');
+                    addPaymentButton.style.pointerEvents = 'auto';
+                    addPaymentButton.setAttribute('aria-disabled', 'false');
+                    
+                    printIndividualButton.removeAttribute('disabled');
+                    printIndividualButton.classList.remove('disabled-button-visual');
+                    printIndividualButton.style.pointerEvents = 'auto';
+                    printIndividualButton.setAttribute('aria-disabled', 'false');
+        
+                    addPaymentButton.href = `/payment/individual/${individualId}/create/`;
+                    printIndividualButton.href = `/individual/${individualId}/print_payments/`;
+                    console.log('Buttons ENABLED.');
+                } else {
+                    addPaymentButton.setAttribute('disabled', 'true');
+                    addPaymentButton.classList.add('disabled-button-visual');
+                    addPaymentButton.style.pointerEvents = 'none';
+                    addPaymentButton.setAttribute('aria-disabled', 'true');
+                    
+                    printIndividualButton.setAttribute('disabled', 'true');
+                    printIndividualButton.classList.add('disabled-button-visual');
+                    printIndividualButton.style.pointerEvents = 'none';
+                    printIndividualButton.setAttribute('aria-disabled', 'true');
+                    
+                    addPaymentButton.href = '#';
+                    printIndividualButton.href = '#';
+                    console.log('Buttons DISABLED (no individualId).');
+                }
+            } else {
+                console.warn('Action buttons not found in DOM.');
+            }
+        }
+
+        async function loadMemberDetails(individualId) {
+            console.log('loadMemberDetails called for ID:', individualId);
+            updateActionButtons(individualId);
+
+            try {
+                const response = await fetch(`/individual/${individualId}/details/`);
+                if (!response.ok) {
+                    updateActionButtons(null);
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                console.log('AJAX response data for details:', data);
+
+                paymentListBody.innerHTML = '';
+                if (data.payments && data.payments.length > 0) {
+                    data.payments.forEach(payment => {
+                        const row = `<tr class="text-xs">
+                                            <td>${payment.date || 'N/A'}</td>
+                                            <td>${payment.description || 'N/A'}</td>
+                                            <td>${payment.amount || 'N/A'}</td>
+                                            <td>${payment.receipt_no || 'N/A'}</td>
+                                        </tr>`;
+                        paymentListBody.insertAdjacentHTML('beforeend', row);
+                    });
+                } else {
+                    paymentListBody.innerHTML = '<tr><td colspan="4" class="text-center text-xs text-base-content/60 py-1">No payments found.</td></tr>';
+                }
+
+            } catch (error) {
+                console.error('AJAX Error in loadMemberDetails:', error);
+                paymentListBody.innerHTML = '<tr><td colspan="4" class="text-center text-error text-xs py-1">Error loading payments.</td></tr>';
+            }
+        }
+
+        memberList.addEventListener('click', function(event) {
+            const listItem = event.target.closest('.member-list-item'); 
+            
+            if (listItem) {
+                memberList.querySelectorAll('.member-list-item a.active').forEach(item => {
+                    item.classList.remove('active');
+                });
+                
+                listItem.querySelector('a').classList.add('active');
+
+                const individualId = listItem.dataset.individualId; 
+                console.log('Clicked member. Retrieved ID from listItem:', individualId);
+
+                if (individualId) {
+                    loadMemberDetails(individualId);
+                } else {
+                    console.warn('Clicked item has no individual ID. Check data-individual-id attribute.');
+                    updateActionButtons(null);
+                }
+            }
+        });
+
+        if (dashboardSearchInput) {
+            dashboardSearchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                let firstVisibleMemberId = null;
+                
+                const allMemberListItems = Array.from(memberList.querySelectorAll('.member-list-item'));
+                
+                const currentActiveLink = memberList.querySelector('.member-list-item a.active');
+                const activeMemberId = currentActiveLink ? currentActiveLink.closest('.member-list-item').dataset.individualId : null;
+
+                allMemberListItems.forEach(item => {
+                    const memberName = item.querySelector('a').textContent.toLowerCase();
+                    if (memberName.includes(searchTerm)) {
+                        item.style.display = '';
+                        if (firstVisibleMemberId === null) {
+                            firstVisibleMemberId = item.dataset.individualId;
+                        }
+                    } else {
+                        item.style.display = 'none';
+                        if (item.dataset.individualId === activeMemberId) {
+                            item.querySelector('a').classList.remove('active');
+                        }
+                    }
+                });
+
+                const newActiveLink = memberList.querySelector(`.member-list-item[data-individual-id="${activeMemberId}"] a`);
+                
+                if (newActiveLink && newActiveLink.offsetParent !== null) {
+                    updateActionButtons(activeMemberId); 
+                } 
+                else if (firstVisibleMemberId) {
+                    const firstVisibleListItem = memberList.querySelector(`.member-list-item[data-individual-id="${firstVisibleMemberId}"]`);
+                    if (firstVisibleListItem) {
+                        firstVisibleListItem.querySelector('a').classList.add('active');
+                        loadMemberDetails(firstVisibleMemberId);
+                    }
+                } 
+                else {
+                    paymentListBody.innerHTML = '<tr><td colspan="4" class="text-center text-base-content/60 text-xs py-1">No payments found.</td></tr>';
+                    updateActionButtons(null);
+                }
+
+                dashboardSearchInput.focus(); 
+            });
+        }
+        
+        // --- Initial Load of First Member's Details (on page load) ---
+        const firstMemberListItem = memberList.querySelector('.member-list-item');
+        if (firstMemberListItem) {
+            const initialIndividualId = firstMemberListItem.dataset.individualId;
+            console.log('Initial load. First member ID:', initialIndividualId);
+            // The 'active' class is added by Django template {% if forloop.first %}active{% endif %}
+            loadMemberDetails(initialIndividualId);
+        } else {
+            console.log('No members found on initial page load. Disabling buttons.');
+            paymentListBody.innerHTML = '<tr><td colspan="4" class="text-center text-xs text-base-content/60 py-1">No members found.</td></tr>';
+            updateActionButtons(null);
+        }
+
+        // --- NEW ADDITION: Remove active class from list items when search input gets focus ---
+        if (dashboardSearchInput) {
+            dashboardSearchInput.addEventListener('focus', function() {
+                // Remove 'active' class from all list items when the search input is focused
+                memberList.querySelectorAll('.member-list-item a.active').forEach(item => {
+                    item.classList.remove('active');
+                });
+                // Also, ensure buttons are disabled since no list item is explicitly selected now
+                updateActionButtons(null);
+                // Clear payment list content
+                paymentListBody.innerHTML = '<tr><td colspan="4" class="text-center text-xs text-base-content/60 py-1">Search or select a member.</td></tr>';
+            });
+            
+            // --- FINAL STEP: Ensure search input gets focus initially after DOM is ready ---
+            dashboardSearchInput.focus();
+        }
+    });
+</script>
+{% endblock %}

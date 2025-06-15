@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="max-w-xl mx-auto mt-10 bg-base-100 p-8 rounded-lg shadow-lg border border-base-300 text-base-content">
+    <h2 class="text-3xl font-bold mb-6 text-primary">Create New User</h2>
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% for field in form %}
+            <div class="mb-5">
+                <label for="{{ field.id_for_label }}" class="block text-base-content font-semibold mb-2">
+                    {{ field.label }}
+                    {% if field.field.required %}
+                        <span class="text-error">*</span> {# Changed to text-error for theme consistency #}
+                    {% endif %}
+                </label>
+                {# Using DaisyUI input classes for theme consistency #}
+                {{ field|add_class:"input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-primary" }}
+                {% if field.help_text %}
+                    <p class="text-base-content/70 text-xs mt-1">{{ field.help_text }}</p> {# Adjusted text color for theme #}
+                {% endif %}
+                {% if field.errors %}
+                    <p class="text-error text-sm mt-1">{{ field.errors }}</p> {# Changed to text-error #}
+                {% endif %}
+            </div>
+        {% endfor %}
+
+        <div class="mt-8 flex items-center">
+            {# Using DaisyUI button classes for theme consistency #}
+            <button type="submit" class="btn btn-primary font-semibold px-6 py-2 rounded transition">
+                Save
+            </button>
+            {# Using DaisyUI link classes for theme consistency #}
+            <a href="{% url 'account:user_list' %}" class="ml-4 link link-hover text-base-content/80 transition">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

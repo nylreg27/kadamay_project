@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% load static %} {# Make sure to load static if you're using any static files #}
+
+{% block title %}Create New Issue - Kadamay System{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto py-8 px-4">
+    <div class="card bg-base-100 shadow-xl p-6 md:p-8 text-base-content rounded-xl my-6">
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+            <h1 class="text-3xl font-extrabold text-primary flex items-center gap-3">
+                <i data-feather="plus-circle" class="w-8 h-8 text-primary"></i> Create New Issue
+            </h1>
+            <a href="{% url 'issues:user_issue_list' %}"
+               class="btn btn-ghost flex items-center gap-2 transition-all duration-300 hover:scale-105">
+                <i data-feather="arrow-left" class="w-5 h-5"></i> Back to Issues
+            </a>
+        </header>
+
+        ---
+
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+
+            {# Display non-field errors if any #}
+            {% if form.non_field_errors %}
+            <div role="alert" class="alert alert-error shadow-lg">
+                <i data-feather="alert-circle" class="w-6 h-6 stroke-current shrink-0"></i>
+                <div>
+                    <h3 class="font-bold">Error!</h3>
+                    <ul class="list-disc list-inside">
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+
+            {# Title Field #}
+            <div class="form-control w-full">
+                <label for="{{ form.title.id_for_label }}" class="label">
+                    <span class="label-text">Title</span>
+                </label>
+                <input type="text"
+                       name="{{ form.title.name }}"
+                       id="{{ form.title.id_for_label }}"
+                       placeholder="Enter issue title"
+                       class="input input-bordered w-full {% if form.title.errors %}input-error{% endif %}"
+                       value="{{ form.title.value|default_if_none:'' }}"
+                       required>
+                {% if form.title.errors %}
+                    <label class="label">
+                        <span class="label-text-alt text-error">{{ form.title.errors }}</span>
+                    </label>
+                {% endif %}
+            </div>
+
+            {# Description Field #}
+            <div class="form-control w-full">
+                <label for="{{ form.description.id_for_label }}" class="label">
+                    <span class="label-text">Description</span>
+                </label>
+                <textarea name="{{ form.description.name }}"
+                          id="{{ form.description.id_for_label }}"
+                          placeholder="Describe the issue in detail"
+                          class="textarea textarea-bordered h-32 w-full {% if form.description.errors %}textarea-error{% endif %}"
+                          required>{{ form.description.value|default_if_none:'' }}</textarea>
+                {% if form.description.errors %}
+                    <label class="label">
+                        <span class="label-text-alt text-error">{{ form.description.errors }}</span>
+                    </label>
+                {% endif %}
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {# Priority Field #}
+                <div class="form-control w-full">
+                    <label for="{{ form.priority.id_for_label }}" class="label">
+                        <span class="label-text">Priority</span>
+                    </label>
+                    <select name="{{ form.priority.name }}"
+                            id="{{ form.priority.id_for_label }}"
+                            class="select select-bordered w-full {% if form.priority.errors %}select-error{% endif %}"
+                            required>
+                        <option value="">Select Priority</option>
+                        {# Assuming form.priority.choices correctly fetches the choices from your model #}
+                        {% for value, text in form.priority.field.choices %}
+                            <option value="{{ value }}" {% if form.priority.value == value %}selected{% endif %}>{{ text }}</option>
+                        {% endfor %}
+                    </select>
+                    {% if form.priority.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.priority.errors }}</span>
+                        </label>
+                    {% endif %}
+                </div>
+
+                {# Status Field (You might want to make this read-only or hidden for creation) #}
+                {# For creation, 'status' usually defaults to 'New' or 'Open' and isn't set by the user #}
+                <div class="form-control w-full">
+                    <label for="{{ form.status.id_for_label }}" class="label">
+                        <span class="label-text">Status</span>
+                    </label>
+                    <select name="{{ form.status.name }}"
+                            id="{{ form.status.id_for_label }}"
+                            class="select select-bordered w-full {% if form.status.errors %}select-error{% endif %}"
+                            {% if not form.instance.pk %}disabled{% endif %}> {# Disable status for creation, as it's usually set by default #}
+                        <option value="">Select Status</option>
+                        {% for value, text in form.status.field.choices %}
+                            <option value="{{ value }}" {% if form.status.value == value %}selected{% endif %}>{{ text }}</option>
+                        {% endfor %}
+                    </select>
+                    {% if not form.instance.pk %}
+                    <label class="label">
+                        <span class="label-text-alt text-info">Status is automatically set for new issues.</span>
+                    </label>
+                    {% endif %}
+                    {% if form.status.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.status.errors }}</span>
+                        </label>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-3 mt-8">
+                <a href="{% url 'issues:user_issue_list' %}" class="btn btn-ghost">Cancel</a>
+                <button type="submit" class="btn btn-primary">Submit Issue</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace(); // Initialize Feather Icons
+    });
+</script>
+{% endblock %}

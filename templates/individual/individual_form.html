@@ -1,0 +1,294 @@
+{# apps/individual/templates/individual/individual_form.html #}
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Kadamay Mortuary System{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-4 max-w-4xl">
+    <div class="card bg-base-100 shadow-xl p-6 md:p-8 rounded-xl text-base-content">
+        <h1 class="text-3xl font-extrabold text-primary mb-6 text-center">{{ title }}</h1>
+
+        <form method="post" class="space-y-8">
+            {% csrf_token %}
+
+            {# Personal Information Section #}
+            <section>
+                <h2 class="text-2xl font-semibold mb-4 border-b-2 pb-2 text-base-content/90">Personal Information</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {# Surname #}
+                    <div class="form-control">
+                        <label for="{{ form.surname.id_for_label }}" class="label">
+                            <span class="label-text">Surname <span class="text-error">*</span></span>
+                        </label>
+                        <input type="text" name="{{ form.surname.name }}" id="{{ form.surname.id_for_label }}"
+                               value="{{ form.surname.value|default:'' }}"
+                               class="input input-bordered w-full {% if form.surname.errors %}input-error{% endif %}"
+                               placeholder="e.g., Dela Cruz" required />
+                        {% if form.surname.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.surname.errors }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    {# Given Name #}
+                    <div class="form-control">
+                        <label for="{{ form.given_name.id_for_label }}" class="label">
+                            <span class="label-text">Given Name <span class="text-error">*</span></span>
+                        </label>
+                        <input type="text" name="{{ form.given_name.name }}" id="{{ form.given_name.id_for_label }}"
+                               value="{{ form.given_name.value|default:'' }}"
+                               class="input input-bordered w-full {% if form.given_name.errors %}input-error{% endif %}"
+                               placeholder="e.g., Juan" required />
+                        {% if form.given_name.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.given_name.errors }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    {# Middle Name #}
+                    <div class="form-control">
+                        <label for="{{ form.middle_name.id_for_label }}" class="label">
+                            <span class="label-text">Middle Name (Optional)</span>
+                        </label>
+                        <input type="text" name="{{ form.middle_name.name }}" id="{{ form.middle_name.id_for_label }}"
+                               value="{{ form.middle_name.value|default:'' }}"
+                               class="input input-bordered w-full {% if form.middle_name.errors %}input-error{% endif %}"
+                               placeholder="e.g., Santos" />
+                        {% if form.middle_name.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.middle_name.errors }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    {# Suffix Name #}
+                    <div class="form-control">
+                        <label for="{{ form.suffix_name.id_for_label }}" class="label">
+                            <span class="label-text">Suffix Name (Optional)</span>
+                        </label>
+                        <input type="text" name="{{ form.suffix_name.name }}" id="{{ form.suffix_name.id_for_label }}"
+                               value="{{ form.suffix_name.value|default:'' }}"
+                               class="input input-bordered w-full {% if form.suffix_name.errors %}input-error{% endif %}"
+                               placeholder="e.g., Jr., Sr., III" />
+                        {% if form.suffix_name.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.suffix_name.errors }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    {# Sex #}
+                    <div class="form-control">
+                        <label for="{{ form.sex.id_for_label }}" class="label">
+                            <span class="label-text">Sex <span class="text-error">*</span></span>
+                        </label>
+                        <select name="{{ form.sex.name }}" id="{{ form.sex.id_for_label }}"
+                                class="select select-bordered w-full {% if form.sex.errors %}select-error{% endif %}" required>
+                            <option value="">Select Sex</option>
+                            {% for value, label in form.sex.field.choices %}
+                                <option value="{{ value }}" {% if value|stringformat:"s" == form.sex.value|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if form.sex.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.sex.errors }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    {# Civil Status #}
+                    <div class="form-control">
+                        <label for="{{ form.civil_status.id_for_label }}" class="label">
+                            <span class="label-text">Civil Status <span class="text-error">*</span></span>
+                        </label>
+                        <select name="{{ form.civil_status.name }}" id="{{ form.civil_status.id_for_label }}"
+                                class="select select-bordered w-full {% if form.civil_status.errors %}select-error{% endif %}" required>
+                            <option value="">Select Civil Status</option>
+                            {% for value, label in form.civil_status.field.choices %}
+                                <option value="{{ value }}" {% if value|stringformat:"s" == form.civil_status.value|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if form.civil_status.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.civil_status.errors }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    {# Birth Date #}
+                    <div class="form-control">
+                        <label for="{{ form.birth_date.id_for_label }}" class="label">
+                            <span class="label-text">Birth Date (Optional)</span>
+                        </label>
+                        <input type="date" name="{{ form.birth_date.name }}" id="{{ form.birth_date.id_for_label }}"
+                               value="{{ form.birth_date.value|date:'Y-m-d'|default:'' }}"
+                               class="input input-bordered w-full {% if form.birth_date.errors %}input-error{% endif %}" />
+                        {% if form.birth_date.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.birth_date.errors }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    {# Contact Number #}
+                    <div class="form-control">
+                        <label for="{{ form.contact_number.id_for_label }}" class="label">
+                            <span class="label-text">Contact Number (Optional)</span>
+                        </label>
+                        <input type="tel" name="{{ form.contact_number.name }}" id="{{ form.contact_number.id_for_label }}"
+                               value="{{ form.contact_number.value|default:'' }}"
+                               class="input input-bordered w-full {% if form.contact_number.errors %}input-error{% endif %}"
+                               placeholder="e.g., +639123456789" />
+                        {% if form.contact_number.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.contact_number.errors }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    {# Email Address #}
+                    <div class="form-control">
+                        <label for="{{ form.email_address.id_for_label }}" class="label">
+                            <span class="label-text">Email Address (Optional)</span>
+                        </label>
+                        <input type="email" name="{{ form.email_address.name }}" id="{{ form.email_address.id_for_label }}"
+                               value="{{ form.email_address.value|default:'' }}"
+                               class="input input-bordered w-full {% if form.email_address.errors %}input-error{% endif %}"
+                               placeholder="e.g., juan.delacruz@example.com" />
+                        {% if form.email_address.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.email_address.errors }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+
+            {# Membership Information Section #}
+            <section>
+                <h2 class="text-2xl font-semibold mb-4 border-b-2 pb-2 text-base-content/90 mt-8">Membership Information</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                    {# Family #}
+                    <div class="form-control">
+                        <label for="{{ form.family.id_for_label }}" class="label">
+                            <span class="label-text">Family (Optional)</span>
+                        </label>
+                        <select name="{{ form.family.name }}" id="{{ form.family.id_for_label }}"
+                                class="select select-bordered w-full {% if form.family.errors %}select-error{% endif %}">
+                            <option value="">Select Family</option>
+                            {% for family in form.fields.family.queryset %}
+                                <option value="{{ family.pk }}" {% if family.pk|stringformat:"s" == form.family.value|stringformat:"s" %}selected{% endif %}>{{ family.family_name|upper }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if form.family.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.family.errors }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    {# Relationship #}
+                    <div class="form-control">
+                        <label for="{{ form.relationship.id_for_label }}" class="label">
+                            <span class="label-text">Relationship to Head of Family <span class="text-error">*</span></span>
+                        </label>
+                        <select name="{{ form.relationship.name }}" id="{{ form.relationship.id_for_label }}"
+                                class="select select-bordered w-full {% if form.relationship.errors %}select-error{% endif %}" required>
+                            <option value="">Select Relationship</option>
+                            {% for value, label in form.relationship.field.choices %}
+                                <option value="{{ value }}" {% if value|stringformat:"s" == form.relationship.value|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if form.relationship.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.relationship.errors }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    {# Membership Status - NEW! REQUIRED! #}
+                    <div class="form-control hidden">
+                        <label for="{{ form.membership_status.id_for_label }}" class="label">
+                            <span class="label-text">Membership Status <span class="text-error">*</span></span>
+                        </label>
+                        <select name="{{ form.membership_status.name }}" id="{{ form.membership_status.id_for_label }}"
+                                class="select select-bordered w-full {% if form.membership_status.errors %}select-error{% endif %}" required>
+                            <option value="">Select Status</option>
+                            {% for value, label in form.membership_status.field.choices %}
+                                <option value="{{ value }}" {% if value|stringformat:"s" == form.membership_status.value|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if form.membership_status.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.membership_status.errors }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    {# Is Active Member #}
+                    <div class="form-control">
+                        <label class="label cursor-pointer justify-start gap-4">
+                            <input type="checkbox" name="{{ form.is_active_member.name }}" id="{{ form.is_active_member.id_for_label }}"
+                                   {% if form.is_active_member.value %}checked{% endif %}
+                                   class="checkbox checkbox-primary" />
+                            <span class="label-text">Is Active Member?</span>
+                        </label>
+                        {% if form.is_active_member.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.is_active_member.errors }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    {# Is Alive #}
+                    <div class="form-control">
+                        <label class="label cursor-pointer justify-start gap-4">
+                            <input type="checkbox" name="{{ form.is_alive.name }}" id="{{ form.is_alive.id_for_label }}"
+                                   {% if form.is_alive.value %}checked{% endif %}
+                                   class="checkbox checkbox-primary" />
+                            <span class="label-text">Is Alive?</span>
+                        </label>
+                        {% if form.is_alive.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.is_alive.errors }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+
+            {# Display non-field errors #}
+            {% if form.non_field_errors %}
+                <div role="alert" class="alert alert-error mt-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <div>
+                        <h3 class="font-bold">Form Submission Error!</h3>
+                        <ul class="list-disc ml-5">
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="flex justify-end gap-4 mt-8">
+                <a href="{% url 'individual:individual_list' %}" class="btn btn-ghost">Cancel</a>
+                <button type="submit" class="btn btn-primary">Save Member</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace(); // Feather Icons
+    });
+</script>
+{% endblock %}

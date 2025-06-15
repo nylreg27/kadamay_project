@@ -1,0 +1,186 @@
+{# apps/family/templates/family/family_detail.html #}
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-base-content">{{ family.family_name }} Details</h1>
+        <div class="space-x-2">
+            <a href="{% url 'family:family_update' family.pk %}" class="btn btn-warning btn-outline btn-sm">
+                <i data-feather="edit" class="w-4 h-4"></i> Edit Family
+            </a>
+            <a href="{% url 'family:family_list' %}" class="btn btn-ghost btn-sm">
+                <i data-feather="arrow-left" class="w-4 h-4"></i> Back to List
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+        <div class="mb-4">
+            {% for message in messages %}
+                <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %} shadow-lg">
+                    <div>
+                        <i data-feather="{% if message.tags == 'success' %}check-circle{% else %}alert-circle{% endif %}" class="w-6 h-6"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title text-primary">Family Information</h2>
+                <div class="text-base-content/80">
+                    <p class="mb-2"><strong class="text-base-content">Name:</strong> {{ family.family_name }}</p>
+                    <p class="mb-2"><strong class="text-base-content">Address:</strong> {{ family.address }}</p>
+                    <p class="mb-2"><strong class="text-base-content">Church:</strong> <a href="{% url 'church:church_detail' family.church.pk %}" class="link link-hover link-info">{{ family.church.name }}</a></p>
+                    <p class="mb-2"><strong class="text-base-content">Status:</strong>
+                        <span class="badge {% if family.is_active %}badge-success{% else %}badge-error{% endif %} badge-md">
+                            {% if family.is_active %}Active{% else %}Inactive{% endif %}
+                        </span>
+                    </p>
+                    {% if family.in_charge %}
+                        <p class="mb-2"><strong class="text-base-content">In Charge:</strong> {{ family.in_charge.full_name }}</p>
+                    {% else %}
+                        <p class="mb-2"><strong class="text-base-content">In Charge:</strong> Not assigned</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title text-primary">Key Metrics</h2>
+                <div class="stats stats-vertical lg:stats-horizontal shadow mb-6">
+                    <div class="stat">
+                        <div class="stat-title">Total Members</div>
+                        <div class="stat-value">{{ total_members_count }}</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-title">Active Members</div>
+                        <div class="stat-value text-success">{{ active_members_count }}</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-title">Deceased Members</div>
+                        <div class="stat-value text-error">{{ deceased_members_count }}</div>
+                    </div>
+                </div>
+
+                {% if family_head %}
+                    <p class="text-lg font-semibold mb-4">Family Head: <span class="text-primary">{{ family_head.given_name }} {{ family_head.surname }}</span></p>
+                {% else %}
+                    <p class="text-base-content/70 mb-4">No Family Head designated yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-xl mb-8">
+        <div class="card-body">
+            <h2 class="card-title text-primary">Family Members</h2>
+            {% if total_members_count > 0 %}
+                <div class="overflow-x-auto">
+                    <table class="table w-full">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Relationship</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for individual in all_individuals %}
+                                <tr>
+                                    <td><a href="{% url 'individual:individual_detail' individual.pk %}" class="link link-hover link-primary">{{ individual.full_name }}</a></td>
+                                    <td>{{ individual.get_relationship_display_value }}</td> {# Use the display value #}
+                                    <td>
+                                        <span class="badge {% if individual.is_active_member %}badge-success{% else %}badge-error{% endif %} badge-md">
+                                            {% if individual.is_active_member %}ACTIVE{% else %}INACTIVE{% endif %}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="flex gap-1">
+                                            <a href="{% url 'individual:individual_detail' individual.pk %}" class="btn btn-xs btn-info btn-square tooltip" data-tip="View Member">
+                                                <i data-feather="eye" class="w-4 h-4"></i>
+                                            </a>
+                                            <a href="{% url 'individual:individual_update' individual.pk %}" class="btn btn-xs btn-warning btn-square tooltip" data-tip="Edit Member">
+                                                <i data-feather="edit-3" class="w-4 h-4"></i>
+                                            </a>
+                                            {# Add delete button if needed #}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-4 text-right">
+                    <a href="{% url 'individual:family_individual_create' family.pk %}" class="btn btn-primary btn-md">
+                        <i data-feather="plus-circle" class="w-5 h-5"></i> Add New Member
+                    </a>
+                </div>
+            {% else %}
+                <div class="alert alert-info shadow-lg mt-6">
+                    <div>
+                        <i data-feather="info" class="w-6 h-6"></i>
+                        <span>This family currently has no registered members.</span>
+                    </div>
+                </div>
+                <div class="mt-4 text-center">
+                    <a href="{% url 'individual:family_individual_create' family.pk %}" class="btn btn-primary btn-md">
+                        <i data-feather="plus-circle" class="w-5 h-5"></i> Add First Member
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title text-primary">Recent Payments by Family Members</h2>
+            {% if family_payments %}
+                <div class="overflow-x-auto">
+                    <table class="table w-full">
+                        <thead>
+                            <tr>
+                                <th>Individual</th>
+                                <th>Amount</th>
+                                <th>Date Paid</th>
+                                <th>Payment Type</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in family_payments %}
+                                <tr>
+                                    <td><a href="{% url 'individual:individual_detail' payment.individual.pk %}" class="link link-hover link-primary">{{ payment.individual.full_name }}</a></td>
+                                    <td>{{ payment.amount|floatformat:2 }}</td>
+                                    <td>{{ payment.date_paid|date:"M j, Y" }}</td>
+                                    <td>{{ payment.get_payment_type_display }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-warning shadow-lg mt-6">
+                    <div>
+                        <i data-feather="alert-triangle" class="w-6 h-6"></i>
+                        <span>No recent payments found for this family.</span>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    feather.replace();
+</script>
+{% endblock %}

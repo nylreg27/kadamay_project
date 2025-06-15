@@ -1,0 +1,302 @@
+{# church_detail.html #}
+{% extends 'base.html' %}
+
+{% block title %}
+{{ church.name|upper }} - Kadamay Mortuary System
+{% endblock %}
+
+{% block content %}
+{# Reduced max-w from 7xl to 5xl, and padding from p-6/p-8 to p-5/p-6 #}
+<div class="card bg-base-100 shadow-xl p-5 md:p-6 text-base-content rounded-xl my-5 mx-auto max-w-5xl">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-3"> {# Reduced bottom margin and gap #}
+        <div>
+            {# Slightly smaller title #}
+            <h1 class="text-2xl font-extrabold text-primary">{{ church.name|upper }}</h1>
+            {# Reduced text size and margin #}
+            <p class="text-base-content/80 mt-0.5 text-base max-w-prose">{{ church.address|upper }}</p>
+        </div>
+        <div class="flex flex-wrap md:flex-nowrap gap-2 w-full md:w-auto justify-end"> {# Reduced gap #}
+            <a href="{% url 'church:church_list' %}"
+               class="btn btn-ghost btn-sm flex items-center gap-1 transition-all duration-300 hover:scale-105 w-full md:w-auto"> {# Added btn-sm, reduced gap #}
+                <i data-feather="arrow-left" class="w-4 h-4"></i> Back to List {# Reduced icon size #}
+            </a>
+            {% if user.is_superuser %}
+            <a href="{% url 'church:church_update' church.id %}"
+               class="btn btn-primary btn-sm flex items-center gap-1 transition-all duration-300 hover:scale-105 w-full md:w-auto"> {# Added btn-sm, reduced gap #}
+                <i data-feather="edit" class="w-4 h-4"></i> Edit Church {# Reduced icon size #}
+            </a>
+            <a href="{% url 'church:church_delete' church.id %}"
+               class="btn btn-error btn-sm flex items-center gap-1 transition-all duration-300 hover:scale-105 w-full md:w-auto"> {# Added btn-sm, reduced gap #}
+                <i data-feather="trash-2" class="w-4 h-4"></i> Delete Church {# Reduced icon size #}
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8"> {# Reduced gaps and bottom margin #}
+        <div class="card bg-base-200 rounded-xl p-5 shadow-md border border-base-300"> {# Reduced padding #}
+            {# Changed text-secondary to text-primary for consistency #}
+            <h2 class="text-xl font-bold mb-3 text-primary">Church Information</h2> {# Reduced title size and margin #}
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3"> {# Reduced gaps #}
+                <div class="space-y-0.5"> {# Reduced space-y #}
+                    {# Changed text-base-content/70 to text-base-content/60 for lighter effect #}
+                    <h3 class="text-xs font-medium text-base-content/60">District</h3> {# Reduced text size #}
+                    {# Reduced text size #}
+                    <p class="text-base font-semibold text-base-content">{{ church.district|default:"-"|upper }}</p>
+                </div>
+                <div class="space-y-0.5">
+                    <h3 class="text-xs font-medium text-base-content/60">In-Charge</h3>
+                    <p class="text-base font-semibold text-base-content">{{ church.in_charge.get_full_name|default:"-"|upper }}</p>
+                </div>
+                <div class="space-y-0.5">
+                    <h3 class="text-xs font-medium text-base-content/60">Status</h3>
+                    <p class="text-base font-semibold text-base-content">
+                        {% if church.is_active %}
+                            <span class="badge badge-success badge-md font-semibold">ACTIVE</span> {# Reduced badge size to md #}
+                        {% else %}
+                            <span class="badge badge-error badge-md font-semibold">INACTIVE</span> {# Reduced badge size to md #}
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-200 rounded-xl p-5 shadow-md border border-base-300"> {# Reduced padding #}
+            {# Changed text-secondary to text-primary for consistency #}
+            <h2 class="text-xl font-bold mb-3 text-primary">Quick Stats</h2> {# Reduced title size and margin #}
+            <div class="stats stats-vertical lg:stats-horizontal shadow w-full">
+                {# Stat colors adjusted for better theme integration #}
+                <div class="stat place-items-center bg-base-100"> {# Added bg-base-100 for a subtle break #}
+                    <div class="stat-figure text-primary">
+                        <i data-feather="home" class="w-6 h-6"></i> {# Reduced icon size #}
+                    </div>
+                    <div class="stat-title text-xs">Total Families</div> {# Reduced title size #}
+                    {# UPDATED: Use the context variable from views.py #}
+                    <div class="stat-value text-primary text-3xl">{{ total_families_count }}</div> {# Reduced value size #}
+                </div>
+                <div class="stat place-items-center bg-base-100">
+                    <div class="stat-figure text-success"> {# Changed to text-success for general positive count #}
+                        <i data-feather="users" class="w-6 h-6"></i>
+                    </div>
+                    <div class="stat-title text-xs">Total Members</div>
+                    {# UPDATED: Use the context variable from views.py #}
+                    <div class="stat-value text-success text-3xl">{{ total_members_count }}</div>
+                </div>
+                <div class="stat place-items-center bg-base-100">
+                    <div class="stat-figure text-info"> {# Changed to text-info for active status #}
+                        <i data-feather="user-check" class="w-6 h-6"></i>
+                    </div>
+                    <div class="stat-title text-xs">Active Members</div>
+                    <div class="stat-value text-info text-3xl">
+                      {# This is already correct #}
+                      {{ active_members_count }}
+                    </div>
+                </div>
+                <div class="stat place-items-center bg-base-100">
+                    <div class="stat-figure text-error"> {# Changed to text-error for deceased #}
+                        <i data-feather="crosshair" class="w-6 h-6"></i>
+                    </div>
+                    <div class="stat-title text-xs">Deceased</div>
+                    <div class="stat-value text-error text-3xl">
+                      {# This is already correct #}
+                      {{ deceased_members_count }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tabs tabs-boxed mb-5 bg-base-200 shadow-sm rounded-lg"> {# Reduced bottom margin #}
+        <button
+            id="families-tab-btn"
+            class="tab tab-active text-base font-semibold" {# Reduced text size #}
+            onclick="openTab(event, 'families-tab')"
+        >
+            Families
+        </button>
+        <button
+            id="members-tab-btn"
+            class="tab text-base font-semibold" {# Reduced text size #}
+            onclick="openTab(event, 'members-tab')"
+        >
+            Members
+        </button>
+    </div>
+
+    {# MODIFIED: Added flex flex-col to the tab-content div #}
+    <div id="families-tab" class="tab-content flex flex-col">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 gap-2"> {# Adjusted for small screen responsiveness, reduced gap #}
+            <h3 class="text-lg font-bold text-base-content">Recent Families</h3> {# Reduced title size #}
+            <a href="{% url 'family:church_families' church.id %}"
+               class="link link-hover link-primary flex items-center gap-0.5 font-semibold transition-all duration-300 hover:scale-105 text-sm"> {# Reduced gap, added text-sm #}
+                View All <i data-feather="arrow-right" class="w-4 h-4"></i> {# Reduced icon size #}
+            </a>
+        </div>
+
+        {# UPDATED: Use recent_families context variable #}
+        {% if recent_families %}
+        <div class="overflow-x-auto rounded-lg shadow-md border border-base-300"> {# Added border #}
+            <table class="table table-sm w-full"> {# Added table-sm for compact #}
+                <thead class="bg-primary text-primary-content">
+                    <tr>
+                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider">Family Name</th> {# Reduced padding and text size #}
+                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider">Address</th>
+                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider">Members</th>
+                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {# UPDATED: Iterate over recent_families directly #}
+                    {% for family in recent_families %}
+                    <tr class="border-b border-base-200 hover:bg-base-200 transition-colors duration-200">
+                        <td class="px-4 py-2 whitespace-nowrap"> {# Reduced padding #}
+                            <a href="{% url 'family:family_detail' family.id %}" class="link link-hover link-primary font-medium text-sm"> {# Reduced text size #}
+                                {{ family.family_name|upper }}
+                            </a>
+                        </td>
+                        <td class="px-4 py-2 text-xs">{{ family.address|truncatechars:30|upper }}</td> {# Reduced truncate, added text-xs #}
+                        <td class="px-4 py-2 text-xs">{{ family.individual_set.count }}</td> {# This is correct: individual_set is the default related_name from Family to Individual #}
+                        <td class="px-4 py-2">
+                            {% if family.is_active %}
+                                <span class="badge badge-success badge-md font-semibold">ACTIVE</span> {# Reduced badge size to md #}
+                            {% else %}
+                                <span class="badge badge-error badge-md font-semibold">INACTIVE</span> {# Reduced badge size to md #}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="hero bg-base-200 rounded-lg p-8 text-center shadow-lg"> {# Reduced padding #}
+            <div class="hero-content flex flex-col items-center">
+                <i data-feather="users" class="w-16 h-16 text-base-content/50 mb-3"></i> {# Reduced icon size and margin #}
+                <p class="text-lg font-bold mb-3 text-base-content">No families found for this church.</p> {# Reduced text size and margin #}
+                {% if user.is_superuser %}
+                <a href="{% url 'family:family_create_in_church' church.id %}"
+                   class="btn btn-primary btn-md flex items-center gap-1 transition-all duration-300 hover:scale-105"> {# Reduced button size, reduced gap #}
+                    <i data-feather="plus" class="w-4 h-4"></i> Add First Family {# Reduced icon size #}
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    {# MODIFIED: Added flex flex-col to the tab-content div #}
+    <div id="members-tab" class="tab-content hidden flex flex-col">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 gap-2"> {# Adjusted for small screen responsiveness, reduced gap #}
+            <h3 class="text-lg font-bold text-base-content">Recent Members</h3> {# Reduced title size #}
+            <a href="{% url 'individual:church_individuals' church.id %}"
+               class="link link-hover link-primary flex items-center gap-0.5 font-semibold transition-all duration-300 hover:scale-105 text-sm"> {# Reduced gap, added text-sm #}
+                View All <i data-feather="arrow-right" class="w-4 h-4"></i> {# Reduced icon size #}
+            </a>
+        </div>
+
+        {# UPDATED: Use recent_members context variable #}
+        {% if recent_members %}
+        <div class="overflow-x-auto rounded-lg shadow-md border border-base-300"> {# Added border #}
+            <table class="table table-sm w-full"> {# Added table-sm for compact #}
+                <thead class="bg-primary text-primary-content">
+                    <tr>
+                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider">Name</th> {# Reduced padding and text size #}
+                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider">Family</th>
+                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider">Relationship</th>
+                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {# UPDATED: Iterate over recent_members directly #}
+                    {% for member in recent_members %}
+                    <tr class="border-b border-base-200 hover:bg-base-200 transition-colors duration-200">
+                        <td class="px-4 py-2 whitespace-nowrap"> {# Reduced padding #}
+                            <a href="{% url 'individual:individual_detail' member.id %}" class="link link-hover link-primary font-medium text-sm"> {# Reduced text size #}
+                                {{ member.surname|upper }}, {{ member.given_name|upper }} {{ member.middle_name|default:""|upper }}
+                            </a>
+                        </td>
+                        <td class="px-4 py-2 text-xs"> {# Added text-xs #}
+                            <a href="{% url 'family:family_detail' member.family.id %}" class="link link-hover link-primary">
+                                {{ member.family.family_name|upper }}
+                            </a>
+                        </td>
+                        <td class="px-4 py-2 text-xs">{{ member.get_relationship_display|upper }}</td> {# Added text-xs #}
+                        <td class="px-4 py-2">
+                            {% if member.is_active_member and member.is_alive %}
+                                <span class="badge badge-success badge-md font-semibold">ACTIVE</span> {# Reduced badge size to md #}
+                            {% elif not member.is_alive %}
+                                <span class="badge badge-info badge-md font-semibold">DECEASED</span> {# Reduced badge size to md #}
+                            {% else %}
+                                <span class="badge badge-error badge-md font-semibold">INACTIVE</span> {# Reduced badge size to md #}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="hero bg-base-200 rounded-lg p-8 text-center shadow-lg"> {# Reduced padding #}
+            <div class="hero-content flex flex-col items-center">
+                <i data-feather="user" class="w-16 h-16 text-base-content/50 mb-3"></i> {# Reduced icon size and margin #}
+                <p class="text-lg font-bold mb-3 text-base-content">No members found for this church.</p> {# Reduced text size and margin #}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        function openTab(evt, tabName) {
+            document.querySelectorAll(".tab-content").forEach(tab => tab.classList.add("hidden"));
+            document.querySelectorAll(".tab").forEach(btn => {
+                btn.classList.remove("tab-active");
+            });
+            document.getElementById(tabName).classList.remove("hidden");
+            evt.currentTarget.classList.add("tab-active");
+
+            if (typeof feather !== 'undefined') {
+                feather.replace();
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            // Directly activate the families tab on load
+            const initialTabContentId = 'families-tab';
+            const initialTabButtonId = 'families-tab-btn';
+
+            // Hide all tab content
+            document.querySelectorAll(".tab-content").forEach(tab => tab.classList.add("hidden"));
+            // Remove active class from all buttons
+            document.querySelectorAll(".tab").forEach(btn => {
+                btn.classList.remove("tab-active");
+            });
+
+            // Show the initial tab content
+            const initialTabContent = document.getElementById(initialTabContentId);
+            if (initialTabContent) {
+                initialTabContent.classList.remove("hidden");
+            } else {
+                console.error(`Tab content with ID '${initialTabContentId}' not found.`);
+            }
+
+            // Add active class to the initial tab button
+            const initialTabButton = document.getElementById(initialTabButtonId);
+            if (initialTabButton) {
+                initialTabButton.classList.add("tab-active");
+            } else {
+                console.error(`Tab button with ID '${initialTabButtonId}' not found.`);
+            }
+
+            if (typeof feather !== 'undefined') {
+                feather.replace();
+            } else {
+                console.error("Feather Icons library is not loaded.");
+            }
+        });
+    </script>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{# No additional JS needed here as the inline script handles feather.replace() for dynamic content. #}
+{% endblock %}

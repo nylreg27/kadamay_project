@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="corporate">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Kadamay System</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.10.1/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <style>
+        /* Optional: Add custom styles here if needed. 
+           Can mostly be replaced by Tailwind/DaisyUI utility classes directly on body. */
+        body {
+            /* flexbox properties for centering */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            /* bg-base-200 is set on the body tag directly below */
+        }
+        /* No longer strictly needed if using w-11/12 max-w-md on the card directly */
+        /* .login-card {
+            max-width: 400px;
+            width: 90%;
+        } */
+    </style>
+</head>
+<body class="bg-base-200">
+    <div class="card bg-base-100 shadow-xl p-8 w-11/12 max-w-md"> {# Adjusted width for better responsiveness #}
+        <h2 class="text-3xl font-extrabold text-center mb-4 text-primary flex items-center justify-center gap-2">
+            <i data-feather="key" class="w-8 h-8"></i> Welcome to Kadamay System
+        </h2>
+        <p class="text-xl font-semibold text-center mb-8 text-base-content/80">Login to your account</p>
+
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="form-control">
+                    <label class="label" for="{{ field.id_for_label }}">
+                        <span class="label-text">{{ field.label }}</span>
+                    </label>
+                    <input type="{{ field.field.widget.input_type|default:'text' }}"
+                           name="{{ field.name }}"
+                           id="{{ field.id_for_label }}"
+                           placeholder="{{ field.label }}"
+                           class="input input-bordered w-full {% if field.errors %}input-error{% endif %}"
+                           value="{{ field.value|default_if_none:'' }}"
+                           {% if field.field.widget.input_type == 'password' %}autocomplete="current-password"{% endif %}
+                           {% if field.field.widget.attrs.autofocus %}autofocus{% endif %} {# Preserve autofocus if set in Django form #}
+                    >
+                    {% if field.help_text %}
+                        <label class="label">
+                            <span class="label-text-alt text-base-content/70">{{ field.help_text }}</span>
+                        </label>
+                    {% endif %}
+                    {% for error in field.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ error }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+
+            {# Non-field errors #}
+            {% if form.non_field_errors %}
+                <div role="alert" class="alert alert-error mt-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span>
+                        <ul class="list-disc ml-4">
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </span>
+                </div>
+            {% endif %}
+
+            <input type="hidden" name="next" value="{{ next }}">
+            <button type="submit" class="btn btn-primary w-full mt-6">Login</button>
+        </form>
+
+        <div class="text-center mt-6 text-sm">
+            <a href="{% url 'password_reset' %}" class="link link-hover text-primary">Forgot password?</a>
+        </div>
+        <div class="text-center mt-2 text-sm text-base-content/80">
+            Don't have an account? 
+            {# Changed URL to a placeholder, recommend creating a specific "request account" or contact page #}
+            <a href="#" class="link link-hover text-primary" onclick="alert('Please contact your system administrator to request an account.'); return false;">
+                Contact Administrator
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Feather Icons
+        feather.replace();
+    </script>
+</body>
+</html>

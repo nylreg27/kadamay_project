@@ -1,0 +1,126 @@
+{# family_form.html #}
+{% extends 'base.html' %}
+
+{% block title %}{% if form.instance.pk %}Edit{% else %}Create{% endif %} Family - Kadamay Mortuary System{% endblock %}
+
+{% block content %}
+<div class="card bg-base-100 shadow-xl p-6 md:p-8 text-base-content rounded-xl my-6 mx-auto max-w-4xl">
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <h1 class="text-3xl font-extrabold text-primary">{% if form.instance.pk %}Edit Family{% else %}Create New Family{% endif %}</h1>
+        
+        <a href="{% if form.instance.pk %}{% url 'family:family_detail' form.instance.pk %}{% else %}{% url 'family:family_list' %}{% endif %}" 
+           class="btn btn-ghost flex items-center gap-2 transition-all duration-300 hover:scale-105 w-full md:w-auto">
+            <i data-feather="arrow-left" class="w-5 h-5"></i> Back
+        </a>
+    </header>
+    
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+        <div role="alert" class="alert alert-error mb-4"> {# DaisyUI alert #}
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <span>
+                {% for error in form.non_field_errors %}
+                    {{ error }}
+                {% endfor %}
+            </span>
+        </div>
+        {% endif %}
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="form-control w-full"> {# DaisyUI form control #}
+                <label class="label" for="{{ form.family_name.id_for_label }}">
+                    <span class="label-text text-base-content/70">Family Name</span>
+                </label>
+                <input type="text" 
+                       name="{{ form.family_name.name }}" 
+                       id="{{ form.family_name.id_for_label }}" 
+                       value="{{ form.family_name.value|default:'' }}" 
+                       placeholder="e.g., Dela Cruz Family"
+                       class="input input-bordered w-full {% if form.family_name.errors %}input-error{% endif %}"
+                >
+                {% if form.family_name.errors %}
+                <label class="label">
+                    <span class="label-text-alt text-error">{{ form.family_name.errors }}</span>
+                </label>
+                {% endif %}
+            </div>
+
+            <div class="form-control w-full"> {# DaisyUI form control #}
+                <label class="label" for="{{ form.church.id_for_label }}">
+                    <span class="label-text text-base-content/70">Church</span>
+                </label>
+                <select name="{{ form.church.name }}" 
+                        id="{{ form.church.id_for_label }}" 
+                        class="select select-bordered w-full {% if form.church.errors %}select-error{% endif %}">
+                  <option value="" disabled selected>Select Church</option> {# Disabled and selected for placeholder #}
+                    {% for church_id, church_name in form.fields.church.choices %}
+                        {% if church_id %} {# Ensure value is not empty string for valid options #}
+                        <option value="{{ church_id }}" {% if form.church.value|stringformat:"s" == church_id|stringformat:"s" %}selected{% endif %}>{{ church_name }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+                {% if form.church.errors %}
+                <label class="label">
+                    <span class="label-text-alt text-error">{{ form.church.errors }}</span>
+                </label>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="form-control w-full"> {# DaisyUI form control #}
+            <label class="label" for="{{ form.address.id_for_label }}">
+                <span class="label-text text-base-content/70">Address</span>
+            </label>
+            <textarea name="{{ form.address.name }}" 
+                      id="{{ form.address.id_for_label }}" 
+                      rows="3" 
+                      placeholder="e.g., 123 Main St, Anytown"
+                      class="textarea textarea-bordered h-24 w-full {% if form.address.errors %}textarea-error{% endif %}">{{ form.address.value|default:'' }}</textarea>
+            {% if form.address.errors %}
+            <label class="label">
+                <span class="label-text-alt text-error">{{ form.address.errors }}</span>
+            </label>
+            {% endif %}
+        </div>
+
+        <div class="form-control"> {# DaisyUI form control for checkbox #}
+            <label class="label cursor-pointer justify-start gap-3"> {# Align checkbox and label #}
+                <input type="checkbox" 
+                       name="{{ form.is_active.name }}" 
+                       id="{{ form.is_active.id_for_label }}" 
+                       {% if form.is_active.value %}checked{% endif %} 
+                       class="checkbox checkbox-primary"
+                >
+                <span class="label-text text-base-content">Is Active</span>
+            </label>
+            {% if form.is_active.errors %}
+            <label class="label">
+                <span class="label-text-alt text-error">{{ form.is_active.errors }}</span>
+            </label>
+            {% endif %}
+        </div>
+
+        <div class="flex justify-end space-x-3 mt-8"> {# Increased top margin #}
+            <a href="{% if form.instance.pk %}{% url 'family:family_detail' form.instance.pk %}{% else %}{% url 'family:family_list' %}{% endif %}" 
+               class="btn btn-ghost transition-all duration-300 hover:scale-105">
+                Cancel
+            </a>
+            <button type="submit" 
+                    class="btn btn-primary transition-all duration-300 hover:scale-105">
+                {% if form.instance.pk %}Update Family{% else %}Create Family{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace();
+    });
+</script>
+{% endblock %}

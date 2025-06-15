@@ -1,0 +1,79 @@
+{# church_confirm_delete.html #}
+{% extends 'base.html' %}
+
+{% block title %}Confirm Delete - Kadamay Mortuary System{% endblock %}
+
+{% block content %}
+<div class="card bg-base-100 shadow-xl p-6 md:p-8 text-base-content max-w-4xl mx-auto my-6 rounded-xl">
+
+  <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+    <h1 class="text-3xl font-extrabold text-error">Confirm Church Deletion</h1> {# Added text-error for severity #}
+    <a href="{% url 'church:church_detail' church.id %}"
+       class="btn btn-ghost flex items-center gap-2 transition-all duration-300 hover:scale-105"> {# Added transition #}
+      <i data-feather="arrow-left" class="w-5 h-5"></i> Back to Details {# Added w-5 h-5 #}
+    </a>
+  </header>
+
+  <section class="alert alert-warning mb-10 shadow-md"> {# Added shadow #}
+    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-8 w-8" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+    <div>
+      <h2 class="text-xl font-bold">Warning: Irreversible Action!</h2> {# Stronger heading #}
+      <p class="text-lg leading-relaxed text-base-content/90"> {# Slightly darker text #}
+        You are about to permanently delete the church "<strong class="font-bold">{{ church.name|upper }}</strong>". <br>
+        This action <span class="underline font-extrabold text-error">cannot be undone</span> and will remove:
+      </p>
+    </div>
+  </section>
+
+  <section class="mb-10">
+    <h3 class="text-2xl font-semibold mb-4 border-b-2 pb-2 text-base-content/90">Church Details</h3> {# Consistent text color #}
+    <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+      <div>
+        <dt class="font-medium text-base-content/70">Name</dt>
+        <dd class="mt-1 text-lg font-semibold text-base-content">{{ church.name|upper }}</dd> {# Added font-semibold, uppercase #}
+      </div>
+      <div>
+        <dt class="font-medium text-base-content/70">Date Established</dt>
+        <dd class="mt-1 text-lg font-semibold text-base-content">{{ church.date_established|date:"F d, Y"|default:"N/A" }}</dd> {# Added font-semibold, default #}
+      </div>
+      <div class="md:col-span-2">
+        <dt class="font-medium text-base-content/70">Address</dt>
+        <dd class="mt-1 text-lg font-semibold text-base-content">{{ church.address|upper }}</dd> {# Added font-semibold, uppercase #}
+      </div>
+    </dl>
+  </section>
+
+  <section class="alert alert-info mb-12 shadow-md"> {# Added shadow #}
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+    <div>
+      <h3 class="text-xl font-bold">Associated Data to be Removed</h3> {# More descriptive heading #}
+      <ul class="list-disc list-inside space-y-2 text-lg font-medium text-base-content/90">
+        <li><strong class="text-xl font-extrabold text-info">{{ church.family_set.count }}</strong> Families</li> {# Used family_set, added text-xl font-extrabold #}
+        <li><strong class="text-xl font-extrabold text-info">{{ church.individual_set.count }}</strong> Members</li> {# Used individual_set, added text-xl font-extrabold #}
+        <li>All associated payments and related records will also be permanently deleted.</li> {# Rephrased for clarity #}
+      </ul>
+    </div>
+  </section>
+
+  <form method="post" class="flex justify-end space-x-4">
+    {% csrf_token %}
+    <a href="{% url 'church:church_detail' church.id %}"
+       class="btn btn-ghost transition-all duration-300 hover:scale-105"> {# Added transition #}
+      Cancel
+    </a>
+    <button type="submit"
+            class="btn btn-error transition-all duration-300 hover:scale-105"> {# Added transition #}
+      Confirm Delete
+    </button>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,139 @@
+{# church_form.html #}
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{% if form.instance.pk %}Edit{% else %}Create{% endif %} Church - Kadamay Mortuary System{% endblock %}
+
+{% block content %}
+{# Reduced max-w from 3xl to 2xl, and padding from p-6/p-8 to p-5/p-6 #}
+<div class="card bg-base-100 shadow-xl p-5 md:p-6 text-base-content max-w-2xl mx-auto my-5 rounded-xl"> 
+    <div class="flex flex-col md:flex-row justify-between items-center mb-5 gap-3"> {# Reduced bottom margin and gap #}
+        {# Slightly smaller title #}
+        <h1 class="text-2xl font-extrabold text-primary">{% if form.instance.pk %}Edit{% else %}Add New{% endif %} Church</h1>
+        <a href="{% url 'church:church_list' %}" class="btn btn-ghost btn-sm flex items-center gap-1"> {# Added btn-sm, reduced gap #}
+            <i data-feather="arrow-left" class="w-4 h-4"></i> {# Reduced icon size #}
+            Back to List
+        </a>
+    </div>
+
+    <form method="post" class="space-y-4" novalidate> {# Reduced space-y for less vertical spacing #}
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+        <div role="alert" class="alert alert-error py-2 text-sm"> {# Reduced vertical padding, slightly smaller text #}
+            <i data-feather="alert-triangle" class="w-5 h-5 stroke-current shrink-0"></i> {# Reduced icon size #}
+            <div>
+                {% for error in form.non_field_errors %}
+                    <p class="font-bold">Error:</p>
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4"> {# Reduced gap #}
+            <div class="form-control">
+                <label for="{{ form.name.id_for_label }}" class="label">
+                    <span class="label-text text-base font-medium">Church Name</span> {# Reduced label text size #}
+                    {% if form.name.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                </label>
+                <input type="text" name="{{ form.name.name }}" id="{{ form.name.id_for_label }}"
+                       value="{{ form.name.value|default:'' }}"
+                       placeholder="Enter church name"
+                       class="input input-bordered w-full text-base uppercase transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent {% if form.name.errors %}input-error{% endif %}" autocomplete="off" /> {# Reduced input text size #}
+                {% if form.name.errors %}
+                <label class="label">
+                    <span class="label-text-alt text-error text-xs">{{ form.name.errors }}</span> {# Reduced error text size #}
+                </label>
+                {% endif %}
+            </div>
+
+            <div class="form-control">
+                <label for="{{ form.district.id_for_label }}" class="label">
+                    <span class="label-text text-base font-medium">District</span> {# Reduced label text size #}
+                    {% if form.district.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                </label>
+                <select name="{{ form.district.name }}" id="{{ form.district.id_for_label }}"
+                        class="select select-bordered w-full text-base uppercase transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent {% if form.district.errors %}select-error{% endif %}"> {# Reduced select text size #}
+                    <option value="">Select District</option>
+                    {% for district in form.fields.district.queryset %}
+                        <option value="{{ district.pk }}" {% if district.pk|stringformat:"s" == form.district.value|stringformat:"s" %}selected{% endif %}>{{ district.name|upper }}</option>
+                    {% endfor %}
+                </select>
+                {% if form.district.errors %}
+                <label class="label">
+                    <span class="label-text-alt text-error text-xs">{{ form.district.errors }}</span> {# Reduced error text size #}
+                </label>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="form-control">
+            <label for="{{ form.address.id_for_label }}" class="label">
+                <span class="label-text text-base font-medium">Address</span> {# Reduced label text size #}
+                {% if form.address.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+            </label>
+            {# Reduced height from h-24 to h-20, and text size to base #}
+            <textarea name="{{ form.address.name }}" id="{{ form.address.id_for_label }}" rows="3"
+                      placeholder="Enter church address"
+                      class="textarea textarea-bordered h-20 w-full text-base uppercase transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent {% if form.address.errors %}textarea-error{% endif %} resize-y">{{ form.address.value|default:'' }}</textarea>
+            {% if form.address.errors %}
+            <label class="label">
+                <span class="label-text-alt text-error text-xs">{{ form.address.errors }}</span> {# Reduced error text size #}
+            </label>
+            {% endif %}
+        </div>
+
+        <div class="form-control">
+            <label for="{{ form.in_charge.id_for_label }}" class="label">
+                <span class="label-text text-base font-medium">In-Charge</span> {# Reduced label text size #}
+                {% if form.in_charge.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+            </label>
+            <select name="{{ form.in_charge.name }}" id="{{ form.in_charge.id_for_label }}"
+                    class="select select-bordered w-full text-base uppercase transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent {% if form.in_charge.errors %}select-error{% endif %}"> {# Reduced select text size #}
+                <option value="">Select In-Charge</option>
+                {% for user in form.fields.in_charge.queryset %}
+                    <option value="{{ user.pk }}" {% if user.pk|stringformat:"s" == form.in_charge.value|stringformat:"s" %}selected{% endif %}>{{ user.username|upper }}</option>
+                {% endfor %}
+            </select>
+            {% if form.in_charge.errors %}
+            <label class="label">
+                <span class="label-text-alt text-error text-xs">{{ form.in_charge.errors }}</span> {# Reduced error text size #}
+            </label>
+            {% endif %}
+        </div>
+
+        <div class="form-control flex-row items-center gap-1"> {# Reduced gap #}
+            <label class="label cursor-pointer flex-grow justify-start gap-1"> {# Reduced gap #}
+                <input type="checkbox" name="{{ form.is_active.name }}" id="{{ form.is_active.id_for_label }}"
+                        {% if form.is_active.value %}checked{% endif %}
+                        class="checkbox checkbox-primary checkbox-sm" /> {# Added checkbox-sm #}
+                <span class="label-text text-base font-medium">Is Active</span> {# Reduced label text size #}
+            </label>
+            {% if form.is_active.errors %}
+            <label class="label">
+                <span class="label-text-alt text-error text-xs">{{ form.is_active.errors }}</span> {# Reduced error text size #}
+            </label>
+            {% endif %}
+        </div>
+
+        <div class="flex justify-end mt-6 space-x-3"> {# Reduced top margin and space-x #}
+            <a href="{% url 'church:church_list' %}" class="btn btn-secondary btn-outline btn-sm transition-all duration-300 hover:scale-105"> {# Added btn-sm #}
+                Cancel
+            </a>
+            <button type="submit" class="btn btn-primary btn-sm flex items-center gap-1 transition-all duration-300 hover:scale-105"> {# Added btn-sm, reduced gap #}
+                <i data-feather="save" class="w-4 h-4"></i> {# Reduced icon size #}
+                {% if form.instance.pk %}Update{% else %}Create{% endif %} Church
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace();
+    });
+</script>
+{% endblock %}

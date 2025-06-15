@@ -1,0 +1,146 @@
+{# apps/individual/templates/individual/individual_detail.html #}
+{% extends 'base.html' %}
+
+{% block title %}{{ individual.given_name|upper }} {{ individual.surname|upper }} - Kadamay Mortuary System{% endblock %} {# Consistent title #}
+
+{% block content %}
+<div class="card bg-base-100 shadow-xl p-4 md:p-6 text-base-content rounded-xl my-4 mx-auto max-w-7xl"> {# Adjusted padding and margin #}
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-3"> {# Adjusted margin and gap #}
+        <div>
+            <h1 class="text-2xl font-extrabold text-primary"> {# Changed to text-2xl #}
+                {{ individual.surname|upper }}, {{ individual.given_name|upper }} 
+                {% if individual.middle_name %}{{ individual.middle_name|upper }}{% endif %}
+                {% if individual.suffix_name %}{{ individual.suffix_name|upper }}{% endif %}
+            </h1>
+            <p class="text-base-content/70 mt-0.5 text-base"> {# Adjusted mt and text size #}
+                {% if individual.family %}
+                    From <a href="{% url 'family:family_detail' individual.family.id %}" class="link link-hover link-primary">{{ individual.family.family_name|upper }}</a>
+                {% else %}
+                    <span class="italic text-base-content/60 text-sm">No Family Assigned</span> {# Italicized, muted, and text-sm #}
+                {% endif %}
+            </p>
+        </div>
+        <div class="flex flex-wrap md:flex-nowrap gap-2 w-full md:w-auto justify-end"> {# Adjusted gap #}
+            <a href="{% url 'individual:individual_list' %}"
+               class="btn btn-ghost flex items-center gap-2 transition-all duration-300 hover:scale-105 w-full md:w-auto btn-sm"> {# Added btn-sm #}
+                <i data-feather="arrow-left" class="w-4 h-4"></i> Back to List {# Reduced icon size #}
+            </a>
+            {% if user.is_superuser %}
+            <a href="{% url 'individual:individual_update' individual.id %}"
+               class="btn btn-primary flex items-center gap-2 transition-all duration-300 hover:scale-105 w-full md:w-auto btn-sm"> {# Added btn-sm #}
+                <i data-feather="edit" class="w-4 h-4"></i> Edit Member {# Reduced icon size #}
+            </a>
+            <a href="{% url 'individual:individual_delete' individual.id %}"
+               class="btn btn-error flex items-center gap-2 transition-all duration-300 hover:scale-105 w-full md:w-auto btn-sm"> {# Added btn-sm #}
+                <i data-feather="trash-2" class="w-4 h-4"></i> Delete Member {# Reduced icon size #}
+            </a>
+            {% endif %}
+        </div>
+    </header>
+
+    <hr class="border-base-300 my-4"> {# Replaced "---" with proper hr and adjusted margin #}
+
+    <section class="card bg-base-200 rounded-xl p-4 shadow-md border border-base-300 mb-6"> {# Adjusted padding and margin #}
+        <h2 class="text-xl font-bold mb-3 text-secondary">Personal Information</h2> {# Changed to text-xl and adjusted mb #}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3"> {# Adjusted gaps #}
+            <div class="space-y-0.5"> {# Adjusted space-y #}
+                <h3 class="text-xs font-medium text-base-content/70">Full Name</h3> {# Changed to text-xs #}
+                <p class="text-base font-semibold text-base-content"> {# Changed to text-base #}
+                    {{ individual.surname|upper }}, {{ individual.given_name|upper }} 
+                    {% if individual.middle_name %}{{ individual.middle_name|upper }}{% endif %}
+                    {% if individual.suffix_name %}{{ individual.suffix_name|upper }}{% endif %}
+                </p>
+            </div>
+            <div class="space-y-0.5"> {# Adjusted space-y #}
+                <h3 class="text-xs font-medium text-base-content/70">Birth Date</h3> {# Changed to text-xs #}
+                <p class="text-base font-semibold text-base-content"> {# Changed to text-base #}
+                    {{ individual.birth_date|date:"F d, Y"|default:"N/A" }}
+                </p>
+            </div>
+            <div class="space-y-0.5"> {# Adjusted space-y #}
+                <h3 class="text-xs font-medium text-base-content/70">Contact Number</h3> {# Changed to text-xs #}
+                <p class="text-base font-semibold text-base-content"> {# Changed to text-base #}
+                    {{ individual.contact_number|default:"N/A" }}
+                </p>
+            </div>
+            <div class="space-y-0.5"> {# Adjusted space-y #}
+                <h3 class="text-xs font-medium text-base-content/70">Email Address</h3> {# Changed to text-xs #}
+                <p class="text-base font-semibold text-base-content"> {# Changed to text-base #}
+                    {{ individual.email_address|default:"N/A" }}
+                </p>
+            </div>
+            <div class="space-y-0.5"> {# Adjusted space-y #}
+                <h3 class="text-xs font-medium text-base-content/70">Sex</h3> {# Changed to text-xs #}
+                <p class="text-base font-semibold text-base-content"> {# Changed to text-base #}
+                    {{ individual.get_sex_display|default:"N/A"|upper }}
+                </p>
+            </div>
+            <div class="space-y-0.5"> {# Adjusted space-y #}
+                <h3 class="text-xs font-medium text-base-content/70">Civil Status</h3> {# Changed to text-xs #}
+                <p class="text-base font-semibold text-base-content"> {# Changed to text-base #}
+                    {{ individual.get_civil_status_display|default:"N/A"|upper }}
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <hr class="border-base-300 my-4"> {# Replaced "---" with proper hr and adjusted margin #}
+
+    <section class="card bg-base-200 rounded-xl p-4 shadow-md border border-base-300"> {# Adjusted padding #}
+        <h2 class="text-xl font-bold mb-3 text-secondary">Membership Information</h2> {# Changed to text-xl and adjusted mb #}
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3"> {# Adjusted gaps #}
+            <div class="space-y-0.5"> {# Adjusted space-y #}
+                <h3 class="text-xs font-medium text-base-content/70">Family</h3> {# Changed to text-xs #}
+                <p class="text-base font-semibold text-base-content"> {# Changed to text-base #}
+                    {% if individual.family %}
+                        <a href="{% url 'family:family_detail' individual.family.id %}" class="link link-hover link-primary">
+                            {{ individual.family.family_name|upper }}
+                        </a>
+                    {% else %}
+                        <span class="italic text-base-content/60 text-sm">N/A</span> {# Italicized, muted, and text-sm #}
+                    {% endif %}
+                </p>
+            </div>
+            <div class="space-y-0.5"> {# Adjusted space-y #}
+                <h3 class="text-xs font-medium text-base-content/70">Church</h3> {# Changed to text-xs #}
+                <p class="text-base font-semibold text-base-content"> {# Changed to text-base #}
+                    {% if individual.family and individual.family.church %}
+                        <a href="{% url 'church:church_detail' individual.family.church.id %}" class="link link-hover link-primary">
+                            {{ individual.family.church.name|upper }}
+                        </a>
+                    {% else %}
+                        <span class="italic text-base-content/60 text-sm">N/A</span> {# Italicized, muted, and text-sm #}
+                    {% endif %}
+                </p>
+            </div>
+            <div class="space-y-0.5"> {# Adjusted space-y #}
+                <h3 class="text-xs font-medium text-base-content/70">Relationship</h3> {# Changed to text-xs #}
+                <p class="text-base font-semibold text-base-content"> {# Changed to text-base #}
+                    {{ individual.get_relationship_display|default:"N/A"|upper }}
+                </p>
+            </div>
+            <div class="space-y-0.5"> {# Adjusted space-y #}
+                <h3 class="text-xs font-medium text-base-content/70">Status</h3> {# Changed to text-xs #}
+                <p class="text-base font-semibold text-base-content"> {# Changed to text-base #}
+                    {% if individual.is_active_member and individual.is_alive %}
+                        <span class="badge badge-success badge-sm font-semibold">ACTIVE</span> {# Changed to badge-sm #}
+                    {% elif not individual.is_alive %}
+                        <span class="badge badge-info badge-sm font-semibold">DECEASED</span> {# Changed to badge-sm #}
+                    {% else %}
+                        <span class="badge badge-error badge-sm font-semibold">INACTIVE</span> {# Changed to badge-sm #}
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace(); // Re-initialize Feather Icons
+    });
+</script>
+{% endblock %}

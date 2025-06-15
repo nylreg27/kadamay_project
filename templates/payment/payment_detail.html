@@ -1,0 +1,59 @@
+{# PAYMENT_DETAIL #}
+{% extends 'base.html' %}
+
+{% block title %}Payment Details{% endblock %}
+
+{% block content %}
+<div class="flex justify-center items-center min-h-screen bg-gray-100 py-6">
+    <div class="w-full max-w-2xl bg-white shadow-xl rounded-lg p-8 md:p-10 border border-gray-200">
+        <h1 class="text-4xl font-extrabold text-indigo-700 mb-8 text-center border-b-2 border-indigo-200 pb-4">
+            Payment Details
+        </h1>
+
+        {% if payment %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8 text-gray-800 text-lg mb-8">
+                <p><strong class="font-semibold text-gray-700">Receipt No:</strong> <span class="text-indigo-600">{{ payment.receipt_no }}</span></p>
+                <p><strong class="font-semibold text-gray-700">Amount:</strong> <span class="text-green-600 font-bold">₱{{ payment.amount|floatformat:2 }}</span></p>
+                <p><strong class="font-semibold text-gray-700">Date Paid:</strong> {{ payment.date_paid|date:"F d, Y" }}</p>
+                <p><strong class="font-semibold text-gray-700">Paid By:</strong> {{ payment.individual.full_name }}</p>
+                <p><strong class="font-semibold text-gray-700">Contribution Type:</strong> {{ payment.contribution_type.name }}</p>
+
+                {% if payment.deceased_member %}
+                    <p><strong class="font-semibold text-gray-700">Share For Deceased:</strong> {{ payment.deceased_member.full_name }}</p>
+                {% endif %}
+                <p class="md:col-span-2"><strong class="font-semibold text-gray-700">Remarks:</strong> {{ payment.remarks|default:"N/A" }}</p>
+            </div>
+
+            {% if covered_members %}
+                <div class="mt-8 pt-6 border-t-2 border-gray-200">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Covered Members:</h2>
+                    <ul class="list-disc list-inside space-y-2 text-lg text-gray-700">
+                    {% for member in covered_members %}
+                        <li class="flex items-center">
+                            <svg class="w-5 h-5 text-indigo-500 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                            {{ member.full_name }}
+                        </li>
+                    {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            <div class="mt-10 flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                <a href="{% url 'payment:payment_update' payment.id %}" class="w-full sm:w-auto px-8 py-3 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold rounded-lg shadow-md transition duration-200 ease-in-out text-center transform hover:scale-105">
+                    Edit Payment
+                </a>
+                <a href="{% url 'payment:payment_list' %}" class="w-full sm:w-auto px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow-md transition duration-200 ease-in-out text-center transform hover:scale-105">
+                    Back to List
+                </a>
+            </div>
+
+        {% else %}
+            <p class="text-center text-gray-600 text-xl py-10">No payment found for the requested ID.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{# You can add any page-specific JavaScript here if needed #}
+{% endblock scripts %}

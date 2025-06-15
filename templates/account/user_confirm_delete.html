@@ -1,0 +1,23 @@
+{% extends 'base.html' %} {# Assuming you have a base.html for your main layout #}
+
+{% block title %}Delete User - {{ user.username }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-6">
+    <div class="card bg-base-100 shadow-xl max-w-md mx-auto">
+        <div class="card-body text-base-content"> {# Added text-base-content here for general text #}
+            <h2 class="card-title text-error">Confirm Deletion</h2> {# Slightly rephrased for clarity #}
+            <p class="py-4">Are you sure you want to delete the user "<strong>{{ user.username }}</strong>"?</p>
+            <p class="text-warning text-sm mb-4">This action cannot be undone.</p>
+
+            <form method="post" class="flex flex-col gap-4">
+                {% csrf_token %}
+                <div class="card-actions justify-end">
+                    <button type="submit" class="btn btn-error">Yes, Delete</button> {# Capitalized "Delete" for consistency #}
+                    <a href="{% url 'account:user_list' %}" class="btn btn-ghost">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock content %}

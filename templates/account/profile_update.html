@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %} {# Make sure you have 'widget_tweaks' added to your INSTALLED_APPS in settings.py #}
+
+{% block title %}Update Profile{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-6">
+    <div class="max-w-xl mx-auto card bg-base-100 shadow-xl p-8">
+        <h2 class="text-3xl font-bold mb-6 text-primary">Update Profile</h2>
+
+        <form method="post" novalidate class="flex flex-col gap-4">
+            {% csrf_token %}
+
+            {% for field in form %}
+                <div class="form-control w-full"> {# DaisyUI form control container #}
+                    <label class="label" for="{{ field.id_for_label }}">
+                        <span class="label-text text-base-content font-semibold">{{ field.label }}</span>
+                        {% if field.field.required %}
+                            <span class="text-error ml-1">*</span> {# Indicate required fields #}
+                        {% endif %}
+                    </label>
+                    {# Apply DaisyUI input classes using widget_tweaks #}
+                    {{ field|add_class:"input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-primary" }}
+                    
+                    {% if field.help_text %}
+                        <label class="label">
+                            <span class="label-text-alt text-base-content/70">{{ field.help_text }}</span>
+                        </label>
+                    {% endif %}
+                    {% if field.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ field.errors }}</span>
+                        </label>
+                    {% endif %}
+                </div>
+            {% endfor %}
+
+            <div class="mt-4 flex justify-end gap-2"> {# Align buttons to the right and add gap #}
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                {# Ensure profile.id is correctly passed if needed for cancellation #}
+                <a href="{% url 'profile_detail' profile.id %}" class="btn btn-ghost">Cancel</a> {# Changed to btn-ghost for less prominence #}
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
