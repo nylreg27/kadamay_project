@@ -1,41 +1,23 @@
 # apps/payment/urls.py
 
-from django.urls import path, include
+from django.urls import path
 from . import views
 
 app_name = 'payment'
 
 urlpatterns = [
-    # API endpoint to get contribution type details (e.g., default amount)
-    path('api/contribution_type/<int:pk>/',
-         views.contribution_type_detail_api, name='contribution_type_detail_api'),
+    # Existing payment URLs
+    path('individual/<int:individual_id>/create/', views.payment_create_full_form_view, name='add_payment'),
+    path('list/', views.payment_list_view, name='payment_list'), # Assuming you have this
+    path('<int:pk>/detail/', views.payment_detail_view, name='payment_detail'), # Assuming you have this
 
-    # NEW API endpoint: To fetch family members and related info for an individual dynamically
-    path('api/individual/<int:individual_id>/family_details/',
-         views.get_individual_family_details_api, name='get_individual_family_details_api'),
+    # API endpoints (from your payment_form.html JS)
+    path('api/individual/<int:individual_id>/family_details/', views.get_family_details_api_view, name='api_family_details'), # Assuming you have this
+    
+    # === CORRECTED: Renamed the view function to match views.py ===
+    path('api/contribution_type/<int:pk>/', views.get_contribution_amount_api_view, name='api_contribution_amount'), 
 
-    # List all payments
-    path('list/', views.PaymentListView.as_view(), name='payment_list'),
-
-    # --- MAIN PAYMENT CREATION FORM DISPLAY (Handles GET request from dashboard) ---
-    # This URL will display the payment form for a specific individual.
-    path('individual/<int:individual_id>/create/',  # Renamed from /payments/create/ to just /create/ for clarity
-         # <--- This view handles the GET request to display the form
-         views.payment_create_full_form_view,
-         name='payment_create_for_individual'),
-
-    # --- PAYMENT FORM SUBMISSION (Handles POST request from the form) ---
-    # This URL receives the submitted form data.
-    path('add/',
-         # <--- This view handles the POST request (form submission)
-         views.payment_create_view,
-         name='add_payment'),
-
-    # --- Existing Payment Detail, Update, Delete Views ---
-    path('<int:pk>/detail/', views.payment_detail_view, name='payment_detail'),
-    path('<int:pk>/update/', views.payment_update_view, name='payment_update'),
-    path('<int:pk>/delete/', views.payment_delete_view, name='payment_delete'),
-
-    # Make sure this line appears ONLY ONCE
-    path("__reload__/", include("django_browser_reload.urls")),
+    # NEW: URL for cancelling a payment
+    path('cancel/<int:pk>/', views.cancel_payment_view, name='cancel_payment'),
 ]
+

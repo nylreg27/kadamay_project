@@ -1,7 +1,8 @@
 # apps/individual/models.py
 
 from django.db import models
-from apps.family.models import Family
+# Assuming Family model exists in apps.family.models
+from apps.family.models import Family 
 
 GENDER_CHOICES = [
     ('MALE', 'Male'),
@@ -16,6 +17,8 @@ CIVIL_STATUS_CHOICES = [
     ('SEPARATED', 'Separated'),
 ]
 
+# Assuming your Church model is defined somewhere, e.g., apps.church.models
+# from apps.church.models import Church
 
 class Individual(models.Model):
     given_name = models.CharField(max_length=100)
@@ -34,7 +37,7 @@ class Individual(models.Model):
 
     membership_id = models.CharField(max_length=50, blank=True, null=True)
 
-    address = models.CharField(max_length=255, blank=True, null=True)
+    address = models.CharField(max_length=255, blank=True, null=True) # If this is a CharField
 
     RELATIONSHIP_CHOICES = [
         ('HEAD', 'Head'),
@@ -62,6 +65,11 @@ class Individual(models.Model):
 
     family = models.ForeignKey(
         Family, on_delete=models.SET_NULL, null=True, blank=True, related_name='members')
+    
+    # You might have a religion or occupation field that was not in the provided snippet
+    # religion = models.CharField(max_length=100, blank=True, null=True)
+    # occupation = models.CharField(max_length=100, blank=True, null=True)
+    # tin = models.CharField(max_length=20, blank=True, null=True)
 
     @property
     def full_name(self):
@@ -90,3 +98,4 @@ class Individual(models.Model):
 
     class Meta:
         verbose_name_plural = "Individuals"
+

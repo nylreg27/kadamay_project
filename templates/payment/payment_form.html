@@ -172,14 +172,14 @@
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
-                            <label for="{{ form.receipt_number.id_for_label }}" class="block text-xs font-medium text-base-content mb-1"> {# CHANGED: receipt_no to receipt_number #}
+                            <label for="{{ form.receipt_number.id_for_label }}" class="block text-xs font-medium text-base-content mb-1"> {# Now using receipt_number #}
                                 Receipt Number
                                 <span class="text-red-500">*</span>
                             </label>
-                            {# IMPORTANT CHANGE: Now using form.receipt_number #}
-                            {% render_field form.receipt_number class="input input-bordered w-full text-base-content bg-base-200" %} {# CHANGED: receipt_no to receipt_number #}
-                            {% if form.receipt_number.errors %} {# CHANGED: receipt_no to receipt_number #}
-                                <p class="text-red-600 text-xs mt-1">{{ form.receipt_number.errors }}</p> {# CHANGED: receipt_no to receipt_number #}
+                            {# Changed to form.receipt_number #}
+                            {% render_field form.receipt_number class="input input-bordered w-full text-base-content bg-base-200" %} 
+                            {% if form.receipt_number.errors %} {# Changed to form.receipt_number #}
+                                <p class="text-red-600 text-xs mt-1">{{ form.receipt_number.errors }}</p> {# Changed to form.receipt_number #}
                             {% endif %}
                         </div>
                         
@@ -199,6 +199,17 @@
                                 <p class="text-red-600 text-xs mt-1">{{ form.date_paid.errors }}</p>
                             {% endif %}
                         </div>
+                    </div>
+
+                    {# NEW FIELD: is_legacy_record checkbox #}
+                    <div class="form-control mt-3">
+                        <label class="label cursor-pointer justify-start">
+                            {% render_field form.is_legacy_record class="checkbox checkbox-primary mr-2" %} {# Added checkbox-primary for DaisyUI style #}
+                            <span class="label-text text-base-content text-sm">Old Record (No Original Receipt)</span>
+                        </label>
+                        {% if form.is_legacy_record.errors %}
+                            <p class="text-red-600 text-xs mt-1">{{ form.is_legacy_record.errors }}</p>
+                        {% endif %}
                     </div>
                     
                     <div class="mt-3">
@@ -351,7 +362,8 @@
         const selectedMembersCount = document.getElementById('selectedMembersCount');
         const perMemberAmount = document.getElementById('perMemberAmount');
         const selectedMembersIdsInput = document.getElementById('selectedMembersIdsInput'); // Hidden input for selected member IDs
-        const receiptNoInput = document.getElementById('id_receipt_number'); // CHANGED: id_receipt_no to id_receipt_number
+        const receiptNumberInput = document.getElementById('id_receipt_number'); // CHANGED ID: from receiptNoInput to receiptNumberInput
+        const isLegacyRecordCheckbox = document.getElementById('id_is_legacy_record'); // NEW: Reference for the checkbox
 
         let defaultContributionAmount = 0; // Stores the per-member contribution amount
 
@@ -365,6 +377,39 @@
             const selectedIds = Array.from(document.querySelectorAll('.member-checkbox:checked'))
                                      .map(checkbox => checkbox.value);
             selectedMembersIdsInput.value = JSON.stringify(selectedIds);
+        }
+
+        /**
+         * Manages the state of the receipt_number input field based on the isLegacyRecord checkbox.
+         */
+        function handleReceiptNumberState() {
+            if (!receiptNumberInput || !isLegacyRecordCheckbox) {
+                console.error("Receipt Number input or Legacy Record checkbox not found.");
+                return;
+            }
+
+            if (isLegacyRecordCheckbox.checked) {
+                receiptNumberInput.value = ''; // Clear any existing value
+                receiptNumberInput.setAttribute('readonly', 'true');
+                receiptNumberInput.setAttribute('disabled', 'true'); // Disable so it's not sent with form
+                receiptNumberInput.setAttribute('placeholder', 'N/A for Old Records');
+                receiptNumberInput.classList.add('bg-base-300'); // Optional: visually grey out
+            } else {
+                receiptNumberInput.value = ''; // Clear if it was 'N/A' from legacy
+                receiptNumberInput.removeAttribute('readonly');
+                receiptNumberInput.removeAttribute('disabled');
+                receiptNumberInput.setAttribute('placeholder', 'Auto-generated');
+                receiptNumberInput.classList.remove('bg-base-300'); // Optional: remove grey out
+                
+                // For new, non-legacy records, receipt number will be auto-generated on save.
+                // It should still be readonly in the UI for new forms.
+                // In edit mode, if it has a value, it remains readonly as per forms.py init logic.
+                if (!receiptNumberInput.value && !isLegacyRecordCheckbox.checked) { // If it's a new form or cleared from legacy
+                     receiptNumberInput.setAttribute('readonly', 'true');
+                }
+            }
+            // Ensure any error class is removed if the field becomes readonly/disabled
+            receiptNumberInput.classList.remove('input-error');
         }
 
         /**
@@ -549,6 +594,11 @@
             }
         });
 
+        // NEW: Event Listener for isLegacyRecordCheckbox
+        if (isLegacyRecordCheckbox) {
+            isLegacyRecordCheckbox.addEventListener('change', handleReceiptNumberState);
+        }
+
         // Listen for form reset event to clear dynamic fields
         document.getElementById('paymentForm').addEventListener('reset', function() {
             // Reset payee and contribution type selects to default state
@@ -565,8 +615,11 @@
             familyAmountDisplay.value = '0.00';
             mainAmountInput.value = '0.00'; // Ensure main amount is reset
             updateSelectedMembersIdsInput(); // Clear hidden input
-            // Reset receipt number on form reset
-            if (receiptNoInput) receiptNoInput.value = ''; // Ensure receipt number is cleared
+            
+            // Reset receipt number and legacy checkbox on form reset
+            if (receiptNumberInput) receiptNumberInput.value = ''; 
+            if (isLegacyRecordCheckbox) isLegacyRecordCheckbox.checked = false;
+            handleReceiptNumberState(); // Re-apply initial state for receipt number
         });
 
         // Form submission handling to ensure amount is valid
@@ -603,10 +656,17 @@
             if (contributionTypeSelect.value) {
                 getContributionAmount(contributionTypeSelect.value);
             }
-            // If receiptNoInput has a pre-filled value, ensure it's displayed
-            if (receiptNoInput && receiptNoInput.value) {
-                console.log('Receipt Number pre-filled with:', receiptNoInput.value);
+            
+            // Initial state setup for receipt number based on form's initial value
+            // (e.g., in edit mode, or after a form submission with errors)
+            if (isLegacyRecordCheckbox && isLegacyRecordCheckbox.checked) {
+                handleReceiptNumberState(); // Apply N/A state if already checked
+            } else if (receiptNumberInput) {
+                // For new forms or non-legacy existing forms, ensure receipt number is readonly and auto-generated text
+                receiptNumberInput.setAttribute('readonly', 'true');
+                receiptNumberInput.setAttribute('placeholder', 'Auto-generated');
             }
+            
             feather.replace(); // Ensure all icons are rendered
         };
 
@@ -616,6 +676,4 @@
 
     }); // End DOMContentLoaded
 </script>
-
-
 {% endblock %}

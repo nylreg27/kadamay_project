@@ -1,9 +1,27 @@
+{# apps/individual/templates/individual/individual_dashboard.html #}
 {% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
 
-{% block title %}Kadamay Dashboard{% endblock %}
+{% block title %}
+    {{ title }} - Kadamay Mortuary System {# Use 'title' from context #}
+{% endblock %}
 
 {% block extra_css %}
 <style>
+    /* Add any specific CSS for the individual dashboard here */
+    .dashboard-card {
+        background-color: var(--fallback-b1, oklch(var(--b1) / 1)); /* DaisyUI base-100 */
+        border-radius: 0.75rem; /* Slightly more rounded */
+        padding: 1.5rem; /* Increased padding */
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Stronger shadow */
+        transition: transform 0.2s ease-in-out;
+        display: flex; /* Ensure flex for vertical layout */
+        flex-direction: column; /* Stack content vertically */
+    }
+    .dashboard-card:hover {
+        transform: translateY(-5px); /* More pronounced lift effect */
+    }
     /* Custom visual class for disabled buttons, to work alongside the actual 'disabled' attribute */
     .disabled-button-visual { 
         opacity: 0.6;
@@ -15,8 +33,56 @@
         background-color: oklch(var(--a)) !important; /* Accent color from DaisyUI theme */
         color: oklch(var(--ac)) !important; /* Accent content color */
     }
+
+    /* Custom styles for detail rows */
+    .detail-row {
+        display: flex;
+        align-items: flex-start; /* Align icon and text at the top */
+        margin-bottom: 0.5rem; /* Reduced spacing between rows for denser look */
+        font-size: 0.875rem; /* Smaller text for details (sm) */
+    }
+    .detail-row:last-child {
+        margin-bottom: 0;
+    }
+    .detail-icon {
+        flex-shrink: 0;
+        width: 1rem; /* Smaller icon size */
+        height: 1rem;
+        margin-right: 0.5rem; /* Reduced space between icon and text */
+        color: oklch(var(--p)); /* Primary color for icons */
+        margin-top: 0.15rem; /* Slight adjustment for icon alignment with text */
+    }
+    .detail-label {
+        font-weight: 600; /* Semi-bold for labels */
+        color: var(--fallback-bc, oklch(var(--bc) / 0.8)); /* Base content darker */
+        min-width: 70px; /* Adjusted minimum width for labels for alignment */
+        flex-shrink: 0; /* Prevent label from shrinking */
+    }
+    .detail-value {
+        color: var(--fallback-bc, oklch(var(--bc) / 1)); /* Full base content color */
+        word-break: break-word; /* Ensure long words break */
+    }
+
+    /* Styling for family members list within the details card */
+    .family-members-list-card {
+        margin-top: 1rem; /* Reduced space above this section */
+        padding-top: 0.75rem; /* Reduced padding */
+        border-top: 1px solid theme('colors.base-content / 10%');
+    }
+    .family-members-list-card ul li {
+        margin-bottom: 0.4rem; /* Reduced margin */
+        font-size: 0.8rem; /* Even smaller text for sub-list */
+        color: var(--fallback-bc, oklch(var(--bc) / 0.9));
+    }
+
+    /* Style for the toggle icon */
+    .toggle-icon {
+        transition: transform 0.3s ease;
+    }
+    .toggle-icon.rotate {
+        transform: rotate(180deg);
+    }
 </style>
-{{ block.super }}
 {% endblock extra_css %}
 
 {% block content %}
@@ -36,10 +102,11 @@
             </div>
             <div class="overflow-y-auto flex-grow h-0 border border-base-300 rounded-md">
                 <ul class="menu p-1 bg-base-200 w-full rounded-md text-sm" id="memberList">
+                    {# Individuals loaded from context for initial list #}
                     {% if individuals %}
                         {% for individual in individuals %}
                         <li class="member-list-item" data-individual-id="{{ individual.id }}">
-                            <a href="#" class="block hover:bg-base-300 {% if forloop.first %}active{% endif %} py-1 px-2">
+                            <a href="#" class="block hover:bg-base-300 py-1 px-2"> {# Removed {% if forloop.first %}active{% endif %} #}
                                 {{ individual.surname|upper }}, {{ individual.given_name|upper }}
                             </a>
                         </li>
@@ -51,36 +118,54 @@
             </div>
         </div>
 
-        {# Right Section: Only Payments #}
+        {# Right Section: Individual Details and Payments #}
         <div class="md:col-span-2 lg:col-span-3 flex flex-col gap-4">
 
-            <div class="bg-base-100 rounded-lg shadow-xl p-3 flex-none">
+            {# Individual Details Card (Dynamic via JS) - Initially hidden #}
+            <div class="dashboard-card shadow-md flex-none hidden" id="individualDetailsCard"> {# Added 'hidden' class here #}
+                <h2 class="text-xl font-bold text-base-content mb-4 flex items-center justify-between">
+                    <span class="flex items-center gap-3">
+                        <i data-feather="user-check" class="w-6 h-6 text-accent"></i>
+                        Member Details
+                    </span>
+                    <button type="button" id="toggleDetailsBtn" class="btn btn-sm btn-circle btn-ghost">
+                        <i data-feather="chevron-down" class="w-5 h-5 toggle-icon"></i>
+                    </button>
+                </h2>
+                <div id="individualInfoContent" class="flex-grow">
+                    <p class="text-center text-base-content/70 py-6">Select a member from the left to view details.</p>
+                </div>
+            </div>
+
+            {# Payments Section #}
+            <div class="dashboard-card shadow-md flex-grow flex flex-col overflow-hidden"> {# Changed to dashboard-card for consistent styling #}
                 <div class="flex justify-between items-center mb-3">
-                    <h2 class="text-lg font-bold text-secondary">List of Individual Payment</h2>
+                    <h2 class="text-lg font-bold text-secondary">List of Individual Payments</h2>
                     <div class="flex gap-2">
-                        <a href="#" id="addPaymentButton" class="btn btn-sm btn-primary" disabled>
+                        <a href="#" id="addPaymentButton" class="btn btn-sm btn-primary disabled-button-visual" disabled aria-disabled="true">
                             <i data-feather="plus"></i> Add Payment
                         </a>
-                        <a href="#" id="printIndividualButton" class="btn btn-sm btn-outline btn-info" disabled>
+                        <a href="#" id="printIndividualButton" class="btn btn-sm btn-outline btn-info disabled-button-visual" disabled aria-disabled="true">
                             <i data-feather="printer"></i> Print Individual
                         </a>
                     </div>
                 </div>
-            </div>
-
-            <div class="bg-base-100 rounded-lg shadow-xl p-3 flex-grow flex flex-col overflow-hidden">
                 <div class="overflow-y-auto flex-grow h-0 border border-base-300 rounded-md">
                     <table class="table table-zebra w-full table-sm">
                         <thead>
                             <tr>
                                 <th class="text-xs font-semibold uppercase">Date</th>
-                                <th class="text-xs font-semibold uppercase">Description</th>
+                                <th class="text-xs font-semibold uppercase">Receipt #</th>
+                                <th class="text-xs font-semibold uppercase">Type</th>
                                 <th class="text-xs font-semibold uppercase">Amount</th>
-                                <th class="text-xs font-semibold uppercase">Receipt No.</th>
+                                <th class="text-xs font-semibold uppercase">Method</th>
+                                <th class="text-xs font-semibold uppercase">Status</th>
+                                <th class="text-xs font-semibold uppercase">Remarks (Deceased)</th>
+                                <th class="text-xs font-semibold uppercase">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="paymentListBody">
-                            <tr><td colspan="4" class="text-center text-xs text-base-content/60 py-1">Select a member to view payments.</td></tr>
+                            <tr><td colspan="8" class="text-center text-xs text-base-content/60 py-1">Select a member to view payments.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -88,19 +173,64 @@
         </div>
     </div>
 </div>
+
+{# Cancellation Modal #}
+<dialog id="cancel_payment_modal" class="modal">
+  <div class="modal-box">
+    <h3 class="font-bold text-lg text-base-content">Cancel Payment</h3>
+    <p class="py-4 text-base-content/80">Please provide a reason for cancelling this payment (Receipt #<span id="modal_receipt_number"></span>).</p>
+    <form id="cancel_payment_form" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="payment_id" id="cancel_payment_id">
+        <div class="form-control">
+            <label for="cancellation_reason" class="label">
+                <span class="label-text text-base-content">Cancellation Reason</span>
+            </label>
+            <textarea id="cancellation_reason" name="cancellation_reason" class="textarea textarea-bordered h-24 text-base-content bg-base-200" placeholder="e.g., Error in amount, Duplicate entry, etc." required></textarea>
+        </div>
+        <div class="modal-action">
+            <button type="submit" class="btn btn-error">Confirm Cancellation</button>
+            <button type="button" class="btn" onclick="document.getElementById('cancel_payment_modal').close()">Close</button>
+        </div>
+    </form>
+  </div>
+</dialog>
+
+
 {% endblock %}
 
 {% block extra_js %}
 {{ block.super }}
+<script src="https://unpkg.com/feather-icons"></script> 
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         feather.replace();
 
         const memberList = document.getElementById('memberList');
         const paymentListBody = document.getElementById('paymentListBody');
+        const individualDetailsCard = document.getElementById('individualDetailsCard'); // Reference to the card itself
+        const individualInfoContent = document.getElementById('individualInfoContent'); // For individual details content
         const dashboardSearchInput = document.getElementById('dashboardSearchInput');
         const printIndividualButton = document.getElementById('printIndividualButton');
         const addPaymentButton = document.getElementById('addPaymentButton');
+        
+        // Cancellation Modal Elements
+        const cancelModal = document.getElementById('cancel_payment_modal');
+        const modalPaymentIdInput = document.getElementById('cancel_payment_id');
+        const modalReceiptNumberSpan = document.getElementById('modal_receipt_number');
+        const cancellationForm = document.getElementById('cancel_payment_form');
+        const cancellationReasonInput = document.getElementById('cancellation_reason');
+
+        // Toggle elements for member details card
+        const toggleDetailsBtn = document.getElementById('toggleDetailsBtn');
+        const toggleDetailsIcon = toggleDetailsBtn ? toggleDetailsBtn.querySelector('.toggle-icon') : null;
+
+        // NEW: Toggle elements for Family details within the card
+        let familyDetailsContent; // This will be assigned dynamically
+        let toggleFamilyBtn; // This will be assigned dynamically
+        let toggleFamilyIcon; // This will be assigned dynamically
+
 
         function updateActionButtons(individualId = null) {
             console.log('updateActionButtons called with ID:', individualId);
@@ -115,9 +245,9 @@
                     printIndividualButton.classList.remove('disabled-button-visual');
                     printIndividualButton.style.pointerEvents = 'auto';
                     printIndividualButton.setAttribute('aria-disabled', 'false');
-        
+                    
                     addPaymentButton.href = `/payment/individual/${individualId}/create/`;
-                    printIndividualButton.href = `/individual/${individualId}/print_payments/`;
+                    printIndividualButton.href = `/individual/${individualId}/print_payments/`; // Assuming this URL exists
                     console.log('Buttons ENABLED.');
                 } else {
                     addPaymentButton.setAttribute('disabled', 'true');
@@ -143,6 +273,19 @@
             console.log('loadMemberDetails called for ID:', individualId);
             updateActionButtons(individualId);
 
+            // Show individual details card and loading states for both sections
+            individualDetailsCard.classList.remove('hidden'); // Show the card
+            individualInfoContent.innerHTML = `
+                <div class="text-center py-6">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div> {# Primary color for spinner #}
+                    <p class="mt-2 text-base-content/70">Loading member details...</p> {# Translated #}
+                </div>`;
+            paymentListBody.innerHTML = `
+                <tr><td colspan="8" class="text-center py-6">
+                    <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div> {# Primary color for spinner #}
+                    <p class="mt-2 text-base-content/70">Loading payments...</p> {# Translated #}
+                </td></tr>`;
+
             try {
                 const response = await fetch(`/individual/${individualId}/details/`);
                 if (!response.ok) {
@@ -152,24 +295,142 @@
                 const data = await response.json();
                 console.log('AJAX response data for details:', data);
 
+                // Populate Individual Details with enhanced styling (English translations)
+                // MODIFIED: Changed to 2-column grid and smaller text/icons
+                individualInfoContent.innerHTML = `
+                    <div class="grid grid-cols-2 gap-x-6 gap-y-3"> {# Two columns with adjusted gaps #}
+                        <div class="detail-row">
+                            <i data-feather="user" class="detail-icon"></i>
+                            <span class="detail-label">Name:</span>
+                            <span class="detail-value">${data.full_name || 'N/A'}</span>
+                        </div>
+                        <div class="detail-row">
+                            <i data-feather="activity" class="detail-icon"></i>
+                            <span class="detail-label">Status:</span>
+                            <span class="detail-value">${data.is_alive ? 'Alive' : 'Deceased'}</span>
+                        </div>
+                        <div class="detail-row">
+                            <i data-feather="award" class="detail-icon"></i>
+                            <span class="detail-label">Membership:</span>
+                            <span class="detail-value">${data.membership_status || 'N/A'}</span>
+                        </div>
+                        <div class="detail-row">
+                            <i data-feather="calendar" class="detail-icon"></i>
+                            <span class="detail-label">Birthdate:</span>
+                            <span class="detail-value">${data.birth_date || 'N/A'}</span>
+                        </div>
+                        <div class="detail-row">
+                            <i data-feather="home" class="detail-icon"></i>
+                            <span class="detail-label">Address:</span>
+                            <span class="detail-value">${data.address || 'N/A'}</span>
+                        </div>
+                        <div class="detail-row">
+                            <i data-feather="phone" class="detail-icon"></i>
+                            <span class="detail-label">Contact #:</span>
+                            <span class="detail-value">${data.contact_no || 'N/A'}</span>
+                        </div>
+                        <div class="detail-row">
+                            <i data-feather="heart" class="detail-icon"></i>
+                            <span class="detail-label">Civil Status:</span>
+                            <span class="detail-value">${data.civil_status || 'N/A'}</span>
+                        </div>
+                        <div class="detail-row">
+                            <i data-feather="plus-circle" class="detail-icon"></i>
+                            <span class="detail-label">Date Added:</span>
+                            <span class="detail-value">${data.date_added || 'N/A'}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="family-members-list-card"> {# Styled section for family members #}
+                        <h4 class="font-bold text-base-content text-md mb-2 flex items-center justify-between">
+                            <span class="flex items-center gap-2">
+                                <i data-feather="users" class="w-5 h-5 text-secondary"></i> Family: ${data.family_name || 'N/A'}
+                            </span>
+                            <button type="button" id="toggleFamilyBtn" class="btn btn-sm btn-circle btn-ghost">
+                                <i data-feather="chevron-down" class="w-5 h-5 toggle-icon"></i>
+                            </button>
+                        </h4>
+                        <div id="familyDetailsContent" class="mt-2"> {# Content to be toggled #}
+                            ${data.other_family_members.length > 0 ? `
+                                <ul class="list-disc list-inside">
+                                    ${data.other_family_members.map(member => `<li>${member.full_name} (${member.relationship})</li>`).join('')}
+                                </ul>` : '<p class="text-sm text-base-content/70">No other family members recorded.</p>'}
+                        </div>
+                    </div>
+                `;
+                feather.replace(); // Re-render icons after updating content
+
+                // Assign toggle elements after they are created in the DOM
+                familyDetailsContent = document.getElementById('familyDetailsContent');
+                toggleFamilyBtn = document.getElementById('toggleFamilyBtn');
+                toggleFamilyIcon = toggleFamilyBtn ? toggleFamilyBtn.querySelector('.toggle-icon') : null;
+
+                // Add event listener for family toggle
+                if (toggleFamilyBtn && familyDetailsContent && toggleFamilyIcon) {
+                    toggleFamilyBtn.addEventListener('click', function() {
+                        familyDetailsContent.classList.toggle('hidden');
+                        toggleFamilyIcon.classList.toggle('rotate');
+                    });
+                     // Ensure family details are visible by default when loaded
+                    familyDetailsContent.classList.remove('hidden');
+                    toggleFamilyIcon.classList.remove('rotate'); // Ensure icon is "up" (chevron-down pointing down)
+                }
+
+
+                // Populate Payment List (table headers translated)
                 paymentListBody.innerHTML = '';
                 if (data.payments && data.payments.length > 0) {
                     data.payments.forEach(payment => {
+                        const statusBadgeClass = 
+                            payment.status === 'VALIDATED' ? 'badge-success' :
+                            payment.status === 'PENDING_VALIDATION' ? 'badge-warning' :
+                            payment.status === 'CANCELLED' ? 'badge-error' :
+                            payment.status === 'LEGACY' ? 'badge-info' :
+                            'badge-ghost';
+                        
+                        const actionsHtml = `
+                            <div class="flex items-center space-x-2">
+                                <a href="/payment/${payment.id}/detail/" class="btn btn-xs btn-outline btn-primary">View</a>
+                                ${payment.status !== 'CANCELLED' && payment.status !== 'LEGACY' ? 
+                                    `<button type="button" class="btn btn-xs btn-outline btn-error cancel-payment-btn" 
+                                            data-payment-id="${payment.id}" data-receipt-number="${payment.receipt_number || 'N/A'}">Cancel</button>` : ''}
+                            </div>
+                        `;
+
                         const row = `<tr class="text-xs">
-                                            <td>${payment.date || 'N/A'}</td>
-                                            <td>${payment.description || 'N/A'}</td>
-                                            <td>${payment.amount || 'N/A'}</td>
-                                            <td>${payment.receipt_no || 'N/A'}</td>
-                                        </tr>`;
+                                        <td>${payment.date || 'N/A'}</td>
+                                        <td>${payment.receipt_number || 'N/A'}</td>
+                                        <td>${payment.description || 'N/A'}</td>
+                                        <td>₱${payment.amount ? payment.amount.toFixed(2) : '0.00'}</td>
+                                        <td>${payment.method_display || 'N/A'}</td>
+                                        <td><span class="badge ${statusBadgeClass}">${payment.status_display}</span></td>
+                                        <td>${payment.deceased_member_name || 'N/A'}</td>
+                                        <td>${actionsHtml}</td>
+                                    </tr>`;
                         paymentListBody.insertAdjacentHTML('beforeend', row);
                     });
+                    // Re-attach event listeners for newly rendered cancel buttons
+                    document.querySelectorAll('.cancel-payment-btn').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const paymentId = this.dataset.paymentId;
+                            const receiptNumber = this.dataset.receiptNumber; // Get from data attribute
+
+                            modalPaymentIdInput.value = paymentId;
+                            modalReceiptNumberSpan.textContent = receiptNumber;
+                            cancellationReasonInput.value = ''; // Clear previous reason
+                            cancelModal.showModal();
+                        });
+                    });
+
                 } else {
-                    paymentListBody.innerHTML = '<tr><td colspan="4" class="text-center text-xs text-base-content/60 py-1">No payments found.</td></tr>';
+                    paymentListBody.innerHTML = '<tr><td colspan="8" class="text-center text-xs text-base-content/60 py-1">No payments found.</td></tr>';
                 }
 
             } catch (error) {
                 console.error('AJAX Error in loadMemberDetails:', error);
-                paymentListBody.innerHTML = '<tr><td colspan="4" class="text-center text-error text-xs py-1">Error loading payments.</td></tr>';
+                individualInfoContent.innerHTML = `<p class="text-center text-error py-4">Error loading member details.</p>`;
+                paymentListBody.innerHTML = '<tr><td colspan="8" class="text-center text-error text-xs py-1">Error loading payments.</p></td></tr>';
+                updateActionButtons(null);
             }
         }
 
@@ -177,10 +438,12 @@
             const listItem = event.target.closest('.member-list-item'); 
             
             if (listItem) {
+                // Remove active class from all previously active items
                 memberList.querySelectorAll('.member-list-item a.active').forEach(item => {
                     item.classList.remove('active');
                 });
                 
+                // Add active class to the clicked item
                 listItem.querySelector('a').classList.add('active');
 
                 const individualId = listItem.dataset.individualId; 
@@ -188,6 +451,12 @@
 
                 if (individualId) {
                     loadMemberDetails(individualId);
+                    // Ensure individual details content is shown if card was hidden by toggle
+                    individualInfoContent.classList.remove('hidden');
+                    if (toggleDetailsIcon) {
+                        toggleDetailsIcon.classList.remove('rotate'); // Ensure icon is 'up' (chevron-down pointing down) initially after loading
+                        feather.replace(); // Re-render icon
+                    }
                 } else {
                     console.warn('Clicked item has no individual ID. Check data-individual-id attribute.');
                     updateActionButtons(null);
@@ -196,14 +465,32 @@
         });
 
         if (dashboardSearchInput) {
+            // New: Add focus event listener to dashboardSearchInput
+            dashboardSearchInput.addEventListener('focus', function() {
+                // Remove 'active' class from all list items
+                memberList.querySelectorAll('.member-list-item a.active').forEach(item => {
+                    item.classList.remove('active');
+                });
+                // Disable action buttons
+                updateActionButtons(null);
+                // Hide individual details card and clear its content
+                individualDetailsCard.classList.add('hidden');
+                individualInfoContent.innerHTML = `<p class="text-center text-base-content/70 py-4">Select a member from the left to view details.</p>`;
+                // Clear payments list
+                paymentListBody.innerHTML = '<tr><td colspan="8" class="text-center text-xs text-base-content/60 py-1">Select a member to view payments.</td></tr>';
+            });
+
+
             dashboardSearchInput.addEventListener('input', function() {
                 const searchTerm = this.value.toLowerCase();
                 let firstVisibleMemberId = null;
                 
                 const allMemberListItems = Array.from(memberList.querySelectorAll('.member-list-item'));
                 
-                const currentActiveLink = memberList.querySelector('.member-list-item a.active');
-                const activeMemberId = currentActiveLink ? currentActiveLink.closest('.member-list-item').dataset.individualId : null;
+                // Remove active class from all items when searching
+                allMemberListItems.forEach(item => {
+                    item.querySelector('a').classList.remove('active');
+                });
 
                 allMemberListItems.forEach(item => {
                     const memberName = item.querySelector('a').textContent.toLowerCase();
@@ -214,62 +501,102 @@
                         }
                     } else {
                         item.style.display = 'none';
-                        if (item.dataset.individualId === activeMemberId) {
-                            item.querySelector('a').classList.remove('active');
-                        }
                     }
                 });
 
-                const newActiveLink = memberList.querySelector(`.member-list-item[data-individual-id="${activeMemberId}"] a`);
-                
-                if (newActiveLink && newActiveLink.offsetParent !== null) {
-                    updateActionButtons(activeMemberId); 
-                } 
-                else if (firstVisibleMemberId) {
+                // After search, if there are visible members, select the first one
+                if (firstVisibleMemberId) {
                     const firstVisibleListItem = memberList.querySelector(`.member-list-item[data-individual-id="${firstVisibleMemberId}"]`);
                     if (firstVisibleListItem) {
-                        firstVisibleListItem.querySelector('a').classList.add('active');
-                        loadMemberDetails(firstVisibleMemberId);
+                        firstVisibleListItem.querySelector('a').classList.add('active'); // Highlight the first visible item
+                        loadMemberDetails(firstVisibleMemberId); // Load details for the first visible item
                     }
-                } 
-                else {
-                    paymentListBody.innerHTML = '<tr><td colspan="4" class="text-center text-base-content/60 text-xs py-1">No payments found.</td></tr>';
+                } else {
+                    // If no members found after search, hide details and disable buttons
+                    individualDetailsCard.classList.add('hidden'); 
+                    individualInfoContent.innerHTML = `<p class="text-center text-base-content/70 py-4">No member selected.</p>`;
+                    paymentListBody.innerHTML = '<tr><td colspan="8" class="text-center text-xs text-base-content/60 py-1">No payments found.</td></tr>';
                     updateActionButtons(null);
                 }
-
-                dashboardSearchInput.focus(); 
             });
         }
         
-        // --- Initial Load of First Member's Details (on page load) ---
-        const firstMemberListItem = memberList.querySelector('.member-list-item');
-        if (firstMemberListItem) {
-            const initialIndividualId = firstMemberListItem.dataset.individualId;
-            console.log('Initial load. First member ID:', initialIndividualId);
-            // The 'active' class is added by Django template {% if forloop.first %}active{% endif %}
-            loadMemberDetails(initialIndividualId);
-        } else {
-            console.log('No members found on initial page load. Disabling buttons.');
-            paymentListBody.innerHTML = '<tr><td colspan="4" class="text-center text-xs text-base-content/60 py-1">No members found.</td></tr>';
-            updateActionButtons(null);
+        // --- Initial Load Logic: No member selected by default, buttons disabled ---
+        console.log('Initial page load: Ensuring no member is highlighted and buttons are disabled.');
+        // Ensure no item is active (in case {% if forloop.first %}active{% endif %} from Django template is used)
+        memberList.querySelectorAll('.member-list-item a.active').forEach(item => {
+            item.classList.remove('active');
+        });
+        
+        // Hide individual details card and display placeholder
+        individualDetailsCard.classList.add('hidden'); 
+        individualInfoContent.innerHTML = `<p class="text-center text-base-content/70 py-4">Select a member from the left to view details.</p>`;
+        
+        // Display placeholder for payments list
+        paymentListBody.innerHTML = '<tr><td colspan="8" class="text-center text-xs text-base-content/60 py-1">Select a member to view payments.</td></tr>';
+        
+        // Disable action buttons initially
+        updateActionButtons(null);
+        // --- End Initial Load Logic ---
+
+        // --- Toggle Member Details Card Content ---
+        if (toggleDetailsBtn && individualInfoContent && toggleDetailsIcon) {
+            toggleDetailsBtn.addEventListener('click', function() {
+                individualInfoContent.classList.toggle('hidden'); // Toggle visibility
+                toggleDetailsIcon.classList.toggle('rotate'); // Rotate icon
+            });
         }
 
-        // --- NEW ADDITION: Remove active class from list items when search input gets focus ---
-        if (dashboardSearchInput) {
-            dashboardSearchInput.addEventListener('focus', function() {
-                // Remove 'active' class from all list items when the search input is focused
-                memberList.querySelectorAll('.member-list-item a.active').forEach(item => {
-                    item.classList.remove('active');
-                });
-                // Also, ensure buttons are disabled since no list item is explicitly selected now
-                updateActionButtons(null);
-                // Clear payment list content
-                paymentListBody.innerHTML = '<tr><td colspan="4" class="text-center text-xs text-base-content/60 py-1">Search or select a member.</td></tr>';
+        // --- Cancellation Form Submission Logic ---
+        if (cancellationForm) {
+            cancellationForm.addEventListener('submit', async function(event) {
+                event.preventDefault(); // Stop default form submission
+
+                const paymentId = modalPaymentIdInput.value;
+                const cancellationReason = cancellationReasonInput.value;
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+                if (!cancellationReason) {
+                    alert('Cancellation reason is required.');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/payment/cancel/${paymentId}/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrfToken
+                        },
+                        body: JSON.stringify({ cancellation_reason: cancellationReason })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        alert(data.message); 
+                        cancelModal.close();
+                        
+                        const currentActiveLink = memberList.querySelector('.member-list-item a.active');
+                        if (currentActiveLink) {
+                            const individualId = currentActiveLink.closest('.member-list-item').dataset.individualId;
+                            loadMemberDetails(individualId); // Reload payments for the current individual
+                        } else {
+                            location.reload(); // Fallback to full page reload
+                        }
+                    } else {
+                        alert('Error cancelling payment: ' + data.error);
+                    }
+                } catch (error) {
+                    console.error('Fetch error:', error);
+                    alert('An unexpected error occurred. Please try again.');
+                }
             });
-            
-            // --- FINAL STEP: Ensure search input gets focus initially after DOM is ready ---
-            dashboardSearchInput.focus();
+        } else {
+            console.error("Cancellation form not found, cannot attach event listener.");
         }
     });
 </script>
+
+
 {% endblock %}

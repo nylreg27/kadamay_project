@@ -7,34 +7,27 @@ from django.contrib.auth.decorators import login_required
 from django.views.generic import TemplateView, ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
-from django.db.models import Q  # <--- ADD THIS IMPORT!
-from django.contrib import messages  # <--- ADD THIS IMPORT!
-from apps.payment.models import Payment
+from django.db.models import Q, Sum, Max # <--- ADD Sum, Max IMPORTS!
+from django.contrib import messages
+from apps.payment.models import Payment # <--- Make sure this is imported correctly
 from apps.individual.models import Individual
 from apps.family.models import Family
 from apps.church.models import Church
-from .forms import IndividualForm
-from .forms import PaymentForm
+from .forms import IndividualForm # Assuming you have apps/individual/forms.py
 
 # Your existing IndividualDashboardView
-
-
 class IndividualDashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'individual/individual_dashboard.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Consistent with your template title
         context['title'] = 'Kadamay Dashboard'
 
-        # --- NEW ADDITION HERE ---
-        # Fetch individuals just like your IndividualListView's get_queryset
-        # to ensure the initial list in the dashboard is populated.
+        # Fetch individuals for the sidebar list
         context['individuals'] = Individual.objects.filter(
             is_active_member=True,
             is_alive=True
         ).order_by('surname', 'given_name')
-        # --- END NEW ADDITION ---
 
         return context
 
@@ -44,6 +37,35 @@ class IndividualDashboardView(LoginRequiredMixin, TemplateView):
 def individual_details_api(request, pk):
     try:
         individual = get_object_or_404(Individual, pk=pk)
+        
+        # --- NEW: Fetch payment history for this individual ---
+        # Only fetch relevant payments (e.g., exclude fully cancelled ones from sum)
+        all_payments = Payment.objects.filter(
+            individual=individual
+        ).order_by('-date_paid', '-created_at')
+
+        payments_data = []
+        for payment in all_payments:
+            payments_data.append({
+                'id': payment.id,
+                'date': payment.date_paid.strftime('%Y-%m-%d'), # Format date
+                'description': payment.contribution_type.name if payment.contribution_type else 'N/A',
+                'amount': float(payment.amount), # Convert Decimal to float for JSON
+                'receipt_number': payment.receipt_number if payment.receipt_number else 'N/A',
+                'status': payment.payment_status, # Send raw status for badge logic
+                'status_display': payment.get_payment_status_display(), # Send display for convenience
+                'method_display': payment.get_payment_method_display(),
+                'deceased_member_name': payment.deceased_member.full_name if payment.deceased_member else 'N/A',
+                'is_cancelled': payment.is_cancelled, # Send cancellation flag
+                'is_legacy_record': payment.is_legacy_record, # Send legacy flag
+            })
+        
+        # --- Calculate financial summary ---
+        # Exclude 'CANCELLED' payments from total contributions unless explicitly needed for audit report
+        active_payments = all_payments.exclude(payment_status='CANCELLED')
+        total_contributions = active_payments.aggregate(Sum('amount'))['amount__sum'] or 0.00
+        latest_payment_date = active_payments.aggregate(Max('date_paid'))['date_paid__max']
+
         data = {
             'id': individual.id,
             'full_name': individual.full_name,
@@ -51,18 +73,32 @@ def individual_details_api(request, pk):
             'middle_name': individual.middle_name,
             'surname': individual.surname,
             'suffix_name': individual.suffix_name,
-            # Check if 'code' still exists or should be 'membership_id'
-            'membership_id': individual.membership_id,
+            'membership_id': individual.membership_id, # Corrected from 'code'
             'relationship': individual.relationship,
             'membership_status': individual.membership_status,
             'is_alive': individual.is_alive,
             'is_active_member': individual.is_active_member,
+            'sex': individual.get_sex_display(), # Get display value
+            'civil_status': individual.get_civil_status_display(), # Get display value
+            'birth_date': individual.birth_date.strftime('%Y-%m-%d') if individual.birth_date else 'N/A',
+            'contact_no': individual.contact_number or 'N/A', # Use contact_number
+            'email_address': individual.email_address or 'N/A',
+            'address': individual.address or 'N/A', # Assuming address is CharField
+            'date_added': individual.date_added.strftime('%Y-%m-%d') if individual.date_added else 'N/A',
+            
+            # Family details (adjust based on your Family model structure)
             'family_id': individual.family.id if individual.family else None,
-            'family_name': individual.family.family_name if individual.family and hasattr(individual.family, 'family_name') else "N/A",
-            # Assuming Address is a separate model
-            'municipality': individual.address.municipality if hasattr(individual, 'address') and individual.address else 'N/A',
-            # Assuming Address is a separate model
-            'barangay': individual.address.barangay if hasattr(individual, 'address') and individual.address else 'N/A',
+            'family_name': individual.family.family_name if individual.family else "N/A",
+            'family_head_name': individual.family.head_of_family.full_name if individual.family and hasattr(individual.family, 'head_of_family') else "N/A",
+            'other_family_members': [
+                {'id': m.id, 'full_name': m.full_name, 'relationship': m.get_relationship_display_value()} 
+                for m in individual.family.members.all() if m != individual
+            ] if individual.family else [],
+
+            # --- Financial Summary and Payments Data ---
+            'total_contributions': total_contributions,
+            'latest_payment_date': latest_payment_date.strftime('%Y-%m-%d') if latest_payment_date else 'N/A',
+            'payments': payments_data, # Include the payment history
         }
         return JsonResponse(data)
     except Individual.DoesNotExist:
@@ -72,8 +108,6 @@ def individual_details_api(request, pk):
         return JsonResponse({'error': str(e)}, status=500)
 
 # Individual List View - MODIFIED FOR SEARCH
-
-
 class IndividualListView(LoginRequiredMixin, ListView):
     model = Individual
     template_name = 'individual/individual_list.html'
@@ -81,43 +115,28 @@ class IndividualListView(LoginRequiredMixin, ListView):
     paginate_by = 10
 
     def get_queryset(self):
-        # Start with the base queryset for active and alive members
         queryset = Individual.objects.filter(
             is_active_member=True, is_alive=True)
-
-        # Get the search term from the GET request
         search_query = self.request.GET.get('search')
-
         if search_query:
-            # Filter the queryset based on multiple fields (case-insensitive)
-            # Using Q objects for OR conditions
             queryset = queryset.filter(
                 Q(surname__icontains=search_query) |
                 Q(given_name__icontains=search_query) |
                 Q(middle_name__icontains=search_query) |
                 Q(suffix_name__icontains=search_query) |
-                # Changed from code to membership_id
                 Q(membership_id__icontains=search_query) |
-                # Search by related family's name
-                Q(family__family_name__icontains=search_query) |
-                # Search by related church's name
-                Q(family__church__name__icontains=search_query)
+                Q(family__family_name__icontains=search_query) 
+                # Q(family__church__name__icontains=search_query) # Uncomment if you have Church foreign key in Family
             )
-
-        # Order the results
         return queryset.order_by('surname', 'given_name')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Changed title to 'Members' to match template
         context['title'] = 'Members'
-        # Pass the current search query back to the template to retain the value in the search bar
         context['search_query'] = self.request.GET.get('search', '')
         return context
 
 # Individual Detail View
-
-
 class IndividualDetailView(LoginRequiredMixin, DetailView):
     model = Individual
     template_name = 'individual/individual_detail.html'
@@ -129,8 +148,6 @@ class IndividualDetailView(LoginRequiredMixin, DetailView):
         return context
 
 # Individual Create View
-
-
 class IndividualCreateView(LoginRequiredMixin, CreateView):
     model = Individual
     form_class = IndividualForm
@@ -154,32 +171,26 @@ class IndividualCreateView(LoginRequiredMixin, CreateView):
 
 
 # Individual Update View
-
-
 class IndividualUpdateView(LoginRequiredMixin, UpdateView):
     model = Individual
     form_class = IndividualForm
     template_name = 'individual/individual_form.html'
     success_url = reverse_lazy('individual:individual_list')
-    extra_context = {'title': 'Edit Individual'}  # Added for context
+    extra_context = {'title': 'Edit Individual'}
 
     def form_valid(self, form):
         messages.success(self.request, "Individual updated successfully!")
         return super().form_valid(form)
 
     def form_invalid(self, form):
-        # --- ADD THESE PRINT STATEMENTS ---
         print("\n--- IndividualUpdateView FORM IS INVALID! ---")
         print("Field errors:", form.errors)
         print("Non-field errors:", form.non_field_errors)
         print("-------------------------------------\n")
-        # --- END TEMPORARY PRINT STATEMENTS ---
         messages.error(self.request, "Please correct the errors below.")
         return super().form_invalid(form)
 
 # Individual Delete View
-
-
 class IndividualDeleteView(LoginRequiredMixin, DeleteView):
     model = Individual
     template_name = 'individual/individual_confirm_delete.html'
@@ -190,8 +201,6 @@ class IndividualDeleteView(LoginRequiredMixin, DeleteView):
         return super().form_valid(form)
 
 # URL for listing individuals within a specific church - MODIFIED FOR SEARCH
-
-
 class IndividualListInChurchView(LoginRequiredMixin, ListView):
     model = Individual
     template_name = 'individual/individual_list.html'
@@ -201,14 +210,11 @@ class IndividualListInChurchView(LoginRequiredMixin, ListView):
         church_id = self.kwargs['church_id']
         church = get_object_or_404(Church, id=church_id)
 
-        # Start with the base queryset for individuals in this church
         queryset = Individual.objects.filter(
             family__church=church,
             is_active_member=True,
             is_alive=True
         )
-
-        # Add search filtering
         search_query = self.request.GET.get('search')
         if search_query:
             queryset = queryset.filter(
@@ -216,11 +222,9 @@ class IndividualListInChurchView(LoginRequiredMixin, ListView):
                 Q(given_name__icontains=search_query) |
                 Q(middle_name__icontains=search_query) |
                 Q(suffix_name__icontains=search_query) |
-                # Changed from code to membership_id
                 Q(membership_id__icontains=search_query) |
                 Q(family__family_name__icontains=search_query)
             )
-
         return queryset.order_by('surname', 'given_name')
 
     def get_context_data(self, **kwargs):
@@ -230,12 +234,10 @@ class IndividualListInChurchView(LoginRequiredMixin, ListView):
         context['title'] = f'Individuals in {church.name}'
         context['church'] = church
         context['search_query'] = self.request.GET.get(
-            'search', '')  # Pass search query
+            'search', '')
         return context
 
 # NEW URL: For creating an individual within a specific family context
-
-
 class IndividualCreateInFamilyView(LoginRequiredMixin, CreateView):
     model = Individual
     form_class = IndividualForm
@@ -279,47 +281,38 @@ class IndividualCreateInFamilyView(LoginRequiredMixin, CreateView):
         messages.error(self.request, "Please correct the errors below.")
         return super().form_invalid(form)
 
+# COMMENTED OUT: This class was a duplicate from payment/views.py.
+# All payment creation logic should be in apps/payment/views.py.
+# class PaymentCreateView(LoginRequiredMixin, CreateView):
+#     model = Payment
+#     form_class = PaymentForm  # You'll need to define this in apps/payment/forms.py
+#     template_name = 'payment/payment_form.html'  # Create this template
 
-class PaymentCreateView(LoginRequiredMixin, CreateView):
-    model = Payment
-    form_class = PaymentForm  # You'll need to define this in apps/payment/forms.py
-    template_name = 'payment/payment_form.html'  # Create this template
+#     def get_initial(self):
+#         initial = super().get_initial()
+#         individual_id = self.kwargs.get('individual_id')
+#         if individual_id:
+#             initial['individual'] = get_object_or_404(
+#                 Individual, pk=individual_id)
+#         return initial
 
-    def get_initial(self):
-        initial = super().get_initial()
-        # Get the individual_id from the URL kwargs
-        individual_id = self.kwargs.get('individual_id')
-        if individual_id:
-            # Set the individual field in the form's initial data
-            initial['individual'] = get_object_or_404(
-                Individual, pk=individual_id)
-        return initial
+#     def get_context_data(self, **kwargs):
+#         context = super().get_context_data(**kwargs)
+#         individual_id = self.kwargs.get('individual_id')
+#         if individual_id:
+#             individual = get_object_or_404(Individual, pk=individual_id)
+#             context['title'] = f'Add Payment for {individual.full_name}'
+#             context['individual'] = individual
+#         else:
+#             context['title'] = 'Add New Payment'
+#         return context
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        individual_id = self.kwargs.get('individual_id')
-        if individual_id:
-            individual = get_object_or_404(Individual, pk=individual_id)
-            context['title'] = f'Add Payment for {individual.full_name}'
-            # Pass individual to template for display
-            context['individual'] = individual
-        else:
-            context['title'] = 'Add New Payment'
-        return context
+#     def form_valid(self, form):
+#         messages.success(self.request, "Payment added successfully!")
+#         return super().form_valid(form)
 
-    def form_valid(self, form):
-        # The form's individual field should already be set by get_initial or user selection
-        # If you want to automatically set the individual based on URL, ensure your form field is not required
-        # or handle it here if it's hidden.
-        messages.success(self.request, "Payment added successfully!")
-        return super().form_valid(form)
-
-    def get_success_url(self):
-        # Redirect back to the individual dashboard, or the individual's detail page
-        individual_id = self.kwargs.get('individual_id')
-        if individual_id:
-            # Assuming your individual dashboard URL structure allows for a direct return
-            # Or you might want to return to individual:individual_detail if you have one.
-            return reverse_lazy('individual:individual_dashboard')
-            # return reverse_lazy('individual:individual_detail', kwargs={'pk': individual_id})
-        return reverse_lazy('individual:individual_list')  # Fallback
+#     def get_success_url(self):
+#         individual_id = self.kwargs.get('individual_id')
+#         if individual_id:
+#             return reverse_lazy('individual:individual_dashboard')
+#         return reverse_lazy('individual:individual_list')
