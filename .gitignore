@@ -1,24 +1,25 @@
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python/
-env/
+# Python virtual environment
+.venv/
 venv/
-*.env
-.idea/
+*.pyc
+__pycache__/
+
+# Node modules
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+.pnpm-debug.log
+
+# IDE specific files (optional but recommended)
 .vscode/
+.idea/
 
-# Django specific
-*.sqlite3
-*.log
-local_settings.py
+# Local settings
+*.env
+.env
 
-# Media and static files (if you're serving them locally)
+# Django specific ignores
+db.sqlite3
 /media/
 /static/
-
-# OS generated files
-.DS_Store
-Thumbs.db
