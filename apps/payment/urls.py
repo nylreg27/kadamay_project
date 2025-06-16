@@ -1,6 +1,6 @@
 # apps/payment/urls.py
 
-from django.urls import path
+from django.urls import path, include
 from . import views
 
 app_name = 'payment'
@@ -35,4 +35,7 @@ urlpatterns = [
     path('<int:pk>/detail/', views.payment_detail_view, name='payment_detail'),
     path('<int:pk>/update/', views.payment_update_view, name='payment_update'),
     path('<int:pk>/delete/', views.payment_delete_view, name='payment_delete'),
+
+    # Make sure this line appears ONLY ONCE
+    path("__reload__/", include("django_browser_reload.urls")),
 ]

@@ -24,7 +24,7 @@ class ContributionType(models.Model):
         ordering = ['name']
 
 
-# NEW INTERMEDIARY MODEL: PaymentIndividualAllocation (no changes here)
+# NEW INTERMEDIARY MODEL: PaymentIndividualAllocation - DUGANGAN OG is_payer
 class PaymentIndividualAllocation(models.Model):
     payment = models.ForeignKey(
         'Payment',
@@ -37,6 +37,12 @@ class PaymentIndividualAllocation(models.Model):
         related_name='payment_allocations'
     )
     allocated_amount = models.DecimalField(max_digits=10, decimal_places=2)
+
+    # NEW FIELD: Is this individual the actual payer for this specific allocation?
+    is_payer = models.BooleanField(
+        default=False,
+        help_text="True if this individual is the actual payer of this allocated amount."
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -51,7 +57,7 @@ class PaymentIndividualAllocation(models.Model):
         return f"{self.individual.full_name} - ₱{self.allocated_amount} from Payment #{self.payment.id}"
 
 
-# Your Payment model - MODIFIED to add deceased_member back
+# Your Payment model (no changes needed here for this fix)
 class Payment(models.Model):
     PAYMENT_METHOD_CHOICES = [
         ('GCASH', 'GCash to GCash'),
@@ -98,7 +104,6 @@ class Payment(models.Model):
     )
     notes = models.TextField(blank=True, null=True)
 
-    # NEW AUDIT FIELDS (no changes here)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
@@ -116,7 +121,6 @@ class Payment(models.Model):
         related_name='payments_updated'
     )
 
-    # NEW FIELDS FOR PAYMENT METHOD AND VALIDATION WORKFLOW (no changes here)
     payment_method = models.CharField(
         max_length=10,
         choices=PAYMENT_METHOD_CHOICES,
@@ -131,7 +135,6 @@ class Payment(models.Model):
         help_text="Current status of the payment (e.g., Pending Validation, Validated, Cancelled)."
     )
 
-    # NEW FIELDS FOR COLLECTOR AND VALIDATOR (no changes here)
     collected_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -154,7 +157,6 @@ class Payment(models.Model):
         help_text="Date and time when the payment was validated."
     )
 
-    # NEW FIELDS FOR CANCELLATION TRACKING (no changes here)
     is_cancelled = models.BooleanField(
         default=False,
         help_text="Indicates if the receipt/payment has been cancelled."
@@ -183,18 +185,15 @@ class Payment(models.Model):
         help_text="True if this is an old record without a physical official receipt number."
     )
 
-    # RE-ADDED: Deceased Member field
     deceased_member = models.ForeignKey(
         Individual,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        # Changed related_name to avoid clash with other individual relationships
         related_name='payments_for_deceased',
         help_text="If this payment is for a deceased member's contribution."
     )
 
-    # MODIFIED: Use the through model for covered_members (no changes here)
     covered_members = models.ManyToManyField(
         Individual,
         through='PaymentIndividualAllocation',

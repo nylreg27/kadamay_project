@@ -1,7 +1,6 @@
-# apps/report/views.py
-
 from django.views.generic import TemplateView
-from django.db.models import Sum, Count
+# <--- DUGANGI SUBQUERY UG OUTERREF DIRI!
+from django.db.models import Sum, Count, Q, Case, When, DecimalField, Subquery, OuterRef
 from django.shortcuts import render
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils import timezone
@@ -17,10 +16,7 @@ from apps.family.models import Family
 # Siguraduha nga sakto ni nga import path
 from apps.church.models import Church
 # Siguraduha nga sakto ni nga import path
-from apps.payment.models import Payment
-# Walay klaro nga Payment model definition sa New Text Document.txt,
-# pero naa sa comment nga # apps/payment/views.py, so I assume naa ni Payment model
-# sa apps/payment/models.py. Kung wala, kailangan ni buhaton.
+from apps.payment.models import Payment, PaymentIndividualAllocation
 
 
 class DashboardView(LoginRequiredMixin, TemplateView):
@@ -64,11 +60,6 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         # Overall Statistics
         context['total_families'] = families.count()
         context['total_members'] = individuals.count()
-        # This should probably be filtered too if selected_church_id is present
-        context['total_churches'] = churches.count()
-        # Correction: If a church is selected, total_churches should still show overall,
-        # or maybe just 1 if referring to the selected church.
-        # For simplicity, keeping it as total_churches.count()
         if selected_church_id:
             context['total_churches'] = 1 if selected_church else 0
         else:
@@ -115,9 +106,26 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             'church')
 
         # Top 5 Individual Contributors
+        # FIX KINI GAMIT ANG SUBQUERY!
+        # Subquery to calculate the sum of allocated_amount for each individual
+        # where they are marked as the payer.
+        payer_contributions_subquery = PaymentIndividualAllocation.objects.filter(
+            # Links to the Individual in the outer query (Individual.id)
+            individual=OuterRef('pk'),
+            # Filter for allocations where this specific individual is the payer
+            is_payer=True
+        ).values('individual').annotate(
+            # Sum the allocated_amount for these filtered allocations
+            total_payer_amount=Sum('allocated_amount')
+            # Select only the aggregated sum to be used in the outer query
+        ).values('total_payer_amount')
+
         top_contributors = individuals.annotate(
-            total_contribution=Sum('payments_made__amount')
-        ).exclude(total_contribution=None).order_by('-total_contribution')[:5]
+            total_contribution=Subquery(
+                payer_contributions_subquery, output_field=DecimalField())
+        ).exclude(total_contribution__isnull=True).order_by('-total_contribution')[:5]
+        # .exclude(total_contribution__isnull=True) will correctly filter out individuals
+        # who have no payments where they are the payer, as the subquery will return NULL for them.
         context['top_individual_contributors'] = top_contributors.select_related(
             'family__church')
 

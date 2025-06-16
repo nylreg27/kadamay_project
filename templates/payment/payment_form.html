@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load widget_tweaks %} {# <--- IMPORTANT: DUGANGI NI NGA LOAD WIDGET_TWEAKS! #}
 
 {% block title %}
     {{ page_title }} - Kadamay Mortuary System
@@ -10,6 +11,7 @@
     /* Card styles for a subtle lift and shadow */
     .card {
         transition: all 0.2s ease-in-out;
+        /* Box shadow often needs adjustment for dark themes if not automatically inverted by framework */
         box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
     }
     .card:hover {
@@ -20,17 +22,19 @@
         transition: background-color 0.15s;
     }
     .family-member-item:hover {
-        background-color: theme('colors.gray.50');
+        /* Adjusted hover background for dark mode */
+        background-color: theme('colors.base-300'); /* Use a slightly darker base color for hover */
     }
     /* Highlight for the primary payer information card */
     .highlight-card {
-        border-left: 4px solid theme('colors.blue.500');
+        border-left: 4px solid theme('colors.blue.500'); /* Keep specific color if desired */
     }
     /* Scrollable container for family members list */
     .scroll-container {
         max-height: 40vh; /* Limits height to 40% of viewport height */
         overflow-y: auto; /* Enables vertical scrolling when content overflows */
-        border: 1px solid theme('colors.gray.200');
+        /* Adjusted border for dark mode */
+        border: 1px solid theme('colors.base-content / 10%'); /* Use a subtle border from theme */
         border-radius: theme('borderRadius.md');
     }
     /* Custom scrollbar styles for better aesthetics */
@@ -38,11 +42,13 @@
         width: 8px;
     }
     .scroll-container::-webkit-scrollbar-thumb {
-        background-color: theme('colors.gray.300');
+        /* Adjusted scrollbar thumb for dark mode */
+        background-color: theme('colors.base-content / 30%');
         border-radius: 4px;
     }
     .scroll-container::-webkit-scrollbar-track {
-        background-color: theme('colors.gray.100');
+        /* Adjusted scrollbar track for dark mode */
+        background-color: theme('colors.base-300');
     }
 </style>
 {% endblock %}
@@ -51,10 +57,10 @@
 <div class="container mx-auto px-4 py-6">
     <div class="flex justify-between items-center mb-6">
         <div>
-            <h1 class="text-2xl font-bold text-gray-800">
+            <h1 class="text-2xl font-bold text-base-content">
                 {{ page_title }}
             </h1>
-            <p class="text-gray-600 text-sm mt-1">Record new payments for family contributions</p>
+            <p class="text-base-content/70 text-sm mt-1">Record new payments for family contributions</p>
         </div>
         <div class="flex space-x-2">
             <a href="{% url 'payment:payment_list' %}" class="btn btn-sm btn-outline btn-neutral flex items-center gap-1">
@@ -95,22 +101,22 @@
             <div class="flex flex-col gap-4">
                 {# Payer Information Card #}
                 <div class="card bg-base-100 rounded-lg p-5 highlight-card">
-                    <h2 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                    <h2 class="text-lg font-bold text-base-content mb-3 flex items-center gap-2">
                         <i data-feather="user" class="w-4 h-4 text-blue-500"></i>
                         Payer Information
                     </h2>
                     
                     <div class="space-y-3">
                         <div>
-                            <label for="{{ form.individual.id_for_label }}" class="block text-xs font-medium text-gray-700 mb-1">
+                            <label for="{{ form.individual.id_for_label }}" class="block text-xs font-medium text-base-content mb-1">
                                 Payee (Head of Family)
                                 <span class="text-red-500">*</span>
                             </label>
                             <div class="relative">
-                                {# Render Django form field for individual/payee #}
-                                {{ form.individual }}
+                                {# IMPORTANT CHANGE: Using render_field to apply classes directly #}
+                                {% render_field form.individual class="select select-bordered w-full text-base-content bg-base-200" %}
                                 <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                                    <i data-feather="chevron-down" class="w-3 h-3 text-gray-400"></i>
+                                    <i data-feather="chevron-down" class="w-3 h-3 text-base-content/50"></i>
                                 </div>
                             </div>
                             {# Display field-specific errors #}
@@ -121,15 +127,15 @@
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
-                                <label for="{{ form.contribution_type.id_for_label }}" class="block text-xs font-medium text-gray-700 mb-1">
+                                <label for="{{ form.contribution_type.id_for_label }}" class="block text-xs font-medium text-base-content mb-1">
                                     Contribution Type
                                     <span class="text-red-500">*</span>
                                 </label>
                                 <div class="relative">
-                                    {# Render Django form field for contribution type #}
-                                    {{ form.contribution_type }}
+                                    {# IMPORTANT CHANGE: Using render_field #}
+                                    {% render_field form.contribution_type class="select select-bordered w-full text-base-content bg-base-200" %}
                                     <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                                        <i data-feather="chevron-down" class="w-3 h-3 text-gray-400"></i>
+                                        <i data-feather="chevron-down" class="w-3 h-3 text-base-content/50"></i>
                                     </div>
                                 </div>
                                 {% if form.contribution_type.errors %}
@@ -138,15 +144,15 @@
                             </div>
                             
                             <div>
-                                <label for="{{ form.payment_method.id_for_label }}" class="block text-xs font-medium text-gray-700 mb-1">
+                                <label for="{{ form.payment_method.id_for_label }}" class="block text-xs font-medium text-base-content mb-1">
                                     Payment Method
                                     <span class="text-red-500">*</span>
                                 </label>
                                 <div class="relative">
-                                    {# Render Django form field for payment method #}
-                                    {{ form.payment_method }}
+                                    {# IMPORTANT CHANGE: Using render_field #}
+                                    {% render_field form.payment_method class="select select-bordered w-full text-base-content bg-base-200" %}
                                     <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                                        <i data-feather="chevron-down" class="w-3 h-3 text-gray-400"></i>
+                                        <i data-feather="chevron-down" class="w-3 h-3 text-base-content/50"></i>
                                     </div>
                                 </div>
                                 {% if form.payment_method.errors %}
@@ -159,34 +165,34 @@
 
                 {# Payment Details Card #}
                 <div class="card bg-base-100 rounded-lg p-5">
-                    <h2 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                    <h2 class="text-lg font-bold text-base-content mb-3 flex items-center gap-2">
                         <i data-feather="credit-card" class="w-4 h-4 text-green-500"></i>
                         Payment Details
                     </h2>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
-                            <label for="{{ form.receipt_no.id_for_label }}" class="block text-xs font-medium text-gray-700 mb-1">
+                            <label for="{{ form.receipt_no.id_for_label }}" class="block text-xs font-medium text-base-content mb-1">
                                 Receipt Number
                                 <span class="text-red-500">*</span>
                             </label>
-                            {# Render Django form field for receipt number #}
-                            {{ form.receipt_no }}
+                            {# IMPORTANT CHANGE: Using render_field #}
+                            {% render_field form.receipt_no class="input input-bordered w-full text-base-content bg-base-200" %}
                             {% if form.receipt_no.errors %}
                                 <p class="text-red-600 text-xs mt-1">{{ form.receipt_no.errors }}</p>
                             {% endif %}
                         </div>
                         
                         <div>
-                            <label for="{{ form.date_paid.id_for_label }}" class="block text-xs font-medium text-gray-700 mb-1">
+                            <label for="{{ form.date_paid.id_for_label }}" class="block text-xs font-medium text-base-content mb-1">
                                 Payment Date
                                 <span class="text-red-500">*</span>
                             </label>
                             <div class="relative">
-                                {# Render Django form field for payment date #}
-                                {{ form.date_paid }}
+                                {# IMPORTANT CHANGE: Using render_field #}
+                                {% render_field form.date_paid type="date" class="input input-bordered w-full text-base-content bg-base-200" %}
                                 <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                                    <i data-feather="calendar" class="w-3 h-3 text-gray-400"></i>
+                                    <i data-feather="calendar" class="w-3 h-3 text-base-content/50"></i>
                                 </div>
                             </div>
                             {% if form.date_paid.errors %}
@@ -196,13 +202,13 @@
                     </div>
                     
                     <div class="mt-3">
-                        <label for="{{ form.deceased_member.id_for_label }}" class="block text-xs font-medium text-gray-700 mb-1">
+                        <label for="{{ form.deceased_member.id_for_label }}" class="block text-xs font-medium text-base-content mb-1">
                             Remarks (Deceased Member) </label>
                         <div class="relative">
-                            {# Render Django form field for deceased member remarks #}
-                            {{ form.deceased_member }}
+                            {# IMPORTANT CHANGE: Using render_field #}
+                            {% render_field form.deceased_member class="select select-bordered w-full text-base-content bg-base-200" %}
                             <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                                <i data-feather="chevron-down" class="w-3 h-3 text-gray-400"></i>
+                                <i data-feather="chevron-down" class="w-3 h-3 text-base-content/50"></i>
                             </div>
                         </div>
                         {% if form.deceased_member.errors %}
@@ -215,31 +221,31 @@
             <div class="flex flex-col gap-4">
                 {# Family Details Card #}
                 <div class="card bg-base-100 rounded-lg p-5">
-                    <h2 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                    <h2 class="text-lg font-bold text-base-content mb-3 flex items-center gap-2">
                         <i data-feather="users" class="w-4 h-4 text-purple-500"></i>
                         Family Details
                     </h2>
                     
-                    <div class="bg-blue-50 rounded-md p-3 mb-3">
-                        <h3 class="font-semibold text-blue-800 text-center text-sm" id="familyNameLabel">
+                    <div class="bg-primary/10 rounded-md p-3 mb-3"> 
+                        <h3 class="font-semibold text-primary text-center text-sm" id="familyNameLabel">
                             Please select a Payee
                         </h3>
                     </div>
                     
                     <div class="space-y-3">
-                        <div class="bg-gray-50 p-3 rounded-md">
+                        <div class="bg-base-200 p-3 rounded-md"> 
                             <div class="flex justify-between items-center mb-2">
-                                <h4 class="font-medium text-gray-700 text-sm">Family Members for Contribution</h4>
+                                <h4 class="font-medium text-base-content text-sm">Family Members for Contribution</h4>
                                 <div class="flex items-center">
                                     <input type="checkbox" id="selectAllFamilyMembers" class="checkbox checkbox-sm">
-                                    <label for="selectAllFamilyMembers" class="ml-2 text-xs">Select All</label>
+                                    <label for="selectAllFamilyMembers" class="ml-2 text-xs text-base-content">Select All</label>
                                 </div>
                             </div>
                             
                             <div class="scroll-container">
                                 <div id="familyMembersList" class="space-y-1">
                                     {# Placeholder content for when no payee is selected #}
-                                    <div class="text-center py-6 text-gray-400">
+                                    <div class="text-center py-6 text-base-content/50"> 
                                         <i data-feather="users" class="w-10 h-10 mx-auto"></i>
                                         <p class="mt-1 text-sm">Select a payee to view family members</p>
                                     </div>
@@ -251,19 +257,19 @@
 
                 {# Amount Calculation Card #}
                 <div class="card bg-base-100 rounded-lg p-5">
-                    <h2 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                    <h2 class="text-lg font-bold text-base-content mb-3 flex items-center gap-2">
                         <i data-feather="dollar-sign" class="w-4 h-4 text-yellow-500"></i>
                         Amount Calculation
                     </h2>
                     
-                    <div class="bg-gray-50 p-3 rounded-md">
+                    <div class="bg-base-200 p-3 rounded-md"> 
                         <div class="grid grid-cols-2 gap-3">
                             <div class="text-center">
-                                <p class="text-xs text-gray-600">Members Selected</p>
+                                <p class="text-xs text-base-content/70">Members Selected</p> 
                                 <p id="selectedMembersCount" class="text-xl font-bold text-blue-600">0</p>
                             </div>
                             <div class="text-center">
-                                <p class="text-xs text-gray-600">Per Member</p>
+                                <p class="text-xs text-base-content/70">Per Member</p> 
                                 <p id="perMemberAmount" class="text-xl font-bold text-green-600">₱0.00</p>
                             </div>
                         </div>
@@ -271,29 +277,31 @@
                     
                     <div class="space-y-3 mt-3">
                         <div>
-                            <label class="block text-xs font-medium text-gray-700 mb-1">
+                            <label class="block text-xs font-medium text-base-content mb-1">
                                 Family Contribution Amount (Calculated)
                             </label>
                             <div class="relative">
                                 <input type="text" id="family_amount_display"
-                                        class="input input-bordered input-sm w-full text-base font-bold text-green-700"
-                                        value="0.00" readonly>
+                                            class="input input-bordered input-sm w-full text-base font-bold text-green-500 bg-base-200"
+                                            value="0.00" readonly>
                                 <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                                    <i data-feather="dollar-sign" class="w-3 h-3 text-gray-400"></i>
+                                    <i data-feather="dollar-sign" class="w-3 h-3 text-base-content/50"></i>
                                 </div>
                             </div>
                         </div>
                         
                         <div>
-                            <label for="{{ form.amount.id_for_label }}" class="block text-xs font-medium text-gray-700 mb-1">
+                            <label for="{{ form.amount.id_for_label }}" class="block text-xs font-medium text-base-content mb-1">
                                 Total Payment Amount
                                 <span class="text-red-500">*</span>
                             </label>
                             <div class="relative">
-                                {# Render Django form field for total amount #}
-                                {{ form.amount }}
+                                {# IMPORTANT CHANGE: Using render_field #}
+                                <input type="number" step="0.01" name="{{ form.amount.name }}" id="{{ form.amount.id_for_label }}"
+                                    class="input input-bordered w-full text-base-content bg-base-200 {% if form.amount.errors %}input-error{% endif %}"
+                                    value="{{ form.amount.value|default_if_none:'0.00' }}">
                                 <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                                    <i data-feather="dollar-sign" class="w-3 h-3 text-gray-400"></i>
+                                    <i data-feather="dollar-sign" class="w-3 h-3 text-base-content/50"></i>
                                 </div>
                             </div>
                             {% if form.amount.errors %}
@@ -305,7 +313,7 @@
             </div>
         </div>
 
-        <div class="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200">
+        <div class="flex justify-end gap-2 mt-6 pt-4 border-t border-base-content/10"> 
             <button type="reset" class="btn btn-sm btn-outline btn-neutral flex items-center gap-1">
                 <i data-feather="refresh-ccw" class="w-4 h-4"></i>
                 Reset Form
@@ -347,7 +355,7 @@
          */
         function updateSelectedMembersIdsInput() {
             const selectedIds = Array.from(document.querySelectorAll('.member-checkbox:checked'))
-                                    .map(checkbox => checkbox.value);
+                                     .map(checkbox => checkbox.value);
             selectedMembersIdsInput.value = JSON.stringify(selectedIds);
         }
 
@@ -361,7 +369,7 @@
             familyMembersList.innerHTML = `
                 <div class="text-center py-6">
                     <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-                    <p class="mt-2 text-gray-500 text-sm">Loading family data...</p>
+                    <p class="mt-2 text-base-content/70">Loading family data...</p>
                 </div>`;
             
             familyNameLabel.textContent = 'Family details loading...';
@@ -370,7 +378,7 @@
             if (!individualId) {
                 // Display placeholder if no individual is selected
                 familyMembersList.innerHTML = `
-                    <div class="text-center py-6 text-gray-400">
+                    <div class="text-center py-6 text-base-content/50">
                         <i data-feather="users" class="w-10 h-10 mx-auto"></i>
                         <p class="mt-1 text-sm">Select a payee to view family members</p>
                     </div>`;
@@ -396,14 +404,14 @@
                 if (data.family_members && data.family_members.length > 0) {
                     data.family_members.forEach(member => {
                         const memberDiv = document.createElement('div');
-                        memberDiv.className = 'family-member-item flex items-center p-2 border-b border-gray-100 last:border-b-0';
+                        memberDiv.className = 'family-member-item flex items-center p-2 border-b border-base-content/10 last:border-b-0';
                         memberDiv.innerHTML = `
                             <div class="flex items-center w-full">
                                 <input type="checkbox" name="family_members_for_contribution" value="${member.id}" 
                                     id="member_${member.id}" class="checkbox checkbox-sm member-checkbox mr-2">
                                 <label for="member_${member.id}" class="flex-1 min-w-0 cursor-pointer">
-                                    <div class="font-medium text-sm truncate">${member.full_name}</div>
-                                    <div class="flex text-xs text-gray-500 mt-0.5">
+                                    <div class="font-medium text-sm text-base-content truncate">${member.full_name}</div>
+                                    <div class="flex text-xs text-base-content/70 mt-0.5">
                                         <span class="mr-2">${member.status || 'N/A'}</span>
                                         <span>${member.relationship || 'N/A'}</span>
                                     </div>
@@ -426,7 +434,7 @@
                 } else {
                     // Display message if no family members found
                     familyMembersList.innerHTML = `
-                        <div class="text-center py-6 text-gray-400">
+                        <div class="text-center py-6 text-base-content/50">
                             <i data-feather="user-x" class="w-10 h-10 mx-auto"></i>
                             <p class="mt-1 text-sm">No family members found for this payee</p>
                         </div>`;
@@ -584,7 +592,7 @@
                 // If no payee selected, ensure placeholder is displayed
                 familyNameLabel.textContent = 'Please select a Payee';
                 familyMembersList.innerHTML = `
-                    <div class="text-center py-6 text-gray-400">
+                    <div class="text-center py-6 text-base-content/50">
                         <i data-feather="users" class="w-10 h-10 mx-auto"></i>
                         <p class="mt-1 text-sm">Select a payee to view family members</p>
                     </div>`;
