@@ -1,137 +1,160 @@
-from django.views.generic import View
+# apps/report/views.py
+
+from django.views.generic import TemplateView
+from django.db.models import Sum, Count
 from django.shortcuts import render
-from django.db.models import Count, Sum
 from django.contrib.auth.mixins import LoginRequiredMixin
-from apps.church.models import Church
-from apps.family.models import Family
-from apps.individual.models import Individual
-from apps.payment.models import Payment
 from django.utils import timezone
-from django.db.models.functions import ExtractMonth, ExtractYear
-import json  # Important: Import json for data serialization
+import json  # Para sa JSON serialization sa data sa charts
+import datetime  # Para sa date calculations
+from decimal import Decimal  # Import Decimal para sa type checking
+
+# Import models from their respective apps
+# Siguraduha nga sakto ni nga import path
+from apps.individual.models import Individual
+# Siguraduha nga sakto ni nga import path
+from apps.family.models import Family
+# Siguraduha nga sakto ni nga import path
+from apps.church.models import Church
+# Siguraduha nga sakto ni nga import path
+from apps.payment.models import Payment
+# Walay klaro nga Payment model definition sa New Text Document.txt,
+# pero naa sa comment nga # apps/payment/views.py, so I assume naa ni Payment model
+# sa apps/payment/models.py. Kung wala, kailangan ni buhaton.
 
 
-class DashboardView(LoginRequiredMixin, View):
+class DashboardView(LoginRequiredMixin, TemplateView):
+
     template_name = 'report/dashboard.html'
 
-    def get(self, request, *args, **kwargs):
-        selected_church_id = request.GET.get('church')
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
 
-        # Determine which churches to include based on user type and filter
-        if request.user.is_superuser:
-            all_available_churches = Church.objects.all().order_by('name')
-        else:
-            # Assuming UserChurch model assigns a church to a user
-            user_church_assignment = request.user.assigned_church.first()
-            if user_church_assignment:
-                all_available_churches = Church.objects.filter(
-                    id=user_church_assignment.church.id).order_by('name')
-            else:
-                all_available_churches = Church.objects.none()  # No churches assigned
+        # Title sa page
+        context['title'] = 'Dashboard'
 
-        # Apply the filter if a specific church is selected
+        # Filter by Church
+        churches = Church.objects.all()
+        context['churches'] = churches
+
+        selected_church_id = self.request.GET.get('church')
+
+        selected_church = None
         if selected_church_id:
             try:
-                churches_to_display = all_available_churches.filter(
-                    id=int(selected_church_id))
-            except ValueError:
-                churches_to_display = all_available_churches  # Invalid ID, show all available
+                selected_church = Church.objects.get(id=selected_church_id)
+                families = Family.objects.filter(church=selected_church)
+                individuals = Individual.objects.filter(
+                    family__church=selected_church)
+                payments = Payment.objects.filter(
+                    individual__family__church=selected_church)
+            except Church.DoesNotExist:
+                families = Family.objects.all()
+                individuals = Individual.objects.all()
+                payments = Payment.objects.all()
+                selected_church_id = None  # Reset if church not found
         else:
-            churches_to_display = all_available_churches
+            families = Family.objects.all()
+            individuals = Individual.objects.all()
+            payments = Payment.objects.all()
 
-        church_ids_to_display = [church.id for church in churches_to_display]
+        # Importante para sa pre-selection sa dropdown
+        context['selected_church'] = selected_church_id
 
-        # Querysets based on the churches selected/filtered
-        individual_queryset = Individual.objects.filter(
-            family__church__id__in=church_ids_to_display)
-        family_queryset = Family.objects.filter(
-            church__id__in=church_ids_to_display)
-        payment_queryset = Payment.objects.filter(
-            individual__family__church__id__in=church_ids_to_display)
+        # Overall Statistics
+        context['total_families'] = families.count()
+        context['total_members'] = individuals.count()
+        # This should probably be filtered too if selected_church_id is present
+        context['total_churches'] = churches.count()
+        # Correction: If a church is selected, total_churches should still show overall,
+        # or maybe just 1 if referring to the selected church.
+        # For simplicity, keeping it as total_churches.count()
+        if selected_church_id:
+            context['total_churches'] = 1 if selected_church else 0
+        else:
+            context['total_churches'] = churches.count()
 
-        # --- Dashboard Stats ---
-        total_churches = churches_to_display.count()
-        total_families = family_queryset.count()
-        total_members = individual_queryset.count()
+        context['total_contributions'] = payments.aggregate(Sum('amount'))[
+            'amount__sum'] or 0
 
-        active_members_count = individual_queryset.filter(
-            is_active_member=True, is_alive=True).count()
-        inactive_deceased = individual_queryset.filter(is_alive=False).count()
-        inactive_alive = individual_queryset.filter(
-            is_active_member=False, is_alive=True).count()
+        # Membership Status Distribution (for Pie Chart)
+        membership_status_distribution = individuals.values(
+            'membership_status').annotate(count=Count('id'))
+        context['membership_status_distribution'] = {
+            item['membership_status']: item['count'] for item in membership_status_distribution}
 
-        total_payments = payment_queryset.aggregate(
-            total_amount=Sum('amount'))['total_amount'] or 0
-        recent_members = individual_queryset.order_by('-date_added')[:5]
-
-        # --- Data for "Families per Church" Chart ---
-        family_counts_per_church = churches_to_display.annotate(
-            num_families=Count('families')
-        ).values('name', 'num_families').order_by('name')
-
-        church_names = [item['name'] for item in family_counts_per_church]
-        family_counts_data = [item['num_families']
-                              for item in family_counts_per_church]
-
-        # --- Data for "Monthly Contributions" Chart ---
-        monthly_contributions = {}
+        # Contributions Over Time Chart
+        # Example: Last 6 months contributions
         today = timezone.now()
+        months_labels = []
+        contributions_data = []
+        for i in range(6):
+            month_start = (today - datetime.timedelta(days=30*i)
+                           ).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            month_end = (month_start + datetime.timedelta(days=30)).replace(day=1,
+                                                                            hour=0, minute=0, second=0, microsecond=0) - datetime.timedelta(days=1)
 
-        # Initialize monthly_contributions for the last 12 months with 0
-        for i in range(11, -1, -1):  # Iterate from 11 down to 0 to get chronological order
-            month_date = (today - timezone.timedelta(days=30 * i)
-                          ).replace(day=1)
-            month_str = month_date.strftime('%Y-%m')  # e.g., "2024-01"
-            month_label = month_date.strftime('%b %Y')  # e.g., "Jan 2024"
-            monthly_contributions[month_str] = {
-                'label': month_label, 'total_amount': 0}
+            monthly_contributions = payments.filter(
+                date_paid__gte=month_start,
+                date_paid__lte=month_end
+            ).aggregate(Sum('amount'))['amount__sum'] or 0
 
-        # Aggregate payments by month
-        # Approximate 12 months ago
-        twelve_months_ago = today - timezone.timedelta(days=365)
+            # Add to front to show chronologically
+            months_labels.insert(0, month_start.strftime('%b %Y'))
+            # Add to front
+            contributions_data.insert(0, monthly_contributions)
 
-        payments_by_month = payment_queryset.filter(
-            date_paid__gte=twelve_months_ago
-        ).annotate(
-            year=ExtractYear('date_paid'),
-            month=ExtractMonth('date_paid')
-        ).values('year', 'month').annotate(
-            total=Sum('amount')
-        ).order_by('year', 'month')
+        context['contributions_over_time_labels'] = months_labels
+        context['contributions_over_time_data'] = contributions_data
 
-        for entry in payments_by_month:
-            # Format YYYY-MM
-            month_key = f"{entry['year']}-{entry['month']:02d}"
-            if month_key in monthly_contributions:
-                monthly_contributions[month_key]['total_amount'] = float(
-                    entry['total'])  # Ensure float for JS
+        # Top 5 Families with Most Members
+        top_families = families.annotate(member_count=Count(
+            'members')).order_by('-member_count')[:5]
+        # Ensure family.church is included for display in template
+        context['top_families_by_members'] = top_families.select_related(
+            'church')
 
-        # Extract labels and data in correct chronological order
-        months_labels = [monthly_contributions[key]['label']
-                         for key in sorted(monthly_contributions.keys())]
-        contributions_data = [monthly_contributions[key]['total_amount']
-                              for key in sorted(monthly_contributions.keys())]
+        # Top 5 Individual Contributors
+        top_contributors = individuals.annotate(
+            total_contribution=Sum('payments_made__amount')
+        ).exclude(total_contribution=None).order_by('-total_contribution')[:5]
+        context['top_individual_contributors'] = top_contributors.select_related(
+            'family__church')
 
-        context = {
-            'total_churches': total_churches,
-            'total_families': total_families,
-            'total_members': total_members,
-            'active_members': active_members_count,
-            'inactive_deceased': inactive_deceased,
-            'inactive_alive': inactive_alive,
-            'total_payments': total_payments,
-            'recent_members': recent_members,
-            'title': 'System Dashboard',
+        # Church-wise Summary Table
+        church_summaries = []
+        for church_obj in churches:
+            church_families = Family.objects.filter(church=church_obj)
+            church_individuals = Individual.objects.filter(
+                family__church=church_obj)
+            church_payments = Payment.objects.filter(
+                individual__family__church=church_obj)
 
-            # Pass all available churches for the filter dropdown
-            'churches': all_available_churches,
-            # Pass the selected ID back to the template
-            'selected_church': selected_church_id,
+            church_summaries.append({
+                'name': church_obj.name,
+                'total_families': church_families.count(),
+                'total_members': church_individuals.count(),
+                'total_contributions': church_payments.aggregate(Sum('amount'))['amount__sum'] or 0
+            })
+        context['church_summaries'] = church_summaries
 
-            # Data for Charts (JSON serialized for JavaScript)
-            'church_names': json.dumps(church_names),
-            'family_counts': json.dumps(family_counts_data),
-            'months': json.dumps(months_labels),
-            'contributions': json.dumps(contributions_data),
-        }
-        return render(request, self.template_name, context)
+        # JSON encode data for Chart.js (already done in your original template, but good to ensure)
+        context['membership_status_distribution_json'] = json.dumps(
+            context['membership_status_distribution'])
+        context['contributions_over_time_labels_json'] = json.dumps(
+            context['contributions_over_time_labels'])
+
+        # CORRECTED SECTION: Convert Decimal values to float before JSON serialization
+        # This loop iterates through the list of monthly contributions and converts each Decimal to float.
+        converted_contributions_data = []
+        for amount in context['contributions_over_time_data']:
+            if isinstance(amount, Decimal):
+                converted_contributions_data.append(float(amount))
+            else:
+                converted_contributions_data.append(amount)
+
+        context['contributions_over_time_data_json'] = json.dumps(
+            converted_contributions_data)
+
+        # Ensure this is the last line of the method, no code after this.
+        return context

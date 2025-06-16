@@ -10,7 +10,7 @@
             <select name="church" id="church-select" class="select select-bordered w-full md:w-auto flex-grow" onchange="this.form.submit()">
                 <option value="">All Churches</option>
                 {% for church_obj in churches %}
-                <option value="{{ church_obj.id }}" {% if selected_church|safe == church_obj.id|stringformat:"s" %}selected{% endif %}>
+                <option value="{{ church_obj.id }}" {% if selected_church|stringformat:"s" == church_obj.id|stringformat:"s" %}selected{% endif %}>
                     {{ church_obj.name }}
                 </option>
                 {% endfor %}
@@ -19,249 +19,213 @@
         </form>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        <div class="card bg-primary text-primary-content shadow-md">
-            <div class="card-body items-center text-center">
-                <h2 class="card-title text-xl"><i class="fas fa-church"></i> Total Churches</h2>
-                <p class="text-4xl font-bold">{{ total_churches }}</p>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="stat shadow-lg bg-base-200 p-4 rounded-lg">
+            <div class="stat-figure text-secondary">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             </div>
+            <div class="stat-title">Total Families</div>
+            <div class="stat-value text-primary">{{ total_families }}</div>
+            <div class="stat-desc">All registered families</div>
         </div>
-        <div class="card bg-success text-success-content shadow-md">
-            <div class="card-body items-center text-center">
-                <h2 class="card-title text-xl"><i class="fas fa-users"></i> Total Families</h2>
-                <p class="text-4xl font-bold">{{ total_families }}</p>
+        <div class="stat shadow-lg bg-base-200 p-4 rounded-lg">
+            <div class="stat-figure text-secondary">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 10 002 2h4a2 10 002-2V4a2 10 00-2-2h-4a2 10 00-2 2m0 10V6m0 4a2 10 002 2h4a2 10 002-2v-4a2 10 00-2-2h-4a2 10 00-2 2"></path></svg>
             </div>
+            <div class="stat-title">Total Members</div>
+            <div class="stat-value text-secondary">{{ total_members }}</div>
+            <div class="stat-desc">Includes all individuals</div>
         </div>
-        <div class="card bg-info text-info-content shadow-md">
-            <div class="card-body items-center text-center">
-                <h2 class="card-title text-xl"><i class="fas fa-user-friends"></i> Total Members</h2>
-                <p class="text-4xl font-bold">{{ total_members }}</p>
+        <div class="stat shadow-lg bg-base-200 p-4 rounded-lg">
+            <div class="stat-figure text-secondary">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 110-4h14a2 110 4M5 8v10a2 002 2h10a2 002-2V8m-9 4h4"></path></svg>
             </div>
+            <div class="stat-title">Total Churches</div>
+            <div class="stat-value text-accent">{{ total_churches }}</div>
+            <div class="stat-desc">Active churches registered</div>
         </div>
-        <div class="card bg-warning text-warning-content shadow-md">
-            <div class="card-body items-center text-center">
-                <h2 class="card-title text-xl"><i class="fas fa-hand-holding-usd"></i> Total Contributions</h2>
-                <p class="text-4xl font-bold">₱ {{ total_payments|floatformat:2 }}</p>
+        <div class="stat shadow-lg bg-base-200 p-4 rounded-lg">
+            <div class="stat-figure text-secondary">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10m0 0h16m-4 0v-4m-3 0V7"></path></svg>
             </div>
-        </div>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <div class="lg:col-span-1">
-            <div class="card bg-base-100 shadow-md h-full">
-                <div class="card-header bg-base-200 text-base-content p-4 font-semibold rounded-t-lg">
-                    Member Status
-                </div>
-                <ul class="menu p-4">
-                    <li>
-                        <div class="flex justify-between items-center px-2 py-1">
-                            <span>Active Members</span>
-                            <span class="badge badge-primary">{{ active_members }}</span>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="flex justify-between items-center px-2 py-1">
-                            <span>Inactive (Alive)</span>
-                            <span class="badge badge-info">{{ inactive_alive }}</span>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="flex justify-between items-center px-2 py-1">
-                            <span>Deceased Members</span>
-                            <span class="badge badge-neutral">{{ inactive_deceased }}</span>
-                        </div>
-                    </li>
-                </ul>
-            </div>
-        </div>
-
-        <div class="lg:col-span-2">
-            <div class="card bg-base-100 shadow-md h-full">
-                <div class="card-header bg-base-200 text-base-content p-4 font-semibold rounded-t-lg">
-                    Recent Members Added
-                </div>
-                <div class="card-body">
-                    {% if recent_members %}
-                    <ul class="menu p-4">
-                        {% for member in recent_members %}
-                        <li>
-                            <a href="{% url 'individual:individual_detail' member.pk %}" class="flex justify-between items-center">
-                                <span>{{ member.full_name }}</span>
-                                <span class="badge badge-ghost">{{ member.date_added|date:"M d, Y" }}</span>
-                            </a>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                    {% else %}
-                    <p class="text-center text-base-content/70">No recent members to display.</p>
-                    {% endif %}
-                </div>
-            </div>
+            <div class="stat-title">Total Contributions</div>
+            <div class="stat-value text-info">₱{{ total_contributions|floatformat:2 }}</div>
+            <div class="stat-desc">Overall financial contributions</div>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-        <div class="card-body bg-white">
-            <div class="card-header bg-base-200 text-base-content p-4 font-semibold rounded-t-lg">
-                Families per Church
-            </div>
-            <div class="card-body">
-                <canvas id="familyChart"></canvas>
-                <p class="text-center mt-4 text-base-content/70" id="noFamilyDataMessage" style="display: none;">No family data available for churches.</p>
-            </div>
+    <div class="bg-base-200 shadow-lg rounded-lg p-6 mb-8">
+        <h2 class="text-xl font-semibold mb-4 text-base-content">Membership Status Distribution</h2>
+        <div class="h-64">
+            <canvas id="membershipStatusChart"></canvas>
         </div>
-        <div class="card-body bg-white">
-            <div class="card-header bg-base-200 text-base-content p-4 font-semibold rounded-t-lg">
-                Monthly Contributions
-            </div>
-            <div class="card-body">
-                <canvas id="monthlyContributionsChart"></canvas>
-                <p class="text-center mt-4 text-base-content/70" id="noContributionsDataMessage" style="display: none;">No contribution data available for the last 12 months.</p>
-            </div>
+    </div>
+
+    <div class="bg-base-200 shadow-lg rounded-lg p-6 mb-8">
+        <h2 class="text-xl font-semibold mb-4 text-base-content">Contributions Over Time</h2>
+        <div class="h-64">
+            <canvas id="contributionsChart"></canvas>
+        </div>
+    </div>
+
+    <div class="bg-base-200 shadow-lg rounded-lg p-6 mb-8">
+        <h2 class="text-xl font-semibold mb-4 text-base-content">Top 5 Families with Most Members</h2>
+        <div class="overflow-x-auto">
+            <table class="table w-full">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Family Name</th>
+                        <th>Members Count</th>
+                        <th>Church</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for family in top_families_by_members %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ family.family_name }}</td>
+                        <td>{{ family.member_count }}</td>
+                        <td>{{ family.church.name }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center">No families found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="bg-base-200 shadow-lg rounded-lg p-6 mb-8">
+        <h2 class="text-xl font-semibold mb-4 text-base-content">Top 5 Individual Contributors</h2>
+        <div class="overflow-x-auto">
+            <table class="table w-full">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Individual Name</th>
+                        <th>Total Contribution</th>
+                        <th>Church</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for contributor in top_individual_contributors %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ contributor.full_name }}</td>
+                        <td>₱{{ contributor.total_contribution|floatformat:2 }}</td>
+                        <td>{{ contributor.family.church.name }}</td> {# assuming individual has family and family has church #}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center">No individual contributors found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="bg-base-200 shadow-lg rounded-lg p-6">
+        <h2 class="text-xl font-semibold mb-4 text-base-content">Church-wise Summary</h2>
+        <div class="overflow-x-auto">
+            <table class="table w-full">
+                <thead>
+                    <tr>
+                        <th>Church Name</th>
+                        <th>Total Families</th>
+                        <th>Total Members</th>
+                        <th>Total Contributions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for church_summary in church_summaries %}
+                    <tr>
+                        <td>{{ church_summary.name }}</td>
+                        <td>{{ church_summary.total_families }}</td>
+                        <td>{{ church_summary.total_members }}</td>
+                        <td>₱{{ church_summary.total_contributions|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center">No church summaries found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 
 </div>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-Fo3rlDk+4Wv1I/c6B1vR0l40p/Q6E02n1Jm1q+a5K11s+j6+zQ/g+A/f/2t/W+a1P00P20S1B/g+tQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <script>
-    // Define a set of fixed light-theme colors for charts
-    const chartFixedColors = {
-        primary: 'rgba(75, 192, 192, 1)', // A standard primary-like color for bars/lines
-        accent: 'rgba(255, 99, 132, 1)', // A standard accent-like color for lines
-        background: 'rgba(255, 255, 255, 1)', // White background
-        labelColor: 'rgba(0, 0, 0, 0.8)', // Dark grey for labels/text
-        gridColor: 'rgba(200, 200, 200, 0.5)', // Light grey for grid lines
-        tooltipBackgroundColor: 'rgba(255, 255, 255, 0.9)', // White for tooltip background
-        tooltipBorderColor: 'rgba(0, 0, 0, 0.2)', // Light border for tooltip
-        tooltipLabelColor: 'rgba(0, 0, 0, 1)', // Black for tooltip text
-    };
+    document.addEventListener('DOMContentLoaded', function() {
+        // Membership Status Chart
+        var membershipCtx = document.getElementById('membershipStatusChart').getContext('2d');
+        var membershipStatusChart = new Chart(membershipCtx, {
+            type: 'pie',
+            data: {
+                // Gamita ang JSON-encoded data gikan sa Django context
+                labels: Object.keys({{ membership_status_distribution_json|safe }}),
+                datasets: [{
+                    data: Object.values({{ membership_status_distribution_json|safe }}),
+                    backgroundColor: [
+                        'rgba(75, 192, 192, 0.6)', // Active
+                        'rgba(255, 99, 132, 0.6)', // Inactive
+                        'rgba(255, 205, 86, 0.6)', // Pending
+                        'rgba(54, 162, 235, 0.6)', // Other statuses if any
+                    ],
+                    borderColor: [
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(255, 205, 86, 1)',
+                        'rgba(54, 162, 235, 1)',
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed !== null) {
+                                    label += context.parsed;
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
 
- // --- Families per Church Chart ---
- const churchNames = JSON.parse('{{ church_names|safe }}');
- const familyCounts = JSON.parse('{{ family_counts|safe }}');
-
- const familyChartCanvas = document.getElementById("familyChart");
- const noFamilyDataMessage = document.getElementById("noFamilyDataMessage");
-
- if (churchNames.length > 0 && familyCounts.length > 0) {
-     new Chart(familyChartCanvas, {
-         type: 'bar',
-         data: {
-             labels: churchNames,
-             datasets: [{
-                 label: 'Number of Families',
-                 data: familyCounts,
-                 backgroundColor: chartFixedColors.primary, // Fixed primary color
-                 borderColor: chartFixedColors.primary,
-                 borderWidth: 1
-             }]
-         },
-         options: {
-             responsive: true,
-             maintainAspectRatio: false,
-             scales: {
-                 y: {
-                     beginAtZero: true,
-                     title: {
-                         display: true,
-                         text: 'Number of Families',
-                         color: chartFixedColors.labelColor, // <-- ADDED COMMA HERE
-                         font: {weight: 'bold' }// Bold label
-                     },
-                     ticks: {
-                         callback: function(value) { if (value % 1 === 0) return value; },
-                         color: chartFixedColors.labelColor, // <-- ADDED COMMA HERE
-                         font: {weight: 'bold' }// Bold label
-                     },
-                     grid: {
-                         color: chartFixedColors.gridColor // Fixed grid color
-                         // No font property here as grid lines don't have text
-                     }
-                 },
-                 x: {
-                     title: {
-                         display: true,
-                         text: 'Church',
-                         color: chartFixedColors.labelColor, // <-- ADDED COMMA HERE
-                         font: {weight: 'bold' }// Bold label
-                     },
-                     ticks: {
-                         color: chartFixedColors.labelColor, // Fixed tick color
-                         maxRotation: 90, // Rotate labels by 90 degrees (vertical)
-                         minRotation: 90,  // Ensure they are always rotated
-                         //font: {weight: 'bold' }// <-- ADDED COMMA HERE for the `ticks` font property
-                     },
-                     grid: {
-                         color: chartFixedColors.gridColor // Fixed grid color
-                         // No font property here as grid lines don't have text
-                     }
-                 }
-             },
-             plugins: {
-                 legend: {
-                     display: false,
-                     labels: {
-                         color: chartFixedColors.labelColor, // <-- ADDED COMMA HERE
-                         font: {weight: 'bold' }// Bold label
-                     }
-                 },
-                 tooltip: {
-                     backgroundColor: chartFixedColors.tooltipBackgroundColor, // Fixed tooltip background
-                     borderColor: chartFixedColors.tooltipBorderColor, // Fixed tooltip border
-                     borderWidth: 1,
-                     titleColor: chartFixedColors.tooltipLabelColor, // Fixed tooltip title color
-                     bodyColor: chartFixedColors.tooltipLabelColor, // Fixed tooltip body color
-                     // The tooltip font properties `titleFont` and `bodyFont` are separate from color,
-                     // so they should be added on their own line after the existing properties,
-                     // with a comma separating the last property above them.
-                     titleFont: { weight: 'bold' }, // Correctly placed
-                     bodyFont: { weight: 'bold' },  // Correctly placed
-                     callbacks: {
-                         label: function(context) {
-                             let label = context.dataset.label || '';
-                             if (label) {
-                                 label += ': ';
-                             }
-                             label += context.raw + ' families';
-                             return label;
-                         }
-                     }
-                 }
-             }
-         }
-     });
-     noFamilyDataMessage.style.display = 'none'; // Hide message if graph is shown
- } else {
-     familyChartCanvas.style.display = 'none'; // Hide canvas if no data
-     noFamilyDataMessage.style.display = 'block'; // Show message if no data
- }
-
-
-    // --- Monthly Contributions Chart ---
-    const months = JSON.parse('{{ months|safe }}');
-    const contributions = JSON.parse('{{ contributions|safe }}');
-
-    const monthlyContributionsCanvas = document.getElementById("monthlyContributionsChart");
-    const noContributionsDataMessage = document.getElementById("noContributionsDataMessage");
-
-    if (months.length > 0 && contributions.length > 0 && contributions.some(amount => amount > 0)) {
-        new Chart(monthlyContributionsCanvas, {
+        // Contributions Over Time Chart
+        var contributionsCtx = document.getElementById('contributionsChart').getContext('2d');
+        var contributionsChart = new Chart(contributionsCtx, {
             type: 'line',
             data: {
-                labels: months,
+                // Gamita ang JSON-encoded data gikan sa Django context
+                labels: {{ contributions_over_time_labels_json|safe }},
                 datasets: [{
                     label: 'Total Contributions (₱)',
-                    data: contributions,
-                    borderColor: chartFixedColors.accent, // Fixed accent color
-                    backgroundColor: chartFixedColors.accent.replace('1)', '0.2)'), // Fixed accent color with transparency
-                    fill: true,
-                    tension: 0.3
+                    data: {{ contributions_over_time_data_json|safe }},
+                    borderColor: 'rgba(153, 102, 255, 1)',
+                    backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                    tension: 0.1,
+                    fill: true
                 }]
             },
             options: {
@@ -272,57 +236,30 @@
                         beginAtZero: true,
                         title: {
                             display: true,
-                            text: 'Amount (₱)',
-                            color: chartFixedColors.labelColor,
-                            font: {weight: 'bold' }// Bold label // Fixed label color
-                        },
-                        ticks: {
-                            color: chartFixedColors.labelColor,
-                            font: {weight: 'bold' }// Bold label // Fixed tick color
-                        },
-                        grid: {
-                            color: chartFixedColors.gridColor,
-                            font: {weight: 'bold' }// Bold label // Fixed grid color
+                            text: 'Amount (₱)'
                         }
                     },
                     x: {
                         title: {
                             display: true,
-                            text: 'Month',
-                            color: chartFixedColors.labelColor,
-                            font: {weight: 'bold' }// Bold label // Fixed label color
-                        },
-                        ticks: {
-                            color: chartFixedColors.labelColor,
-                           
-                        },
-                        grid: {
-                            color: chartFixedColors.gridColor ,
-                            font: {weight: 'bold' }// Bold label// Fixed grid color
+                            text: 'Date'
                         }
                     }
                 },
                 plugins: {
                     legend: {
                         display: true,
-                        labels: {
-                            color: chartFixedColors.labelColor,
-                            font: {weight: 'bold' }// Bold label // Fixed label color
-                        }
                     },
                     tooltip: {
-                        backgroundColor: chartFixedColors.tooltipBackgroundColor, // Fixed tooltip background
-                        borderColor: chartFixedColors.tooltipBorderColor, // Fixed tooltip border
-                        borderWidth: 1,
-                        titleColor: chartFixedColors.tooltipLabelColor, // Fixed tooltip title color
-                        bodyColor: chartFixedColors.tooltipLabelColor, // Fixed tooltip body color
                         callbacks: {
                             label: function(context) {
                                 let label = context.dataset.label || '';
                                 if (label) {
                                     label += ': ';
                                 }
-                                label += '₱ ' + context.raw.toFixed(2);
+                                if (context.parsed.y !== null) {
+                                    label += '₱' + context.parsed.y.toFixed(2);
+                                }
                                 return label;
                             }
                         }
@@ -330,10 +267,6 @@
                 }
             }
         });
-        noContributionsDataMessage.style.display = 'none'; // Hide message if graph is shown
-    } else {
-        monthlyContributionsCanvas.style.display = 'none'; // Hide canvas if no data
-        noContributionsDataMessage.style.display = 'block'; // Show message if no data
-    }
+    });
 </script>
 {% endblock content %}

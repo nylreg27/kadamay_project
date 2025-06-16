@@ -26,6 +26,12 @@ urlpatterns = [
     # Redirect root URL to dashboard
     path('', RedirectView.as_view(pattern_name='report:dashboard'), name='home'),
     path("__reload__/", include("django_browser_reload.urls")),
+
+
+    # Other app urls
+    path("__reload__/", include("django_browser_reload.urls")),
+
+
 ]
 
 # Serve media files (user uploads) and static files during development

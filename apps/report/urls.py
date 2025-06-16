@@ -5,4 +5,5 @@ app_name = 'report'
 
 urlpatterns = [
     path('', DashboardView.as_view(), name='dashboard'),
+
 ]
