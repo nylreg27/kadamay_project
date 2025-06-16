@@ -1,159 +1,236 @@
 # apps/payment/models.py
 
 from django.db import models
-from apps.individual.models import Individual
 from django.utils import timezone
 from django.conf import settings
+from apps.individual.models import Individual
+from apps.church.models import Church
 
 
+# Your existing ContributionType model (no changes needed here for now)
 class ContributionType(models.Model):
-    name = models.CharField(max_length=100)
-    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
 
+    class Meta:
+        verbose_name = "Contribution Type"
+        verbose_name_plural = "Contribution Types"
+        ordering = ['name']
 
-class Payment(models.Model):
-    # Payee: The individual who made the payment
+
+# NEW INTERMEDIARY MODEL: PaymentIndividualAllocation (no changes here)
+class PaymentIndividualAllocation(models.Model):
+    payment = models.ForeignKey(
+        'Payment',
+        on_delete=models.CASCADE,
+        related_name='individual_allocations'
+    )
     individual = models.ForeignKey(
         Individual,
-        on_delete=models.PROTECT,
-        related_name='payments_made',
-        verbose_name="Payee"
+        on_delete=models.CASCADE,
+        related_name='payment_allocations'
     )
+    allocated_amount = models.DecimalField(max_digits=10, decimal_places=2)
 
-    # Optional: If you need to link to a family, not just an individual
-    # family = models.ForeignKey(Family, on_delete=models.PROTECT,
-    #                           related_name='family_payments', blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
-    contribution_type = models.ForeignKey(
-        ContributionType, on_delete=models.PROTECT)
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    date_paid = models.DateField(default=timezone.now)
+    class Meta:
+        unique_together = ('payment', 'individual')
+        verbose_name = "Payment Individual Allocation"
+        verbose_name_plural = "Payment Individual Allocations"
+        ordering = ['-created_at']
 
+    def __str__(self):
+        return f"{self.individual.full_name} - ₱{self.allocated_amount} from Payment #{self.payment.id}"
+
+
+# Your Payment model - MODIFIED to add deceased_member back
+class Payment(models.Model):
     PAYMENT_METHOD_CHOICES = [
-        ('Cash', 'Cash'),
-        ('Bank Transfer', 'Bank Transfer'),
-        ('Cheque', 'Cheque'),
-        ('Online', 'Online Payment'),
-        ('Other', 'Other'),
+        ('GCASH', 'GCash to GCash'),
+        ('CASH', 'Cash on Hand'),
     ]
-    payment_method = models.CharField(
-        max_length=50, choices=PAYMENT_METHOD_CHOICES, default='Cash')
 
-    # Original receipt_no field - we will keep this as it might be used for external receipt numbers
-    receipt_no = models.CharField(
-        # Changed unique=True to unique=False as serial number will be the true unique identifier
-        max_length=50, unique=False, blank=True, null=True)
-
-    notes = models.TextField(
-        blank=True, null=True, verbose_name="Remarks")  # Use for Remarks
-
-    # Covered Members: Individuals covered by this payment (ManyToMany)
-    covered_members = models.ManyToManyField(
-        Individual,
-        related_name='payments_covered',
-        blank=True,
-        help_text="Select members covered by this payment."
-    )
-
-    # --- BAG-ONG FIELDS KARON (Serial Number, Status, Audit Fields) ---
-
-    # 1. Receipt Serial Number
-    # Kini ang internal unique serial number para sa resibo.
-    receipt_serial_number = models.CharField(
-        max_length=100,
-        unique=True,
-        blank=True,
-        null=True,
-        verbose_name="System Receipt No.",
-        help_text="Automatically generated unique receipt serial number."
-    )
-
-    # 2. Payment Status for Two-Step Validation
-    STATUS_CHOICES = [
-        ('PENDING', 'Pending Validation'),
+    PAYMENT_STATUS_CHOICES = [
+        ('PENDING_VALIDATION', 'Pending Validation'),
         ('VALIDATED', 'Validated'),
         ('CANCELLED', 'Cancelled'),
+        ('DRAFT', 'Draft'),
+        ('COMPLETED', 'Completed'),
     ]
-    status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default='PENDING',
-        verbose_name="Payment Status",
-        help_text="Current status of the payment (e.g., Pending, Validated, Cancelled)."
-    )
 
-    # 3. Cancellation Fields
-    is_cancelled = models.BooleanField(
-        default=False,
-        verbose_name="Is Cancelled?",
-        help_text="Check if this payment record has been cancelled."
+    individual = models.ForeignKey(
+        Individual,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='payments'
     )
-    cancellation_remarks = models.TextField(
+    church = models.ForeignKey(
+        Church,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='payments'
+    )
+    contribution_type = models.ForeignKey(
+        ContributionType,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='payments'
+    )
+    date_paid = models.DateField(default=timezone.now)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    receipt_number = models.CharField(
+        max_length=100,
         blank=True,
         null=True,
-        verbose_name="Cancellation Remarks",
-        help_text="Reason for cancellation, if applicable."
+        unique=True,
+        help_text="Official Receipt (OR) number or internal reference."
     )
+    notes = models.TextField(blank=True, null=True)
 
-    # 4. Audit Fields
-    # User who initially recorded the payment (the 'incharge' user)
-    encoded_by = models.ForeignKey(
+    # NEW AUDIT FIELDS (no changes here)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='payments_encoded',
-        verbose_name="Encoded By"
+        related_name='payments_created'
     )
-    encoded_date = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name="Encoded Date"
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='payments_updated'
     )
 
-    # User who validated the payment (the 'cashier' user)
+    # NEW FIELDS FOR PAYMENT METHOD AND VALIDATION WORKFLOW (no changes here)
+    payment_method = models.CharField(
+        max_length=10,
+        choices=PAYMENT_METHOD_CHOICES,
+        default='CASH',
+        help_text="Method of payment (e.g., Cash, GCash)."
+    )
+
+    payment_status = models.CharField(
+        max_length=20,
+        choices=PAYMENT_STATUS_CHOICES,
+        default='PENDING_VALIDATION',
+        help_text="Current status of the payment (e.g., Pending Validation, Validated, Cancelled)."
+    )
+
+    # NEW FIELDS FOR COLLECTOR AND VALIDATOR (no changes here)
+    collected_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='payments_collected',
+        help_text="User who initially collected the payment (e.g., Church In-charge)."
+    )
     validated_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name='payments_validated',
-        verbose_name="Validated By"
+        help_text="Admin/Cashier who validated the payment."
     )
-    validated_date = models.DateTimeField(
+    validation_date = models.DateTimeField(
         null=True,
         blank=True,
-        verbose_name="Validated Date"
-    )  # This will be set manually upon validation
+        help_text="Date and time when the payment was validated."
+    )
 
-    # User who last edited the payment (if allowed)
-    edited_by = models.ForeignKey(
+    # NEW FIELDS FOR CANCELLATION TRACKING (no changes here)
+    is_cancelled = models.BooleanField(
+        default=False,
+        help_text="Indicates if the receipt/payment has been cancelled."
+    )
+    cancellation_reason = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Reason for cancelling the payment, if applicable."
+    )
+    cancelled_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='payments_edited',
-        verbose_name="Last Edited By"
+        related_name='payments_cancelled',
+        help_text="User who marked the payment as cancelled."
     )
-    edited_date = models.DateTimeField(
-        auto_now=True,
+    cancellation_date = models.DateTimeField(
         null=True,
         blank=True,
-        verbose_name="Last Edited Date"
+        help_text="Date and time when the payment was cancelled."
     )
 
-    # Original created_at and updated_at are still useful for general record tracking
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    # created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True) # REMOVE THIS LINE, replace by encoded_by
+    is_legacy_record = models.BooleanField(
+        default=False,
+        help_text="True if this is an old record without a physical official receipt number."
+    )
+
+    # RE-ADDED: Deceased Member field
+    deceased_member = models.ForeignKey(
+        Individual,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        # Changed related_name to avoid clash with other individual relationships
+        related_name='payments_for_deceased',
+        help_text="If this payment is for a deceased member's contribution."
+    )
+
+    # MODIFIED: Use the through model for covered_members (no changes here)
+    covered_members = models.ManyToManyField(
+        Individual,
+        through='PaymentIndividualAllocation',
+        related_name='payments_covered',
+        blank=True,
+        help_text="Individuals covered by this payment, with specific allocated amounts."
+    )
 
     class Meta:
+        verbose_name = "Payment"
+        verbose_name_plural = "Payments"
         ordering = ['-date_paid', '-created_at']
-        verbose_name = "Payment/Contribution"
-        verbose_name_plural = "Payment/Contributions"
 
     def __str__(self):
-        return f"{self.individual.full_name} - {self.contribution_type.name} ({self.amount})"
+        return f"Payment by {self.individual.full_name if self.individual else 'N/A'} - {self.amount}"
+
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('payment:payment_detail', kwargs={'pk': self.pk})
+
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            if hasattr(self, '_request_user') and self._request_user.is_authenticated:
+                self.created_by = self._request_user
+
+        if hasattr(self, '_request_user') and self._request_user.is_authenticated:
+            self.updated_by = self._request_user
+
+        if self.payment_status == 'VALIDATED' and not self.validation_date:
+            self.validation_date = timezone.now()
+            if hasattr(self, '_request_user') and self._request_user.is_authenticated:
+                self.validated_by = self._request_user
+
+        if self.is_cancelled and not self.cancellation_date:
+            self.cancellation_date = timezone.now()
+            if hasattr(self, '_request_user') and self._request_user.is_authenticated:
+                self.cancelled_by = self._request_user
+
+        super().save(*args, **kwargs)

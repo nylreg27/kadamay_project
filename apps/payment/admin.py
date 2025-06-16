@@ -1,115 +1,99 @@
 # apps/payment/admin.py
 
 from django.contrib import admin
-from .models import ContributionType, Payment
-# Import Individual model for autocomplete setup (correctly imported)
-from apps.individual.models import Individual
+# IMPORTANT: Import PaymentIndividualAllocation
+from .models import Payment, ContributionType, PaymentIndividualAllocation
 
-# Admin for ContributionType
+# Inline for PaymentIndividualAllocation
+# This allows you to add/edit individual allocations directly when editing a Payment
+
+
+# Use TabularInline for a compact table layout
+class PaymentIndividualAllocationInline(admin.TabularInline):
+    model = PaymentIndividualAllocation
+    extra = 1  # Number of empty forms to display
+    # Assuming IndividualAdmin has search_fields
+    autocomplete_fields = ['individual']
 
 
 @admin.register(ContributionType)
 class ContributionTypeAdmin(admin.ModelAdmin):
-    list_display = ('name', 'amount', 'description')
+    list_display = ('name', 'is_active')  # <--- FIXED: Removed 'amount'
+    list_filter = ('is_active',)
     search_fields = ('name',)
-    list_filter = ('name',)  # Added list_filter here for consistency
-
-# Admin for Payment
 
 
 @admin.register(Payment)
 class PaymentAdmin(admin.ModelAdmin):
-    # Corrected list_display to match actual fields in Payment model
     list_display = (
-        'receipt_no',
-        'individual_display_name',      # Custom method for the Payee
+        'receipt_number',  # <--- FIXED: Changed from 'receipt_no'
+        'individual_display_name',
+        'church',
         'contribution_type',
         'amount',
         'date_paid',
-        'payment_method',               # Added payment_method
-        'get_covered_members_display',  # Custom method to show covered members
-        # 'is_active', # REMOVED: This field does not exist in your Payment model
+        'payment_status',
+        'get_covered_members_display',
+        'deceased_member_display_name',  # NEW: For the re-added deceased_member
     )
-
-    # Corrected list_filter to use existing fields
     list_filter = (
-        'contribution_type',
-        'payment_method',
-        'date_paid',
-        # 'is_active', # REMOVED: This field does not exist in your Payment model
-        # 'deceased_member', # REMOVED: This field does not exist in your Payment model
+        'payment_status', 'payment_method', 'contribution_type', 'date_paid', 'church'
     )
-
-    # Corrected search_fields to allow searching by actual existing model fields
     search_fields = (
-        'receipt_no',
-        'individual__given_name',       # Allows searching by the payee's given name
-        'individual__surname',          # Allows searching by the payee's surname
-        'notes',                        # Use 'notes' for remarks
-        'contribution_type__name',      # Search by contribution type name
-        'covered_members__given_name',  # Search by covered member's given name
-        'covered_members__surname',     # Search by covered member's surname
-        # 'deceased_member__given_name', # REMOVED: Field does not exist
+        'receipt_number',  # <--- FIXED: Changed from 'receipt_no'
+        'individual__surname', 'individual__given_name',
+        # Updated for through model
+        'covered_members__individual__surname', 'covered_members__individual__given_name',
+        'deceased_member__surname', 'deceased_member__given_name',  # NEW: For deceased_member
     )
+    autocomplete_fields = ('individual', 'church', 'contribution_type', 'collected_by', 'validated_by',
+                           # Make sure all ForeignKeys that should use autocomplete are here
+                           'cancelled_by', 'deceased_member',)
 
-    # Autocomplete fields: These are ForeignKey or ManyToMany fields.
-    # Make sure that IndividualAdmin (in individual/admin.py) has 'search_fields' defined.
-    autocomplete_fields = [
-        'individual',   # For the Payee
-        'covered_members'  # For the ManyToMany field of covered members
-        # 'deceased_member', # REMOVED: This field does not exist
-    ]
+    # Add the inline here!
+    # <--- NEW: This replaces covered_members in fieldsets
+    inlines = [PaymentIndividualAllocationInline]
 
-    # Optional: Read-only fields in the admin interface
-    readonly_fields = ('created_at', 'updated_at')
-
-    # Optional: Organize fields into sections in the admin form
+    # Fieldsets for better organization in the admin
     fieldsets = (
-        (None, {
-            'fields': (('individual', 'receipt_no'), 'date_paid', 'payment_method', 'contribution_type', 'amount', 'notes')
-            # 'is_active' REMOVED from fields
+        ('Payment Details', {
+            'fields': (
+                'individual', 'church', 'contribution_type', 'amount', 'date_paid',
+                # <-- deceased_member re-added here
+                'payment_method', 'receipt_number', 'notes', 'deceased_member',
+            )
         }),
-        ('Covered Individuals', {
-            'fields': ('covered_members',),  # This is your ManyToMany field
-            'description': "Select other individuals covered by this payment.",
-        }),
-        # 'deceased_member' REMOVED from fieldsets
-        ('Timestamps', {
-            'fields': ('created_at', 'updated_at'),
-            'classes': ('collapse',)  # Makes this section collapsible
+        ('Payment Workflow & Audit', {
+            'fields': (
+                'payment_status', 'collected_by', 'validated_by', 'validation_date',
+                'is_cancelled', 'cancellation_reason', 'cancelled_by', 'cancellation_date',
+                'is_legacy_record',
+                # 'covered_members', # <--- REMOVED: Managed by inline now
+            ),
+            'classes': ('collapse',),
         }),
     )
 
-    # --- Custom methods for list_display ---
-    # This method gets the full name of the Individual who made the payment (Payee)
+    readonly_fields = (
+        'created_at', 'updated_at', 'created_by', 'updated_by',
+        'validation_date', 'validated_by',
+        'cancellation_date', 'cancelled_by',
+    )
+
+    # Methods for list_display
     def individual_display_name(self, obj):
         return obj.individual.full_name if obj.individual else "N/A"
-    individual_display_name.short_description = 'Payee'  # Column header in admin list
-    # Allows sorting by payee's surname
+    individual_display_name.short_description = 'Payee'
     individual_display_name.admin_order_field = 'individual__surname'
 
-    # NEW: Method to display covered members in list_display
     def get_covered_members_display(self, obj):
-        return ", ".join([member.full_name for member in obj.covered_members.all()])
-    # Column header in admin list
+        # We now get covered members through the allocation model
+        # You might want to display the allocated amount here too, e.g., "Juan (₱50), Pedro (₱50)"
+        return ", ".join([f"{alloc.individual.full_name} (₱{alloc.allocated_amount})" for alloc in obj.individual_allocations.all()])
     get_covered_members_display.short_description = 'Covered Members'
 
-
-# --- IMPORTANT: FOR AUTOCOMPLETE_FIELDS TO WORK ---
-# Siguraduhon nga ang imong IndividualAdmin sa apps/individual/admin.py naay
-# 'search_fields' nga gi-define. Kung wala pa, ingon ani ang example:
-
-# apps/individual/admin.py (EXAMPLE ONLY - DILI NI I-PASTE SA apps/payment/admin.py)
-# from django.contrib import admin
-# from .models import Individual, Family # Assuming Family is here too
-
-# @admin.register(Individual)
-# class IndividualAdmin(admin.ModelAdmin):
-#    list_display = ('full_name', 'family', 'status')
-#    search_fields = ('given_name', 'surname', 'membership_id') # KINI ANG CRUCIAL LINE
-#    list_filter = ('status', 'family')
-
-# @admin.register(Family)
-# class FamilyAdmin(admin.ModelAdmin):
-#    list_display = ('family_id', 'head_of_family', 'address')
-#    search_fields = ('family_id', 'head_of_family__given_name', 'head_of_family__surname', 'address')
+    # NEW: Method for deceased_member display
+    def deceased_member_display_name(self, obj):
+        return obj.deceased_member.full_name if obj.deceased_member else "N/A"
+    deceased_member_display_name.short_description = 'Deceased Member'
+    deceased_member_display_name.admin_order_field = 'deceased_member__surname'
