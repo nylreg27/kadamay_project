@@ -221,24 +221,46 @@ def payment_create_full_form_view(request, individual_id=None):
             return render(request, 'payment/payment_error.html', {'message': 'Please contact an administrator to add Contribution Types.'})
 
     # Get the individual object if an ID is provided in the URL
-    initial_individual = None
+    initial_payee = None
     if individual_id:
         try:
-            initial_individual = Individual.objects.get(pk=individual_id)
+            selected_individual = Individual.objects.get(pk=individual_id)
+            
+            # If the selected individual belongs to a family, find the family head
+            if selected_individual.family:
+                family_head = Individual.objects.filter(
+                    family=selected_individual.family,
+                    relationship='HEAD',
+                    is_active_member=True,
+                    is_alive=True
+                ).first()
+                if family_head:
+                    initial_payee = family_head
+                else:
+                    messages.warning(request, f"No family head found for the family of {selected_individual.full_name}. Payee field will not be pre-selected based on family head.")
+            else:
+                # If selected individual does not belong to a family,
+                # only use them as initial payee if they themselves are a 'HEAD'.
+                if selected_individual.relationship == 'HEAD' and \
+                   selected_individual.is_active_member and \
+                   selected_individual.is_alive:
+                    initial_payee = selected_individual
+                else:
+                    messages.info(request, f"{selected_individual.full_name} is not a family head and does not belong to a family. Payee field will not be pre-selected.")
+
         except Individual.DoesNotExist:
             messages.error(request, "Selected individual not found.")
             # Redirect back to dashboard if individual doesn't exist
             return redirect('individual:individual_dashboard')
 
     # Initialize the form with initial individual if available
-    form = PaymentForm(initial={'individual': initial_individual})
+    form = PaymentForm(initial={'individual': initial_payee})
 
     context = {
         'form': form,
         'page_title': 'Add New Payment',
         'is_update_mode': False,
-        'individual': initial_individual,  # Pass the individual object to the template
-        # so you can display their name or other details
+        'individual': initial_payee,  # Pass the actual payee to the template for display if needed
     }
 
     return render(request, 'payment/payment_form.html', context)

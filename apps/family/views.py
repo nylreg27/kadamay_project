@@ -4,13 +4,13 @@ from django.urls import reverse_lazy
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib import messages
-from django.db.models import Q
-from django.db.models import F
+from django.db.models import Q, Count # <-- IMPORT 'Count' HERE
+# from django.db.models import F # Not needed for this specific issue, but keep if used elsewhere
 
 from .models import Family
 from apps.church.models import Church
-from apps.individual.models import Individual
-from apps.payment.models import Payment
+# from apps.individual.models import Individual # Not directly used here, but keep if needed elsewhere
+# from apps.payment.models import Payment # Not directly used here, but keep if needed elsewhere
 from .forms import FamilyForm
 
 
@@ -22,6 +22,12 @@ class FamilyListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         queryset = super().get_queryset()
+
+        # --- NEW: Annotate individual_count for each family ---
+        # Assuming your related_name for Family in Individual model is 'members'
+        queryset = queryset.annotate(individual_count=Count('members')) 
+        # If your related_name is still default (individual_set), use Count('individual')
+
         search_query = self.request.GET.get('search')
         if search_query:
             queryset = queryset.filter(
@@ -35,7 +41,7 @@ class FamilyListView(LoginRequiredMixin, ListView):
                 queryset = queryset.filter(church_id=int(church_id))
             except ValueError:
                 pass
-        return queryset.order_by('family_name')
+        return queryset.order_by('family_name') # Already there, good!
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -44,8 +50,7 @@ class FamilyListView(LoginRequiredMixin, ListView):
         context['selected_church'] = self.request.GET.get('church', '')
         return context
 
-# --- Family Detail View (MODIFIED) ---
-
+# --- Family Detail View (NO CHANGES NEEDED FOR THE COUNT HERE, it's already working via direct access to individual_set/members.all().count()) ---
 
 class FamilyDetailView(LoginRequiredMixin, DetailView):
     model = Family
@@ -58,7 +63,7 @@ class FamilyDetailView(LoginRequiredMixin, DetailView):
 
         # All individuals related to this family
         # FIXED: Changed family.individual_set.all() to family.members.all()
-        all_individuals = family.members.all()
+        all_individuals = family.members.all() # Correct if related_name is 'members'
 
         context['total_members_count'] = all_individuals.count()
 
@@ -193,7 +198,11 @@ class FamilyListInChurchView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         church_id = self.kwargs.get('church_id')
         church = get_object_or_404(Church, pk=church_id)
-        queryset = Family.objects.filter(church=church)
+        
+        # --- NEW: Annotate individual_count for families in a specific church ---
+        # Again, use 'members' if that's your related_name
+        queryset = Family.objects.filter(church=church).annotate(individual_count=Count('members')) 
+
         search_query = self.request.GET.get('search')
         if search_query:
             queryset = queryset.filter(
