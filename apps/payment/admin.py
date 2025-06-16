@@ -18,7 +18,7 @@ class PaymentIndividualAllocationInline(admin.TabularInline):
 
 @admin.register(ContributionType)
 class ContributionTypeAdmin(admin.ModelAdmin):
-    list_display = ('name', 'is_active')  # <--- FIXED: Removed 'amount'
+    list_display = ('name', 'is_active', 'amount')
     list_filter = ('is_active',)
     search_fields = ('name',)
 
