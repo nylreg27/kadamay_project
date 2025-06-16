@@ -37,7 +37,6 @@ INSTALLED_APPS = [
     'theme',
     'django_browser_reload',
     'widget_tweaks',
-
     'rest_framework',
 ]
 

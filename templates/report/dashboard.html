@@ -101,7 +101,7 @@
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-        <div class="card bg-base-100 shadow-md h-full">
+        <div class="card-body bg-white">
             <div class="card-header bg-base-200 text-base-content p-4 font-semibold rounded-t-lg">
                 Families per Church
             </div>
@@ -110,7 +110,7 @@
                 <p class="text-center mt-4 text-base-content/70" id="noFamilyDataMessage" style="display: none;">No family data available for churches.</p>
             </div>
         </div>
-        <div class="card bg-base-100 shadow-md h-full">
+        <div class="card-body bg-white">
             <div class="card-header bg-base-200 text-base-content p-4 font-semibold rounded-t-lg">
                 Monthly Contributions
             </div>
@@ -127,87 +127,120 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
-    // --- Families per Church Chart ---
-    const churchNames = JSON.parse('{{ church_names|safe }}');
-    const familyCounts = JSON.parse('{{ family_counts|safe }}');
+    // Define a set of fixed light-theme colors for charts
+    const chartFixedColors = {
+        primary: 'rgba(75, 192, 192, 1)', // A standard primary-like color for bars/lines
+        accent: 'rgba(255, 99, 132, 1)', // A standard accent-like color for lines
+        background: 'rgba(255, 255, 255, 1)', // White background
+        labelColor: 'rgba(0, 0, 0, 0.8)', // Dark grey for labels/text
+        gridColor: 'rgba(200, 200, 200, 0.5)', // Light grey for grid lines
+        tooltipBackgroundColor: 'rgba(255, 255, 255, 0.9)', // White for tooltip background
+        tooltipBorderColor: 'rgba(0, 0, 0, 0.2)', // Light border for tooltip
+        tooltipLabelColor: 'rgba(0, 0, 0, 1)', // Black for tooltip text
+    };
 
-    const familyChartCanvas = document.getElementById("familyChart");
-    const noFamilyDataMessage = document.getElementById("noFamilyDataMessage");
+ // --- Families per Church Chart ---
+ const churchNames = JSON.parse('{{ church_names|safe }}');
+ const familyCounts = JSON.parse('{{ family_counts|safe }}');
 
-    if (churchNames.length > 0 && familyCounts.length > 0) {
-        new Chart(familyChartCanvas, {
-            type: 'bar',
-            data: {
-                labels: churchNames,
-                datasets: [{
-                    label: 'Number of Families',
-                    data: familyCounts,
-                    backgroundColor: 'hsl(var(--p))', // DaisyUI primary color
-                    borderColor: 'hsl(var(--p))',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Number of Families',
-                            color: 'hsl(var(--bc))' // base-content color
-                        },
-                        ticks: {
-                            callback: function(value) { if (value % 1 === 0) return value; }, // Show only whole numbers
-                            color: 'hsl(var(--bc))'
-                        },
-                        grid: {
-                            color: 'hsl(var(--b2) / 0.5)' // base-200 with transparency for grid lines
-                        }
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Church',
-                            color: 'hsl(var(--bc))'
-                        },
-                        ticks: {
-                            color: 'hsl(var(--bc))'
-                        },
-                        grid: {
-                            color: 'hsl(var(--b2) / 0.5)'
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false,
-                        labels: {
-                            color: 'hsl(var(--bc))'
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.dataset.label || '';
-                                if (label) {
-                                    label += ': ';
-                                }
-                                label += context.raw + ' families';
-                                return label;
-                            }
-                        }
-                    }
-                }
-            }
-        });
-        noFamilyDataMessage.style.display = 'none'; // Hide message if graph is shown
-    } else {
-        familyChartCanvas.style.display = 'none'; // Hide canvas if no data
-        noFamilyDataMessage.style.display = 'block'; // Show message if no data
-    }
+ const familyChartCanvas = document.getElementById("familyChart");
+ const noFamilyDataMessage = document.getElementById("noFamilyDataMessage");
+
+ if (churchNames.length > 0 && familyCounts.length > 0) {
+     new Chart(familyChartCanvas, {
+         type: 'bar',
+         data: {
+             labels: churchNames,
+             datasets: [{
+                 label: 'Number of Families',
+                 data: familyCounts,
+                 backgroundColor: chartFixedColors.primary, // Fixed primary color
+                 borderColor: chartFixedColors.primary,
+                 borderWidth: 1
+             }]
+         },
+         options: {
+             responsive: true,
+             maintainAspectRatio: false,
+             scales: {
+                 y: {
+                     beginAtZero: true,
+                     title: {
+                         display: true,
+                         text: 'Number of Families',
+                         color: chartFixedColors.labelColor, // <-- ADDED COMMA HERE
+                         font: {weight: 'bold' }// Bold label
+                     },
+                     ticks: {
+                         callback: function(value) { if (value % 1 === 0) return value; },
+                         color: chartFixedColors.labelColor, // <-- ADDED COMMA HERE
+                         font: {weight: 'bold' }// Bold label
+                     },
+                     grid: {
+                         color: chartFixedColors.gridColor // Fixed grid color
+                         // No font property here as grid lines don't have text
+                     }
+                 },
+                 x: {
+                     title: {
+                         display: true,
+                         text: 'Church',
+                         color: chartFixedColors.labelColor, // <-- ADDED COMMA HERE
+                         font: {weight: 'bold' }// Bold label
+                     },
+                     ticks: {
+                         color: chartFixedColors.labelColor, // Fixed tick color
+                         maxRotation: 90, // Rotate labels by 90 degrees (vertical)
+                         minRotation: 90,  // Ensure they are always rotated
+                         //font: {weight: 'bold' }// <-- ADDED COMMA HERE for the `ticks` font property
+                     },
+                     grid: {
+                         color: chartFixedColors.gridColor // Fixed grid color
+                         // No font property here as grid lines don't have text
+                     }
+                 }
+             },
+             plugins: {
+                 legend: {
+                     display: false,
+                     labels: {
+                         color: chartFixedColors.labelColor, // <-- ADDED COMMA HERE
+                         font: {weight: 'bold' }// Bold label
+                     }
+                 },
+                 tooltip: {
+                     backgroundColor: chartFixedColors.tooltipBackgroundColor, // Fixed tooltip background
+                     borderColor: chartFixedColors.tooltipBorderColor, // Fixed tooltip border
+                     borderWidth: 1,
+                     titleColor: chartFixedColors.tooltipLabelColor, // Fixed tooltip title color
+                     bodyColor: chartFixedColors.tooltipLabelColor, // Fixed tooltip body color
+                     // The tooltip font properties `titleFont` and `bodyFont` are separate from color,
+                     // so they should be added on their own line after the existing properties,
+                     // with a comma separating the last property above them.
+                     titleFont: { weight: 'bold' }, // Correctly placed
+                     bodyFont: { weight: 'bold' },  // Correctly placed
+                     callbacks: {
+                         label: function(context) {
+                             let label = context.dataset.label || '';
+                             if (label) {
+                                 label += ': ';
+                             }
+                             label += context.raw + ' families';
+                             return label;
+                         }
+                     }
+                 }
+             }
+         }
+     });
+     noFamilyDataMessage.style.display = 'none'; // Hide message if graph is shown
+ } else {
+     familyChartCanvas.style.display = 'none'; // Hide canvas if no data
+     noFamilyDataMessage.style.display = 'block'; // Show message if no data
+ }
 
 
     // --- Monthly Contributions Chart ---
@@ -225,8 +258,8 @@
                 datasets: [{
                     label: 'Total Contributions (₱)',
                     data: contributions,
-                    borderColor: 'hsl(var(--a))', // DaisyUI accent color
-                    backgroundColor: 'hsl(var(--a) / 0.2)', // Accent color with transparency
+                    borderColor: chartFixedColors.accent, // Fixed accent color
+                    backgroundColor: chartFixedColors.accent.replace('1)', '0.2)'), // Fixed accent color with transparency
                     fill: true,
                     tension: 0.3
                 }]
@@ -240,26 +273,32 @@
                         title: {
                             display: true,
                             text: 'Amount (₱)',
-                            color: 'hsl(var(--bc))'
+                            color: chartFixedColors.labelColor,
+                            font: {weight: 'bold' }// Bold label // Fixed label color
                         },
                         ticks: {
-                            color: 'hsl(var(--bc))'
+                            color: chartFixedColors.labelColor,
+                            font: {weight: 'bold' }// Bold label // Fixed tick color
                         },
                         grid: {
-                            color: 'hsl(var(--b2) / 0.5)'
+                            color: chartFixedColors.gridColor,
+                            font: {weight: 'bold' }// Bold label // Fixed grid color
                         }
                     },
                     x: {
                         title: {
                             display: true,
                             text: 'Month',
-                            color: 'hsl(var(--bc))'
+                            color: chartFixedColors.labelColor,
+                            font: {weight: 'bold' }// Bold label // Fixed label color
                         },
                         ticks: {
-                            color: 'hsl(var(--bc))'
+                            color: chartFixedColors.labelColor,
+                           
                         },
                         grid: {
-                            color: 'hsl(var(--b2) / 0.5)'
+                            color: chartFixedColors.gridColor ,
+                            font: {weight: 'bold' }// Bold label// Fixed grid color
                         }
                     }
                 },
@@ -267,10 +306,16 @@
                     legend: {
                         display: true,
                         labels: {
-                            color: 'hsl(var(--bc))'
+                            color: chartFixedColors.labelColor,
+                            font: {weight: 'bold' }// Bold label // Fixed label color
                         }
                     },
                     tooltip: {
+                        backgroundColor: chartFixedColors.tooltipBackgroundColor, // Fixed tooltip background
+                        borderColor: chartFixedColors.tooltipBorderColor, // Fixed tooltip border
+                        borderWidth: 1,
+                        titleColor: chartFixedColors.tooltipLabelColor, // Fixed tooltip title color
+                        bodyColor: chartFixedColors.tooltipLabelColor, // Fixed tooltip body color
                         callbacks: {
                             label: function(context) {
                                 let label = context.dataset.label || '';

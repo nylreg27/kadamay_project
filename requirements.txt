@@ -6,14 +6,14 @@ Pillow>=10.0.0
 whitenoise>=6.6.0
 gunicorn>=21.2.0
 python-decouple>=3.8
-dj-database-url>=2.1.0
+django-database-url>=1.0.3
 django-browser-reload>=1.11.0
 django-tailwind>=3.5.0
 django-debug-toolbar>=4.3.0
 django-chartjs>=2.2.0
 django-colorfield>=0.9.0
 django-extensions>=3.2.3  # for shell_plus, graph models
-django-restframework
+djangorestframework
 # npm install tailwindcss @tailwindcss/cli
 # npm install daisyui
 # npx tailwindcss -i ./static/input.css -o ./static/output.css --watch
