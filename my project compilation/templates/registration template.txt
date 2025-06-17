@@ -1,3 +1,6 @@
+templates/report
+
+dashboard
 {% extends "base.html" %}
 
 {% block content %}

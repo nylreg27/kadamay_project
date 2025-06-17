@@ -1,3 +1,5 @@
+templates/base.html
+
 <!DOCTYPE html>
 <html lang="en" data-theme="{{ request.user.profile.theme|default:'corporate' }}">
 <head>
@@ -127,24 +129,7 @@
                 <li><a href="{% url 'individual:individual_list' %}" class="{% if 'individual' in request.resolver_match.app_names and request.resolver_match.url_name == 'individual_list' %}active{% endif %}"><i data-feather="users"></i> Members List</a></li>
                 <li><a href="{% url 'family:family_list' %}" class="{% if 'family' in request.resolver_match.app_names %}active{% endif %}"><i data-feather="user-check"></i> Families</a></li>
                 <li><a href="{% url 'church:church_list' %}" class="{% if 'church' in request.resolver_match.app_names %}active{% endif %}"><i data-feather="layout"></i> Churches</a></li>
-                
-                {# Payments section in sidebar - NOW INCLUDES PENDING PAYMENTS LINK #}
-                <li>
-                    <details {% if 'payment' in request.resolver_match.app_names and 'pending' not in request.resolver_match.url_name and 'admin' not in request.resolver_match.app_names %}open{% endif %}>
-                        <summary><i data-feather="credit-card"></i> Payments</summary>
-                        <ul>
-                            <li><a href="{% url 'payment:payment_list' %}" class="{% if 'payment' in request.resolver_match.app_names and request.resolver_match.url_name == 'payment_list' %}active{% endif %}">All Payments</a></li>
-                            {% if request.user.is_superuser %} {# Only show this link to superusers #}
-                                <li>
-                                    <a href="{% url 'payment:pending_payments_list' %}" class="{% if request.resolver_match.url_name == 'pending_payments_list' %}active{% endif %}">
-                                        <i data-feather="clock" class="w-4 h-4 mr-1"></i> Pending Validation
-                                    </a>
-                                </li>
-                            {% endif %}
-                        </ul>
-                    </details>
-                </li>
-
+                <li><a href="{% url 'payment:payment_list' %}" class="{% if 'payment' in request.resolver_match.app_names %}active{% endif %}"><i data-feather="credit-card"></i> Payments</a></li>
                 <li><a href="{% url 'report:dashboard' %}" class="{% if 'report' in request.resolver_match.app_names %}active{% endif %}"><i data-feather="file-text"></i> Reports</a></li>
                 {% if church %}
                 <li><a href="{% url 'chat:chat_room' church.id %}" class="{% if request.resolver_match.url_name == 'chat_room' %}active{% endif %}"><i data-feather="message-square"></i> Chat Room</a></li>

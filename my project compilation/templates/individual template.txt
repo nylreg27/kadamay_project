@@ -1,0 +1,1442 @@
+template/individual
+
+individual_list
+{% extends 'base.html' %}
+
+{% block title %}Members List - Kadamay Mortuary System{% endblock %}
+
+{% block content %}
+<div class="card bg-base-100 shadow-xl p-4 md:p-6 text-base-content rounded-xl my-4 mx-auto max-w-6xl">
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-3">
+        <h1 class="text-2xl font-extrabold text-primary">Members</h1>
+        
+        <div class="flex flex-col md:flex-row items-stretch md:items-center gap-2 w-full md:w-auto">
+            <form action="{% url 'individual:individual_list' %}" method="GET" class="flex flex-grow md:flex-grow-0" id="searchForm">
+                <input
+                    type="text"
+                    name="search"
+                    placeholder="Search members..."
+                    value="{{ request.GET.search }}"
+                    class="input input-bordered input-sm w-full rounded-r-none"
+                    id="searchInput"
+                    aria-label="Search members"
+                />
+                <button
+                    type="submit"
+                    class="btn btn-primary btn-sm rounded-l-none"
+                    aria-label="Submit search"
+                >
+                    <i data-feather="search" class="w-4 h-4"></i>
+                </button>
+            </form>
+            
+            {% if request.GET.search %}
+            <a href="{% url 'individual:individual_list' %}"
+               class="btn btn-outline btn-primary btn-sm flex items-center gap-2 tooltip tooltip-bottom" {# Updated classes here #}
+               data-tip="Clear Search"
+               aria-label="Clear search and refresh list"
+            >
+                <i data-feather="refresh-cw" class="w-4 h-4"></i> Refresh {# Added text #}
+            </a>
+            {% endif %}
+
+            {% if user.is_superuser %}
+            <a href="{% url 'individual:individual_create' %}"
+               class="btn btn-primary btn-sm w-full md:w-auto flex items-center gap-2 transition-all duration-300 hover:scale-105"
+               aria-label="Add new member"
+            >
+              <i data-feather="plus" class="w-4 h-4"></i> Add Member
+            </a>
+            {% endif %}
+        </div>
+    </header>
+
+    {% if messages %}
+        <div class="mb-4">
+            {% for message in messages %}
+                <div class="alert 
+                    {% if message.tags == 'success' %}alert-success
+                    {% elif message.tags == 'warning' %}alert-warning
+                    {% elif message.tags == 'error' %}alert-error
+                    {% else %}alert-info
+                    {% endif %} shadow-lg mb-2">
+                    <div>
+                        <i data-feather="info" class="w-6 h-6"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="flex gap-2 mb-4">
+        <a href="#" id="viewMemberBtn" class="btn btn-info btn-square tooltip btn-sm" data-tip="View Selected" aria-label="View selected member" disabled>
+            <i data-feather="eye" class="w-4 h-4"></i>
+        </a>
+        {% if user.is_superuser %}
+        <a href="#" id="editMemberBtn" class="btn btn-warning btn-square tooltip btn-sm" data-tip="Edit Selected" aria-label="Edit selected member" disabled>
+            <i data-feather="edit" class="w-4 h-4"></i>
+        </a>
+        <a href="#" id="deleteMemberBtn" class="btn btn-error btn-square tooltip btn-sm" data-tip="Delete Selected" aria-label="Delete selected member" disabled>
+            <i data-feather="trash-2" class="w-4 h-4"></i>
+        </a>
+        {% endif %}
+    </div>
+
+    {% if individuals %}
+        <div class="hidden md:block overflow-x-auto rounded-lg shadow-md border border-base-300">
+            <table class="table table-zebra w-full table-sm">
+                <thead>
+                    <tr>
+                        <th class="w-8"></th>
+                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Name</th>
+                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Family</th>
+                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Church</th>
+                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Relationship</th>
+                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Sex</th>
+                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Civil Status</th>
+                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for individual in individuals %}
+                    <tr class="hover:bg-base-200 cursor-pointer" data-individual-id="{{ individual.id }}">
+                        <td class="w-8">
+                            <label class="label cursor-pointer justify-center p-0">
+                                <input type="checkbox" name="selected_individual" value="{{ individual.id }}" class="checkbox checkbox-primary checkbox-xs individual-checkbox" />
+                            </label>
+                        </td>
+                        <td class="whitespace-nowrap text-xs">
+                            <a href="{% url 'individual:individual_detail' individual.id %}" class="link link-hover link-primary font-medium">
+                                {{ individual.surname|upper }}, {{ individual.given_name|upper }} {% if individual.middle_name %}{{ individual.middle_name|upper }}{% endif %} {% if individual.suffix_name %}{{ individual.suffix_name|upper }}{% endif %}
+                            </a>
+                        </td>
+                        <td class="whitespace-nowrap text-xs">
+                            {% if individual.family %}
+                            <a href="{% url 'family:family_detail' individual.family.id %}" class="link link-hover link-secondary">
+                                {{ individual.family.family_name|upper }}
+                            </a>
+                            {% else %}
+                            <span class="italic text-base-content/60">- No Family -</span>
+                            {% endif %}
+                        </td>
+                        <td class="whitespace-nowrap text-xs">
+                            {% if individual.family and individual.family.church %}
+                                <a href="{% url 'church:church_detail' individual.family.church.id %}" class="link link-hover link-accent">
+                                    {{ individual.family.church.name|upper }}
+                                </a>
+                            {% else %}
+                                <span class="italic text-base-content/60">- No Church -</span>
+                            {% endif %}
+                        </td>
+                        <td class="whitespace-nowrap text-xs">{{ individual.get_relationship_display|upper }}</td>
+                        <td class="whitespace-nowrap text-xs">{{ individual.get_sex_display|upper }}</td>
+                        <td class="whitespace-nowrap text-xs">{{ individual.get_civil_status_display|upper }}</td>
+                        <td class="whitespace-nowrap">
+                            {% if individual.is_active_member and individual.is_alive %}
+                                <span class="badge badge-success badge-sm font-semibold">ACTIVE</span>
+                            {% elif not individual.is_alive %}
+                                <span class="badge badge-info badge-sm font-semibold">DECEASED</span>
+                            {% else %}
+                                <span class="badge badge-error badge-sm font-semibold">INACTIVE</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {# Mobile View (Updated for selection) #}
+        <div class="md:hidden space-y-3">
+            <div class="flex gap-2 mb-4">
+                <a href="#" id="viewMemberBtnMobile" class="btn btn-info btn-square tooltip btn-sm" data-tip="View Selected" aria-label="View selected member" disabled>
+                    <i data-feather="eye" class="w-4 h-4"></i>
+                </a>
+                {% if user.is_superuser %}
+                <a href="#" id="editMemberBtnMobile" class="btn btn-warning btn-square tooltip btn-sm" data-tip="Edit Selected" aria-label="Edit selected member" disabled>
+                    <i data-feather="edit" class="w-4 h-4"></i>
+                </a>
+                <a href="#" id="deleteMemberBtnMobile" class="btn btn-error btn-square tooltip btn-sm" data-tip="Delete Selected" aria-label="Delete selected member" disabled>
+                    <i data-feather="trash-2" class="w-4 h-4"></i>
+                </a>
+                {% endif %}
+            </div>
+            {% for individual in individuals %}
+            <div class="card bg-base-100 shadow-md rounded-lg p-3 flex items-center">
+                <label class="label cursor-pointer justify-center p-0 mr-3">
+                    <input type="checkbox" name="selected_individual" value="{{ individual.id }}" class="checkbox checkbox-primary checkbox-xs individual-checkbox" />
+                </label>
+                <div class="flex-grow">
+                    <h2 class="text-base font-semibold text-primary mb-1">
+                        <a href="{% url 'individual:individual_detail' individual.id %}" class="link link-hover">
+                            {{ individual.surname|upper }}, {{ individual.given_name|upper }}
+                        </a>
+                    </h2>
+                    <div class="text-xs text-base-content/80 space-y-0.5">
+                        <p><strong>Family:</strong> 
+                            {% if individual.family %}
+                            <a href="{% url 'family:family_detail' individual.family.id %}" class="link link-hover link-secondary">
+                                {{ individual.family.family_name|upper }}
+                            </a>
+                            {% else %}
+                            <span class="italic text-base-content/60">- No Family -</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Church:</strong>
+                            {% if individual.family and individual.family.church %}
+                                <a href="{% url 'church:church_detail' individual.family.church.id %}" class="link link-hover link-accent">
+                                    {{ individual.family.church.name|upper }}
+                                </a>
+                            {% else %}
+                                <span class="italic text-base-content/60">- No Church -</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Relationship:</strong> {{ individual.get_relationship_display|upper }}</p>
+                        <p><strong>Sex:</strong> {{ individual.get_sex_display|upper }}</p>
+                        <p><strong>Civil Status:</strong> {{ individual.get_civil_status_display|upper }}</p>
+                        <p><strong>Status:</strong> 
+                            {% if individual.is_active_member and individual.is_alive %}
+                                <span class="badge badge-success badge-sm font-semibold">ACTIVE</span>
+                            {% elif not individual.is_alive %}
+                                <span class="badge badge-info badge-sm font-semibold">DECEASED</span>
+                            {% else %}
+                                <span class="badge badge-error badge-sm font-semibold">INACTIVE</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if is_paginated %}
+        <div class="flex justify-center mt-4">
+            <div class="join join-sm">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="join-item btn btn-sm">«</a>
+                {% else %}
+                <button class="join-item btn btn-sm btn-disabled">«</button>
+                {% endif %}
+
+                <button class="join-item btn btn-sm">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</button>
+
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="join-item btn btn-sm">»</a>
+                {% else %}
+                <button class="join-item btn btn-sm btn-disabled">»</button>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+    {% else %}
+        <div class="hero bg-base-200 rounded-lg p-8 text-center shadow-lg border border-base-300">
+            <div class="hero-content flex flex-col items-center">
+                <i data-feather="users" class="w-16 h-16 text-base-content/50 mb-4"></i>
+                <p class="text-lg font-bold mb-2 text-base-content">No members found.</p>
+                <p class="text-sm text-base-content/80 mb-4">It looks like there are no members in the system yet. You can add one by clicking the button below.</p>
+                {% if user.is_superuser %}
+                <a href="{% url 'individual:individual_create' %}" class="btn btn-primary flex items-center gap-2 btn-sm">
+                    <i data-feather="plus" class="w-4 h-4"></i> Add First Member
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace();
+
+        const searchInput = document.getElementById('searchInput');
+        const searchForm = document.getElementById('searchForm');
+
+        if (searchInput && searchForm) {
+            searchInput.addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    searchForm.submit();
+                }
+            });
+        }
+
+        // --- Handle Row Selection for Action Buttons ---
+        const checkboxes = document.querySelectorAll('.individual-checkbox');
+        
+        // Desktop Buttons
+        const viewBtn = document.getElementById('viewMemberBtn');
+        const editBtn = document.getElementById('editMemberBtn');
+        const deleteBtn = document.getElementById('deleteMemberBtn');
+
+        // Mobile Buttons (added specific IDs for mobile buttons)
+        const viewBtnMobile = document.getElementById('viewMemberBtnMobile');
+        const editBtnMobile = document.getElementById('editMemberBtnMobile');
+        const deleteBtnMobile = document.getElementById('deleteMemberBtnMobile');
+
+        function updateActionButtons() {
+            const checkedBoxes = document.querySelectorAll('.individual-checkbox:checked');
+            const selectedIndividualId = checkedBoxes.length === 1 ? checkedBoxes[0].value : null;
+
+            const viewUrl = selectedIndividualId ? `{% url 'individual:individual_detail' 0 %}`.replace('0', selectedIndividualId) : '#';
+            const editUrl = selectedIndividualId ? `{% url 'individual:individual_update' 0 %}`.replace('0', selectedIndividualId) : '#';
+            const deleteUrl = selectedIndividualId ? `{% url 'individual:individual_delete' 0 %}`.replace('0', selectedIndividualId) : '#';
+
+            function applyButtonState(viewB, editB, deleteB, isSuperuser) {
+                if (viewB) {
+                    if (selectedIndividualId) {
+                        viewB.removeAttribute('disabled');
+                        viewB.href = viewUrl;
+                        
+                        if (isSuperuser) {
+                            if (editB) { editB.removeAttribute('disabled'); editB.href = editUrl; }
+                            if (deleteB) { deleteB.removeAttribute('disabled'); deleteB.href = deleteUrl; }
+                        }
+                    } else {
+                        viewB.setAttribute('disabled', 'disabled');
+                        viewB.href = '#';
+                        
+                        if (isSuperuser) {
+                            if (editB) { editB.setAttribute('disabled', 'disabled'); editB.href = '#'; }
+                            if (deleteB) { deleteB.setAttribute('disabled', 'disabled'); deleteB.href = '#'; }
+                        }
+                    }
+                }
+            }
+
+            applyButtonState(viewBtn, editBtn, deleteBtn, {% if user.is_superuser %}true{% else %}false{% endif %});
+            applyButtonState(viewBtnMobile, editBtnMobile, deleteBtnMobile, {% if user.is_superuser %}true{% else %}false{% endif %});
+        }
+
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    checkboxes.forEach(otherCheckbox => {
+                        if (otherCheckbox !== this) {
+                            otherCheckbox.checked = false;
+                        }
+                    });
+                }
+                updateActionButtons();
+            });
+        });
+
+        const tableRows = document.querySelectorAll('tbody tr');
+        tableRows.forEach(row => {
+            row.addEventListener('click', function(event) {
+                if (event.target.tagName === 'INPUT' || event.target.tagName === 'A' || event.target.closest('a') || event.target.closest('label')) {
+                    return; 
+                }
+
+                const checkbox = this.querySelector('.individual-checkbox');
+                if (checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    if (checkbox.checked) {
+                        checkboxes.forEach(otherCheckbox => {
+                            if (otherCheckbox !== checkbox) {
+                                otherCheckbox.checked = false;
+                            }
+                        });
+                    }
+                    updateActionButtons();
+                }
+            });
+        });
+
+        updateActionButtons();
+    });
+</script>
+{% endblock %}
+
+individual_form
+{# apps/individual/templates/individual/individual_form.html #}
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Kadamay Mortuary System{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-4 max-w-4xl">
+    <div class="card bg-base-100 shadow-xl p-6 md:p-8 rounded-xl text-base-content">
+        <h1 class="text-3xl font-extrabold text-primary mb-6 text-center">{{ title }}</h1>
+
+        <form method="post" class="space-y-8">
+            {% csrf_token %}
+
+            {# Personal Information Section #}
+            <section>
+                <h2 class="text-2xl font-semibold mb-4 border-b-2 pb-2 text-base-content/90">Personal Information</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {# Surname #}
+                    <div class="form-control">
+                        <label for="{{ form.surname.id_for_label }}" class="label">
+                            <span class="label-text">Surname <span class="text-error">*</span></span>
+                        </label>
+                        <input type="text" name="{{ form.surname.name }}" id="{{ form.surname.id_for_label }}"
+                               value="{{ form.surname.value|default:'' }}"
+                               class="input input-bordered w-full {% if form.surname.errors %}input-error{% endif %}"
+                               placeholder="e.g., Dela Cruz" required />
+                        {% if form.surname.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.surname.errors }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    {# Given Name #}
+                    <div class="form-control">
+                        <label for="{{ form.given_name.id_for_label }}" class="label">
+                            <span class="label-text">Given Name <span class="text-error">*</span></span>
+                        </label>
+                        <input type="text" name="{{ form.given_name.name }}" id="{{ form.given_name.id_for_label }}"
+                               value="{{ form.given_name.value|default:'' }}"
+                               class="input input-bordered w-full {% if form.given_name.errors %}input-error{% endif %}"
+                               placeholder="e.g., Juan" required />
+                        {% if form.given_name.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.given_name.errors }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    {# Middle Name #}
+                    <div class="form-control">
+                        <label for="{{ form.middle_name.id_for_label }}" class="label">
+                            <span class="label-text">Middle Name (Optional)</span>
+                        </label>
+                        <input type="text" name="{{ form.middle_name.name }}" id="{{ form.middle_name.id_for_label }}"
+                               value="{{ form.middle_name.value|default:'' }}"
+                               class="input input-bordered w-full {% if form.middle_name.errors %}input-error{% endif %}"
+                               placeholder="e.g., Santos" />
+                        {% if form.middle_name.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.middle_name.errors }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    {# Suffix Name #}
+                    <div class="form-control">
+                        <label for="{{ form.suffix_name.id_for_label }}" class="label">
+                            <span class="label-text">Suffix Name (Optional)</span>
+                        </label>
+                        <input type="text" name="{{ form.suffix_name.name }}" id="{{ form.suffix_name.id_for_label }}"
+                               value="{{ form.suffix_name.value|default:'' }}"
+                               class="input input-bordered w-full {% if form.suffix_name.errors %}input-error{% endif %}"
+                               placeholder="e.g., Jr., Sr., III" />
+                        {% if form.suffix_name.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.suffix_name.errors }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    {# Sex #}
+                    <div class="form-control">
+                        <label for="{{ form.sex.id_for_label }}" class="label">
+                            <span class="label-text">Sex <span class="text-error">*</span></span>
+                        </label>
+                        <select name="{{ form.sex.name }}" id="{{ form.sex.id_for_label }}"
+                                class="select select-bordered w-full {% if form.sex.errors %}select-error{% endif %}" required>
+                            <option value="">Select Sex</option>
+                            {% for value, label in form.sex.field.choices %}
+                                <option value="{{ value }}" {% if value|stringformat:"s" == form.sex.value|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if form.sex.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.sex.errors }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    {# Civil Status #}
+                    <div class="form-control">
+                        <label for="{{ form.civil_status.id_for_label }}" class="label">
+                            <span class="label-text">Civil Status <span class="text-error">*</span></span>
+                        </label>
+                        <select name="{{ form.civil_status.name }}" id="{{ form.civil_status.id_for_label }}"
+                                class="select select-bordered w-full {% if form.civil_status.errors %}select-error{% endif %}" required>
+                            <option value="">Select Civil Status</option>
+                            {% for value, label in form.civil_status.field.choices %}
+                                <option value="{{ value }}" {% if value|stringformat:"s" == form.civil_status.value|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if form.civil_status.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.civil_status.errors }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    {# Birth Date #}
+                    <div class="form-control">
+                        <label for="{{ form.birth_date.id_for_label }}" class="label">
+                            <span class="label-text">Birth Date (Optional)</span>
+                        </label>
+                        <input type="date" name="{{ form.birth_date.name }}" id="{{ form.birth_date.id_for_label }}"
+                               value="{{ form.birth_date.value|date:'Y-m-d'|default:'' }}"
+                               class="input input-bordered w-full {% if form.birth_date.errors %}input-error{% endif %}" />
+                        {% if form.birth_date.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.birth_date.errors }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    {# Contact Number #}
+                    <div class="form-control">
+                        <label for="{{ form.contact_number.id_for_label }}" class="label">
+                            <span class="label-text">Contact Number (Optional)</span>
+                        </label>
+                        <input type="tel" name="{{ form.contact_number.name }}" id="{{ form.contact_number.id_for_label }}"
+                               value="{{ form.contact_number.value|default:'' }}"
+                               class="input input-bordered w-full {% if form.contact_number.errors %}input-error{% endif %}"
+                               placeholder="e.g., +639123456789" />
+                        {% if form.contact_number.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.contact_number.errors }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    {# Email Address #}
+                    <div class="form-control">
+                        <label for="{{ form.email_address.id_for_label }}" class="label">
+                            <span class="label-text">Email Address (Optional)</span>
+                        </label>
+                        <input type="email" name="{{ form.email_address.name }}" id="{{ form.email_address.id_for_label }}"
+                               value="{{ form.email_address.value|default:'' }}"
+                               class="input input-bordered w-full {% if form.email_address.errors %}input-error{% endif %}"
+                               placeholder="e.g., juan.delacruz@example.com" />
+                        {% if form.email_address.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.email_address.errors }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+
+            {# Membership Information Section #}
+            <section>
+                <h2 class="text-2xl font-semibold mb-4 border-b-2 pb-2 text-base-content/90 mt-8">Membership Information</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                    {# Family #}
+                    <div class="form-control">
+                        <label for="{{ form.family.id_for_label }}" class="label">
+                            <span class="label-text">Family (Optional)</span>
+                        </label>
+                        <select name="{{ form.family.name }}" id="{{ form.family.id_for_label }}"
+                                class="select select-bordered w-full {% if form.family.errors %}select-error{% endif %}">
+                            <option value="">Select Family</option>
+                            {% for family in form.fields.family.queryset %}
+                                <option value="{{ family.pk }}" {% if family.pk|stringformat:"s" == form.family.value|stringformat:"s" %}selected{% endif %}>{{ family.family_name|upper }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if form.family.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.family.errors }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    {# Relationship #}
+                    <div class="form-control">
+                        <label for="{{ form.relationship.id_for_label }}" class="label">
+                            <span class="label-text">Relationship to Head of Family <span class="text-error">*</span></span>
+                        </label>
+                        <select name="{{ form.relationship.name }}" id="{{ form.relationship.id_for_label }}"
+                                class="select select-bordered w-full {% if form.relationship.errors %}select-error{% endif %}" required>
+                            <option value="">Select Relationship</option>
+                            {% for value, label in form.relationship.field.choices %}
+                                <option value="{{ value }}" {% if value|stringformat:"s" == form.relationship.value|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if form.relationship.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.relationship.errors }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    {# Membership Status - NEW! REQUIRED! #}
+                    <div class="form-control hidden">
+                        <label for="{{ form.membership_status.id_for_label }}" class="label">
+                            <span class="label-text">Membership Status <span class="text-error">*</span></span>
+                        </label>
+                        <select name="{{ form.membership_status.name }}" id="{{ form.membership_status.id_for_label }}"
+                                class="select select-bordered w-full {% if form.membership_status.errors %}select-error{% endif %}" required>
+                            <option value="">Select Status</option>
+                            {% for value, label in form.membership_status.field.choices %}
+                                <option value="{{ value }}" {% if value|stringformat:"s" == form.membership_status.value|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if form.membership_status.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.membership_status.errors }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    {# Is Active Member #}
+                    <div class="form-control">
+                        <label class="label cursor-pointer justify-start gap-4">
+                            <input type="checkbox" name="{{ form.is_active_member.name }}" id="{{ form.is_active_member.id_for_label }}"
+                                   {% if form.is_active_member.value %}checked{% endif %}
+                                   class="checkbox checkbox-primary" />
+                            <span class="label-text">Is Active Member?</span>
+                        </label>
+                        {% if form.is_active_member.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.is_active_member.errors }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    {# Is Alive #}
+                    <div class="form-control">
+                        <label class="label cursor-pointer justify-start gap-4">
+                            <input type="checkbox" name="{{ form.is_alive.name }}" id="{{ form.is_alive.id_for_label }}"
+                                   {% if form.is_alive.value %}checked{% endif %}
+                                   class="checkbox checkbox-primary" />
+                            <span class="label-text">Is Alive?</span>
+                        </label>
+                        {% if form.is_alive.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.is_alive.errors }}</span>
+                        </label>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+
+            {# Display non-field errors #}
+            {% if form.non_field_errors %}
+                <div role="alert" class="alert alert-error mt-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <div>
+                        <h3 class="font-bold">Form Submission Error!</h3>
+                        <ul class="list-disc ml-5">
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="flex justify-end gap-4 mt-8">
+                <a href="{% url 'individual:individual_list' %}" class="btn btn-ghost">Cancel</a>
+                <button type="submit" class="btn btn-primary">Save Member</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace(); // Feather Icons
+    });
+</script>
+{% endblock %}
+
+
+individual_detail
+
+{# apps/individual/templates/individual/individual_detail.html #}
+{% extends 'base.html' %}
+
+{% block title %}{{ individual.given_name|upper }} {{ individual.surname|upper }} - Kadamay Mortuary System{% endblock %} {# Consistent title #}
+
+{% block content %}
+<div class="card bg-base-100 shadow-xl p-4 md:p-6 text-base-content rounded-xl my-4 mx-auto max-w-7xl"> {# Adjusted padding and margin #}
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-3"> {# Adjusted margin and gap #}
+        <div>
+            <h1 class="text-2xl font-extrabold text-primary"> {# Changed to text-2xl #}
+                {{ individual.surname|upper }}, {{ individual.given_name|upper }} 
+                {% if individual.middle_name %}{{ individual.middle_name|upper }}{% endif %}
+                {% if individual.suffix_name %}{{ individual.suffix_name|upper }}{% endif %}
+            </h1>
+            <p class="text-base-content/70 mt-0.5 text-base"> {# Adjusted mt and text size #}
+                {% if individual.family %}
+                    From <a href="{% url 'family:family_detail' individual.family.id %}" class="link link-hover link-primary">{{ individual.family.family_name|upper }}</a>
+                {% else %}
+                    <span class="italic text-base-content/60 text-sm">No Family Assigned</span> {# Italicized, muted, and text-sm #}
+                {% endif %}
+            </p>
+        </div>
+        <div class="flex flex-wrap md:flex-nowrap gap-2 w-full md:w-auto justify-end"> {# Adjusted gap #}
+            <a href="{% url 'individual:individual_list' %}"
+               class="btn btn-ghost flex items-center gap-2 transition-all duration-300 hover:scale-105 w-full md:w-auto btn-sm"> {# Added btn-sm #}
+                <i data-feather="arrow-left" class="w-4 h-4"></i> Back to List {# Reduced icon size #}
+            </a>
+            {% if user.is_superuser %}
+            <a href="{% url 'individual:individual_update' individual.id %}"
+               class="btn btn-primary flex items-center gap-2 transition-all duration-300 hover:scale-105 w-full md:w-auto btn-sm"> {# Added btn-sm #}
+                <i data-feather="edit" class="w-4 h-4"></i> Edit Member {# Reduced icon size #}
+            </a>
+            <a href="{% url 'individual:individual_delete' individual.id %}"
+               class="btn btn-error flex items-center gap-2 transition-all duration-300 hover:scale-105 w-full md:w-auto btn-sm"> {# Added btn-sm #}
+                <i data-feather="trash-2" class="w-4 h-4"></i> Delete Member {# Reduced icon size #}
+            </a>
+            {% endif %}
+        </div>
+    </header>
+
+    <hr class="border-base-300 my-4"> {# Replaced "---" with proper hr and adjusted margin #}
+
+    <section class="card bg-base-200 rounded-xl p-4 shadow-md border border-base-300 mb-6"> {# Adjusted padding and margin #}
+        <h2 class="text-xl font-bold mb-3 text-secondary">Personal Information</h2> {# Changed to text-xl and adjusted mb #}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3"> {# Adjusted gaps #}
+            <div class="space-y-0.5"> {# Adjusted space-y #}
+                <h3 class="text-xs font-medium text-base-content/70">Full Name</h3> {# Changed to text-xs #}
+                <p class="text-base font-semibold text-base-content"> {# Changed to text-base #}
+                    {{ individual.surname|upper }}, {{ individual.given_name|upper }} 
+                    {% if individual.middle_name %}{{ individual.middle_name|upper }}{% endif %}
+                    {% if individual.suffix_name %}{{ individual.suffix_name|upper }}{% endif %}
+                </p>
+            </div>
+            <div class="space-y-0.5"> {# Adjusted space-y #}
+                <h3 class="text-xs font-medium text-base-content/70">Birth Date</h3> {# Changed to text-xs #}
+                <p class="text-base font-semibold text-base-content"> {# Changed to text-base #}
+                    {{ individual.birth_date|date:"F d, Y"|default:"N/A" }}
+                </p>
+            </div>
+            <div class="space-y-0.5"> {# Adjusted space-y #}
+                <h3 class="text-xs font-medium text-base-content/70">Contact Number</h3> {# Changed to text-xs #}
+                <p class="text-base font-semibold text-base-content"> {# Changed to text-base #}
+                    {{ individual.contact_number|default:"N/A" }}
+                </p>
+            </div>
+            <div class="space-y-0.5"> {# Adjusted space-y #}
+                <h3 class="text-xs font-medium text-base-content/70">Email Address</h3> {# Changed to text-xs #}
+                <p class="text-base font-semibold text-base-content"> {# Changed to text-base #}
+                    {{ individual.email_address|default:"N/A" }}
+                </p>
+            </div>
+            <div class="space-y-0.5"> {# Adjusted space-y #}
+                <h3 class="text-xs font-medium text-base-content/70">Sex</h3> {# Changed to text-xs #}
+                <p class="text-base font-semibold text-base-content"> {# Changed to text-base #}
+                    {{ individual.get_sex_display|default:"N/A"|upper }}
+                </p>
+            </div>
+            <div class="space-y-0.5"> {# Adjusted space-y #}
+                <h3 class="text-xs font-medium text-base-content/70">Civil Status</h3> {# Changed to text-xs #}
+                <p class="text-base font-semibold text-base-content"> {# Changed to text-base #}
+                    {{ individual.get_civil_status_display|default:"N/A"|upper }}
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <hr class="border-base-300 my-4"> {# Replaced "---" with proper hr and adjusted margin #}
+
+    <section class="card bg-base-200 rounded-xl p-4 shadow-md border border-base-300"> {# Adjusted padding #}
+        <h2 class="text-xl font-bold mb-3 text-secondary">Membership Information</h2> {# Changed to text-xl and adjusted mb #}
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3"> {# Adjusted gaps #}
+            <div class="space-y-0.5"> {# Adjusted space-y #}
+                <h3 class="text-xs font-medium text-base-content/70">Family</h3> {# Changed to text-xs #}
+                <p class="text-base font-semibold text-base-content"> {# Changed to text-base #}
+                    {% if individual.family %}
+                        <a href="{% url 'family:family_detail' individual.family.id %}" class="link link-hover link-primary">
+                            {{ individual.family.family_name|upper }}
+                        </a>
+                    {% else %}
+                        <span class="italic text-base-content/60 text-sm">N/A</span> {# Italicized, muted, and text-sm #}
+                    {% endif %}
+                </p>
+            </div>
+            <div class="space-y-0.5"> {# Adjusted space-y #}
+                <h3 class="text-xs font-medium text-base-content/70">Church</h3> {# Changed to text-xs #}
+                <p class="text-base font-semibold text-base-content"> {# Changed to text-base #}
+                    {% if individual.family and individual.family.church %}
+                        <a href="{% url 'church:church_detail' individual.family.church.id %}" class="link link-hover link-primary">
+                            {{ individual.family.church.name|upper }}
+                        </a>
+                    {% else %}
+                        <span class="italic text-base-content/60 text-sm">N/A</span> {# Italicized, muted, and text-sm #}
+                    {% endif %}
+                </p>
+            </div>
+            <div class="space-y-0.5"> {# Adjusted space-y #}
+                <h3 class="text-xs font-medium text-base-content/70">Relationship</h3> {# Changed to text-xs #}
+                <p class="text-base font-semibold text-base-content"> {# Changed to text-base #}
+                    {{ individual.get_relationship_display|default:"N/A"|upper }}
+                </p>
+            </div>
+            <div class="space-y-0.5"> {# Adjusted space-y #}
+                <h3 class="text-xs font-medium text-base-content/70">Status</h3> {# Changed to text-xs #}
+                <p class="text-base font-semibold text-base-content"> {# Changed to text-base #}
+                    {% if individual.is_active_member and individual.is_alive %}
+                        <span class="badge badge-success badge-sm font-semibold">ACTIVE</span> {# Changed to badge-sm #}
+                    {% elif not individual.is_alive %}
+                        <span class="badge badge-info badge-sm font-semibold">DECEASED</span> {# Changed to badge-sm #}
+                    {% else %}
+                        <span class="badge badge-error badge-sm font-semibold">INACTIVE</span> {# Changed to badge-sm #}
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace(); // Re-initialize Feather Icons
+    });
+</script>
+{% endblock %}
+
+individual_dashboard
+{# apps/individual/templates/individual/individual_dashboard.html #}
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}
+    {{ title }} - Kadamay Mortuary System {# Use 'title' from context #}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Add any specific CSS for the individual dashboard here */
+    .dashboard-card {
+        background-color: var(--fallback-b1, oklch(var(--b1) / 1)); /* DaisyUI base-100 */
+        border-radius: 0.75rem; /* Slightly more rounded */
+        padding: 1.5rem; /* Increased padding */
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Stronger shadow */
+        transition: transform 0.2s ease-in-out;
+        display: flex; /* Ensure flex for vertical layout */
+        flex-direction: column; /* Stack content vertically */
+    }
+    .dashboard-card:hover {
+        transform: translateY(-5px); /* More pronounced lift effect */
+    }
+    /* Custom visual class for disabled buttons, to work alongside the actual 'disabled' attribute */
+    .disabled-button-visual { 
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    /* DaisyUI 'active' class for menu items. Ensure it's visually distinct. */
+    .menu li > a.active {
+        background-color: oklch(var(--a)) !important; /* Accent color from DaisyUI theme */
+        color: oklch(var(--ac)) !important; /* Accent content color */
+    }
+
+    /* Custom styles for detail rows */
+    .detail-row {
+        display: flex;
+        align-items: flex-start; /* Align icon and text at the top */
+        margin-bottom: 0.5rem; /* Reduced spacing between rows for denser look */
+        font-size: 0.875rem; /* Smaller text for details (sm) */
+    }
+    .detail-row:last-child {
+        margin-bottom: 0;
+    }
+    .detail-icon {
+        flex-shrink: 0;
+        width: 1rem; /* Smaller icon size */
+        height: 1rem;
+        margin-right: 0.5rem; /* Reduced space between icon and text */
+        color: oklch(var(--p)); /* Primary color for icons */
+        margin-top: 0.15rem; /* Slight adjustment for icon alignment with text */
+    }
+    .detail-label {
+        font-weight: 600; /* Semi-bold for labels */
+        color: var(--fallback-bc, oklch(var(--bc) / 0.8)); /* Base content darker */
+        min-width: 70px; /* Adjusted minimum width for labels for alignment */
+        flex-shrink: 0; /* Prevent label from shrinking */
+    }
+    .detail-value {
+        color: var(--fallback-bc, oklch(var(--bc) / 1)); /* Full base content color */
+        word-break: break-word; /* Ensure long words break */
+    }
+
+    /* Styling for family members list within the details card */
+    .family-members-list-card {
+        margin-top: 1rem; /* Reduced space above this section */
+        padding-top: 0.75rem; /* Reduced padding */
+        border-top: 1px solid theme('colors.base-content / 10%');
+    }
+    .family-members-list-card ul li {
+        margin-bottom: 0.4rem; /* Reduced margin */
+        font-size: 0.8rem; /* Even smaller text for sub-list */
+        color: var(--fallback-bc, oklch(var(--bc) / 0.9));
+    }
+
+    /* Style for the toggle icon */
+    .toggle-icon {
+        transition: transform 0.3s ease;
+    }
+    .toggle-icon.rotate {
+        transform: rotate(180deg);
+    }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<div class="container mx-auto p-4 max-w-7xl h-full flex flex-col">
+    <h1 class="text-3xl font-extrabold text-primary mb-4">Kadamay Members Dashboard</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 flex-grow">
+
+        {# Left Sidebar: List of Members #}
+        <div class="md:col-span-1 bg-base-100 rounded-lg shadow-xl p-3 flex flex-col overflow-hidden">
+            <h2 class="text-lg font-bold text-secondary mb-3">List of Members</h2>
+            <div class="mb-3">
+                <label class="input input-bordered flex items-center gap-2 w-full rounded-md input-sm">
+                    <input type="text" placeholder="Search members..." class="grow text-sm" id="dashboardSearchInput"/>
+                    <i data-feather="search" class="w-4 h-4"></i>
+                </label>
+            </div>
+            <div class="overflow-y-auto flex-grow h-0 border border-base-300 rounded-md">
+                <ul class="menu p-1 bg-base-200 w-full rounded-md text-sm" id="memberList">
+                    {# Individuals loaded from context for initial list #}
+                    {% if individuals %}
+                        {% for individual in individuals %}
+                        <li class="member-list-item" data-individual-id="{{ individual.id }}">
+                            <a href="#" class="block hover:bg-base-300 py-1 px-2"> {# Removed {% if forloop.first %}active{% endif %} #}
+                                {{ individual.surname|upper }}, {{ individual.given_name|upper }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    {% else %}
+                        <li><span class="text-xs text-base-content/60">No members found.</span></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+
+        {# Right Section: Individual Details and Payments #}
+        <div class="md:col-span-2 lg:col-span-3 flex flex-col gap-4">
+
+            {# Individual Details Card (Dynamic via JS) - Initially hidden #}
+            <div class="dashboard-card shadow-md flex-none hidden" id="individualDetailsCard"> {# Added 'hidden' class here #}
+                <h2 class="text-xl font-bold text-base-content mb-4 flex items-center justify-between">
+                    <span class="flex items-center gap-3">
+                        <i data-feather="user-check" class="w-6 h-6 text-accent"></i>
+                        Member Details
+                    </span>
+                    <button type="button" id="toggleDetailsBtn" class="btn btn-sm btn-circle btn-ghost">
+                        <i data-feather="chevron-down" class="w-5 h-5 toggle-icon"></i>
+                    </button>
+                </h2>
+                <div id="individualInfoContent" class="flex-grow">
+                    <p class="text-center text-base-content/70 py-6">Select a member from the left to view details.</p>
+                </div>
+            </div>
+
+            {# Payments Section #}
+            <div class="dashboard-card shadow-md flex-grow flex flex-col overflow-hidden"> {# Changed to dashboard-card for consistent styling #}
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-lg font-bold text-secondary">List of Individual Payments</h2>
+                    <div class="flex gap-2">
+                        <a href="#" id="addPaymentButton" class="btn btn-sm btn-primary disabled-button-visual" disabled aria-disabled="true">
+                            <i data-feather="plus"></i> Add Payment
+                        </a>
+                        <a href="#" id="printIndividualButton" class="btn btn-sm btn-outline btn-info disabled-button-visual" disabled aria-disabled="true">
+                            <i data-feather="printer"></i> Print Individual
+                        </a>
+                    </div>
+                </div>
+                <div class="overflow-y-auto flex-grow h-0 border border-base-300 rounded-md">
+                    <table class="table table-zebra w-full table-sm">
+                        <thead>
+                            <tr>
+                                <th class="text-xs font-semibold uppercase">Date</th>
+                                <th class="text-xs font-semibold uppercase">Receipt #</th>
+                                <th class="text-xs font-semibold uppercase">Type</th>
+                                <th class="text-xs font-semibold uppercase">Amount</th>
+                                <th class="text-xs font-semibold uppercase">Method</th>
+                                <th class="text-xs font-semibold uppercase">Status</th>
+                                <th class="text-xs font-semibold uppercase">Remarks (Deceased)</th>
+                                <th class="text-xs font-semibold uppercase">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paymentListBody">
+                            <tr><td colspan="8" class="text-center text-xs text-base-content/60 py-1">Select a member to view payments.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Cancellation Modal #}
+<dialog id="cancel_payment_modal" class="modal">
+  <div class="modal-box">
+    <h3 class="font-bold text-lg text-base-content">Cancel Payment</h3>
+    <p class="py-4 text-base-content/80">Please provide a reason for cancelling this payment (Receipt #<span id="modal_receipt_number"></span>).</p>
+    <form id="cancel_payment_form" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="payment_id" id="cancel_payment_id">
+        <div class="form-control">
+            <label for="cancellation_reason" class="label">
+                <span class="label-text text-base-content">Cancellation Reason</span>
+            </label>
+            <textarea id="cancellation_reason" name="cancellation_reason" class="textarea textarea-bordered h-24 text-base-content bg-base-200" placeholder="e.g., Error in amount, Duplicate entry, etc." required></textarea>
+        </div>
+        <div class="modal-action">
+            <button type="submit" class="btn btn-error">Confirm Cancellation</button>
+            <button type="button" class="btn" onclick="document.getElementById('cancel_payment_modal').close()">Close</button>
+        </div>
+    </form>
+  </div>
+</dialog>
+
+
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="https://unpkg.com/feather-icons"></script> 
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace();
+
+        const memberList = document.getElementById('memberList');
+        const paymentListBody = document.getElementById('paymentListBody');
+        const individualDetailsCard = document.getElementById('individualDetailsCard'); // Reference to the card itself
+        const individualInfoContent = document.getElementById('individualInfoContent'); // For individual details content
+        const dashboardSearchInput = document.getElementById('dashboardSearchInput');
+        const printIndividualButton = document.getElementById('printIndividualButton');
+        const addPaymentButton = document.getElementById('addPaymentButton');
+        
+        // Cancellation Modal Elements
+        const cancelModal = document.getElementById('cancel_payment_modal');
+        const modalPaymentIdInput = document.getElementById('cancel_payment_id');
+        const modalReceiptNumberSpan = document.getElementById('modal_receipt_number');
+        const cancellationForm = document.getElementById('cancel_payment_form');
+        const cancellationReasonInput = document.getElementById('cancellation_reason');
+
+        // Toggle elements for member details card
+        const toggleDetailsBtn = document.getElementById('toggleDetailsBtn');
+        const toggleDetailsIcon = toggleDetailsBtn ? toggleDetailsBtn.querySelector('.toggle-icon') : null;
+
+        // NEW: Toggle elements for Family details within the card
+        let familyDetailsContent; // This will be assigned dynamically
+        let toggleFamilyBtn; // This will be assigned dynamically
+        let toggleFamilyIcon; // This will be assigned dynamically
+
+
+        function updateActionButtons(individualId = null) {
+            console.log('updateActionButtons called with ID:', individualId);
+            if (addPaymentButton && printIndividualButton) {
+                if (individualId) {
+                    addPaymentButton.removeAttribute('disabled');
+                    addPaymentButton.classList.remove('disabled-button-visual');
+                    addPaymentButton.style.pointerEvents = 'auto';
+                    addPaymentButton.setAttribute('aria-disabled', 'false');
+                    
+                    printIndividualButton.removeAttribute('disabled');
+                    printIndividualButton.classList.remove('disabled-button-visual');
+                    printIndividualButton.style.pointerEvents = 'auto';
+                    printIndividualButton.setAttribute('aria-disabled', 'false');
+                    
+                    addPaymentButton.href = `/payment/individual/${individualId}/create/`;
+                    printIndividualButton.href = `/individual/${individualId}/print_payments/`; // Assuming this URL exists
+                    console.log('Buttons ENABLED.');
+                } else {
+                    addPaymentButton.setAttribute('disabled', 'true');
+                    addPaymentButton.classList.add('disabled-button-visual');
+                    addPaymentButton.style.pointerEvents = 'none';
+                    addPaymentButton.setAttribute('aria-disabled', 'true');
+                    
+                    printIndividualButton.setAttribute('disabled', 'true');
+                    printIndividualButton.classList.add('disabled-button-visual');
+                    printIndividualButton.style.pointerEvents = 'none';
+                    printIndividualButton.setAttribute('aria-disabled', 'true');
+                    
+                    addPaymentButton.href = '#';
+                    printIndividualButton.href = '#';
+                    console.log('Buttons DISABLED (no individualId).');
+                }
+            } else {
+                console.warn('Action buttons not found in DOM.');
+            }
+        }
+
+        async function loadMemberDetails(individualId) {
+            console.log('loadMemberDetails called for ID:', individualId);
+            updateActionButtons(individualId);
+
+            // Show individual details card and loading states for both sections
+            individualDetailsCard.classList.remove('hidden'); // Show the card
+            individualInfoContent.innerHTML = `
+                <div class="text-center py-6">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div> {# Primary color for spinner #}
+                    <p class="mt-2 text-base-content/70">Loading member details...</p> {# Translated #}
+                </div>`;
+            paymentListBody.innerHTML = `
+                <tr><td colspan="8" class="text-center py-6">
+                    <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div> {# Primary color for spinner #}
+                    <p class="mt-2 text-base-content/70">Loading payments...</p> {# Translated #}
+                </td></tr>`;
+
+            try {
+                const response = await fetch(`/individual/${individualId}/details/`);
+                if (!response.ok) {
+                    updateActionButtons(null);
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                console.log('AJAX response data for details:', data);
+
+                // Populate Individual Details with enhanced styling (English translations)
+                // MODIFIED: Changed to 2-column grid and smaller text/icons
+                individualInfoContent.innerHTML = `
+                    <div class="grid grid-cols-2 gap-x-6 gap-y-3"> {# Two columns with adjusted gaps #}
+                        <div class="detail-row">
+                            <i data-feather="user" class="detail-icon"></i>
+                            <span class="detail-label">Name:</span>
+                            <span class="detail-value">${data.full_name || 'N/A'}</span>
+                        </div>
+                        <div class="detail-row">
+                            <i data-feather="activity" class="detail-icon"></i>
+                            <span class="detail-label">Status:</span>
+                            <span class="detail-value">${data.is_alive ? 'Alive' : 'Deceased'}</span>
+                        </div>
+                        <div class="detail-row">
+                            <i data-feather="award" class="detail-icon"></i>
+                            <span class="detail-label">Membership:</span>
+                            <span class="detail-value">${data.membership_status || 'N/A'}</span>
+                        </div>
+                        <div class="detail-row">
+                            <i data-feather="calendar" class="detail-icon"></i>
+                            <span class="detail-label">Birthdate:</span>
+                            <span class="detail-value">${data.birth_date || 'N/A'}</span>
+                        </div>
+                        <div class="detail-row">
+                            <i data-feather="home" class="detail-icon"></i>
+                            <span class="detail-label">Address:</span>
+                            <span class="detail-value">${data.address || 'N/A'}</span>
+                        </div>
+                        <div class="detail-row">
+                            <i data-feather="phone" class="detail-icon"></i>
+                            <span class="detail-label">Contact #:</span>
+                            <span class="detail-value">${data.contact_no || 'N/A'}</span>
+                        </div>
+                        <div class="detail-row">
+                            <i data-feather="heart" class="detail-icon"></i>
+                            <span class="detail-label">Civil Status:</span>
+                            <span class="detail-value">${data.civil_status || 'N/A'}</span>
+                        </div>
+                        <div class="detail-row">
+                            <i data-feather="plus-circle" class="detail-icon"></i>
+                            <span class="detail-label">Date Added:</span>
+                            <span class="detail-value">${data.date_added || 'N/A'}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="family-members-list-card"> {# Styled section for family members #}
+                        <h4 class="font-bold text-base-content text-md mb-2 flex items-center justify-between">
+                            <span class="flex items-center gap-2">
+                                <i data-feather="users" class="w-5 h-5 text-secondary"></i> Family: ${data.family_name || 'N/A'}
+                            </span>
+                            <button type="button" id="toggleFamilyBtn" class="btn btn-sm btn-circle btn-ghost">
+                                <i data-feather="chevron-down" class="w-5 h-5 toggle-icon"></i>
+                            </button>
+                        </h4>
+                        <div id="familyDetailsContent" class="mt-2"> {# Content to be toggled #}
+                            ${data.other_family_members.length > 0 ? `
+                                <ul class="list-disc list-inside">
+                                    ${data.other_family_members.map(member => `<li>${member.full_name} (${member.relationship})</li>`).join('')}
+                                </ul>` : '<p class="text-sm text-base-content/70">No other family members recorded.</p>'}
+                        </div>
+                    </div>
+                `;
+                feather.replace(); // Re-render icons after updating content
+
+                // Assign toggle elements after they are created in the DOM
+                familyDetailsContent = document.getElementById('familyDetailsContent');
+                toggleFamilyBtn = document.getElementById('toggleFamilyBtn');
+                toggleFamilyIcon = toggleFamilyBtn ? toggleFamilyBtn.querySelector('.toggle-icon') : null;
+
+                // Add event listener for family toggle
+                if (toggleFamilyBtn && familyDetailsContent && toggleFamilyIcon) {
+                    toggleFamilyBtn.addEventListener('click', function() {
+                        familyDetailsContent.classList.toggle('hidden');
+                        toggleFamilyIcon.classList.toggle('rotate');
+                    });
+                     // Ensure family details are visible by default when loaded
+                    familyDetailsContent.classList.remove('hidden');
+                    toggleFamilyIcon.classList.remove('rotate'); // Ensure icon is "up" (chevron-down pointing down)
+                }
+
+
+                // Populate Payment List (table headers translated)
+                paymentListBody.innerHTML = '';
+                if (data.payments && data.payments.length > 0) {
+                    data.payments.forEach(payment => {
+                        const statusBadgeClass = 
+                            payment.status === 'VALIDATED' ? 'badge-success' :
+                            payment.status === 'PENDING_VALIDATION' ? 'badge-warning' :
+                            payment.status === 'CANCELLED' ? 'badge-error' :
+                            payment.status === 'LEGACY' ? 'badge-info' :
+                            'badge-ghost';
+                        
+                        const actionsHtml = `
+                            <div class="flex items-center space-x-2">
+                                <a href="/payment/${payment.id}/detail/" class="btn btn-xs btn-outline btn-primary">View</a>
+                                ${payment.status !== 'CANCELLED' && payment.status !== 'LEGACY' ? 
+                                    `<button type="button" class="btn btn-xs btn-outline btn-error cancel-payment-btn" 
+                                            data-payment-id="${payment.id}" data-receipt-number="${payment.receipt_number || 'N/A'}">Cancel</button>` : ''}
+                            </div>
+                        `;
+
+                        const row = `<tr class="text-xs">
+                                        <td>${payment.date || 'N/A'}</td>
+                                        <td>${payment.receipt_number || 'N/A'}</td>
+                                        <td>${payment.description || 'N/A'}</td>
+                                        <td>₱${payment.amount ? payment.amount.toFixed(2) : '0.00'}</td>
+                                        <td>${payment.method_display || 'N/A'}</td>
+                                        <td><span class="badge ${statusBadgeClass}">${payment.status_display}</span></td>
+                                        <td>${payment.deceased_member_name || 'N/A'}</td>
+                                        <td>${actionsHtml}</td>
+                                    </tr>`;
+                        paymentListBody.insertAdjacentHTML('beforeend', row);
+                    });
+                    // Re-attach event listeners for newly rendered cancel buttons
+                    document.querySelectorAll('.cancel-payment-btn').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const paymentId = this.dataset.paymentId;
+                            const receiptNumber = this.dataset.receiptNumber; // Get from data attribute
+
+                            modalPaymentIdInput.value = paymentId;
+                            modalReceiptNumberSpan.textContent = receiptNumber;
+                            cancellationReasonInput.value = ''; // Clear previous reason
+                            cancelModal.showModal();
+                        });
+                    });
+
+                } else {
+                    paymentListBody.innerHTML = '<tr><td colspan="8" class="text-center text-xs text-base-content/60 py-1">No payments found.</td></tr>';
+                }
+
+            } catch (error) {
+                console.error('AJAX Error in loadMemberDetails:', error);
+                individualInfoContent.innerHTML = `<p class="text-center text-error py-4">Error loading member details.</p>`;
+                paymentListBody.innerHTML = '<tr><td colspan="8" class="text-center text-error text-xs py-1">Error loading payments.</p></td></tr>';
+                updateActionButtons(null);
+            }
+        }
+
+        memberList.addEventListener('click', function(event) {
+            const listItem = event.target.closest('.member-list-item'); 
+            
+            if (listItem) {
+                // Remove active class from all previously active items
+                memberList.querySelectorAll('.member-list-item a.active').forEach(item => {
+                    item.classList.remove('active');
+                });
+                
+                // Add active class to the clicked item
+                listItem.querySelector('a').classList.add('active');
+
+                const individualId = listItem.dataset.individualId; 
+                console.log('Clicked member. Retrieved ID from listItem:', individualId);
+
+                if (individualId) {
+                    loadMemberDetails(individualId);
+                    // Ensure individual details content is shown if card was hidden by toggle
+                    individualInfoContent.classList.remove('hidden');
+                    if (toggleDetailsIcon) {
+                        toggleDetailsIcon.classList.remove('rotate'); // Ensure icon is 'up' (chevron-down pointing down) initially after loading
+                        feather.replace(); // Re-render icon
+                    }
+                } else {
+                    console.warn('Clicked item has no individual ID. Check data-individual-id attribute.');
+                    updateActionButtons(null);
+                }
+            }
+        });
+
+        if (dashboardSearchInput) {
+            // New: Add focus event listener to dashboardSearchInput
+            dashboardSearchInput.addEventListener('focus', function() {
+                // Remove 'active' class from all list items
+                memberList.querySelectorAll('.member-list-item a.active').forEach(item => {
+                    item.classList.remove('active');
+                });
+                // Disable action buttons
+                updateActionButtons(null);
+                // Hide individual details card and clear its content
+                individualDetailsCard.classList.add('hidden');
+                individualInfoContent.innerHTML = `<p class="text-center text-base-content/70 py-4">Select a member from the left to view details.</p>`;
+                // Clear payments list
+                paymentListBody.innerHTML = '<tr><td colspan="8" class="text-center text-xs text-base-content/60 py-1">Select a member to view payments.</td></tr>';
+            });
+
+
+            dashboardSearchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                let firstVisibleMemberId = null;
+                
+                const allMemberListItems = Array.from(memberList.querySelectorAll('.member-list-item'));
+                
+                // Remove active class from all items when searching
+                allMemberListItems.forEach(item => {
+                    item.querySelector('a').classList.remove('active');
+                });
+
+                allMemberListItems.forEach(item => {
+                    const memberName = item.querySelector('a').textContent.toLowerCase();
+                    if (memberName.includes(searchTerm)) {
+                        item.style.display = '';
+                        if (firstVisibleMemberId === null) {
+                            firstVisibleMemberId = item.dataset.individualId;
+                        }
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+
+                // After search, if there are visible members, select the first one
+                if (firstVisibleMemberId) {
+                    const firstVisibleListItem = memberList.querySelector(`.member-list-item[data-individual-id="${firstVisibleMemberId}"]`);
+                    if (firstVisibleListItem) {
+                        firstVisibleListItem.querySelector('a').classList.add('active'); // Highlight the first visible item
+                        loadMemberDetails(firstVisibleMemberId); // Load details for the first visible item
+                    }
+                } else {
+                    // If no members found after search, hide details and disable buttons
+                    individualDetailsCard.classList.add('hidden'); 
+                    individualInfoContent.innerHTML = `<p class="text-center text-base-content/70 py-4">No member selected.</p>`;
+                    paymentListBody.innerHTML = '<tr><td colspan="8" class="text-center text-xs text-base-content/60 py-1">No payments found.</td></tr>';
+                    updateActionButtons(null);
+                }
+            });
+        }
+        
+        // --- Initial Load Logic: No member selected by default, buttons disabled ---
+        console.log('Initial page load: Ensuring no member is highlighted and buttons are disabled.');
+        // Ensure no item is active (in case {% if forloop.first %}active{% endif %} from Django template is used)
+        memberList.querySelectorAll('.member-list-item a.active').forEach(item => {
+            item.classList.remove('active');
+        });
+        
+        // Hide individual details card and display placeholder
+        individualDetailsCard.classList.add('hidden'); 
+        individualInfoContent.innerHTML = `<p class="text-center text-base-content/70 py-4">Select a member from the left to view details.</p>`;
+        
+        // Display placeholder for payments list
+        paymentListBody.innerHTML = '<tr><td colspan="8" class="text-center text-xs text-base-content/60 py-1">Select a member to view payments.</td></tr>';
+        
+        // Disable action buttons initially
+        updateActionButtons(null);
+        // --- End Initial Load Logic ---
+
+        // --- Toggle Member Details Card Content ---
+        if (toggleDetailsBtn && individualInfoContent && toggleDetailsIcon) {
+            toggleDetailsBtn.addEventListener('click', function() {
+                individualInfoContent.classList.toggle('hidden'); // Toggle visibility
+                toggleDetailsIcon.classList.toggle('rotate'); // Rotate icon
+            });
+        }
+
+        // --- Cancellation Form Submission Logic ---
+        if (cancellationForm) {
+            cancellationForm.addEventListener('submit', async function(event) {
+                event.preventDefault(); // Stop default form submission
+
+                const paymentId = modalPaymentIdInput.value;
+                const cancellationReason = cancellationReasonInput.value;
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+                if (!cancellationReason) {
+                    alert('Cancellation reason is required.');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/payment/cancel/${paymentId}/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrfToken
+                        },
+                        body: JSON.stringify({ cancellation_reason: cancellationReason })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        alert(data.message); 
+                        cancelModal.close();
+                        
+                        const currentActiveLink = memberList.querySelector('.member-list-item a.active');
+                        if (currentActiveLink) {
+                            const individualId = currentActiveLink.closest('.member-list-item').dataset.individualId;
+                            loadMemberDetails(individualId); // Reload payments for the current individual
+                        } else {
+                            location.reload(); // Fallback to full page reload
+                        }
+                    } else {
+                        alert('Error cancelling payment: ' + data.error);
+                    }
+                } catch (error) {
+                    console.error('Fetch error:', error);
+                    alert('An unexpected error occurred. Please try again.');
+                }
+            });
+        } else {
+            console.error("Cancellation form not found, cannot attach event listener.");
+        }
+    });
+</script>
+
+
+{% endblock %}
+
+individual_confirm_delete
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
+  <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg max-w-md w-full p-6">
+    <h2 class="text-2xl font-semibold text-red-600 dark:text-red-400 mb-4 text-center">
+      ⚠️ Confirm Deletion
+    </h2>
+
+    <p class="text-gray-700 dark:text-gray-300 mb-6 text-center">
+      Are you absolutely sure you want to delete the church: <br>
+      <span class="font-bold text-red-500 dark:text-red-400 text-xl">"{{ object.name|default:'[Church Name]' }}"</span>? {# Added default for robustness, assumed object has .name #}
+      <br>
+      This action cannot be undone.
+    </p>
+
+    <form method="post" class="flex justify-center gap-4">
+      {% csrf_token %}
+      <button 
+        type="submit" 
+        class="btn btn-error px-6 py-2 text-white font-semibold rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+        aria-label="Confirm delete church"
+      >
+        Yes, Delete
+      </button>
+      {# Changed cancel link to go back to the church detail or church list for better UX #}
+      <a 
+        href="{% url 'church:church_detail' object.id %}" {# Assuming 'object' has an 'id' and a church_detail URL exists #}
+        class="btn btn-outline btn-neutral px-6 py-2 font-semibold rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+        aria-label="Cancel deletion and go back"
+      >
+        Cancel
+      </a>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -118,27 +118,11 @@
             </div>
         </div>
 
-        {# Right Section: Individual Details and Payments #}
+        {# Right Section: Individual Payments and Details #}
         <div class="md:col-span-2 lg:col-span-3 flex flex-col gap-4">
 
-            {# Individual Details Card (Dynamic via JS) - Initially hidden #}
-            <div class="dashboard-card shadow-md flex-none hidden" id="individualDetailsCard"> {# Added 'hidden' class here #}
-                <h2 class="text-xl font-bold text-base-content mb-4 flex items-center justify-between">
-                    <span class="flex items-center gap-3">
-                        <i data-feather="user-check" class="w-6 h-6 text-accent"></i>
-                        Member Details
-                    </span>
-                    <button type="button" id="toggleDetailsBtn" class="btn btn-sm btn-circle btn-ghost">
-                        <i data-feather="chevron-down" class="w-5 h-5 toggle-icon"></i>
-                    </button>
-                </h2>
-                <div id="individualInfoContent" class="flex-grow">
-                    <p class="text-center text-base-content/70 py-6">Select a member from the left to view details.</p>
-                </div>
-            </div>
-
-            {# Payments Section #}
-            <div class="dashboard-card shadow-md flex-grow flex flex-col overflow-hidden"> {# Changed to dashboard-card for consistent styling #}
+            {# Payments Section (Now at the top) #}
+            <div class="dashboard-card shadow-md flex-grow flex flex-col overflow-hidden">
                 <div class="flex justify-between items-center mb-3">
                     <h2 class="text-lg font-bold text-secondary">List of Individual Payments</h2>
                     <div class="flex gap-2">
@@ -170,6 +154,23 @@
                     </table>
                 </div>
             </div>
+
+            {# Individual Details Card (Now at the bottom, and initially hidden/collapsed) #}
+            <div class="dashboard-card shadow-md flex-none" id="individualDetailsCard">
+                <h2 class="text-xl font-bold text-base-content mb-4 flex items-center justify-between">
+                    <span class="flex items-center gap-3">
+                        <i data-feather="user-check" class="w-6 h-6 text-accent"></i>
+                        Member Details
+                    </span>
+                    <button type="button" id="toggleDetailsBtn" class="btn btn-sm btn-circle btn-ghost">
+                        <i data-feather="chevron-down" class="w-5 h-5 toggle-icon"></i>
+                    </button>
+                </h2>
+                <div id="individualInfoContent" class="flex-grow hidden"> {# Added 'hidden' class here #}
+                    <p class="text-center text-base-content/70 py-6">Select a member from the left to view details.</p>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
@@ -246,7 +247,7 @@
                     printIndividualButton.style.pointerEvents = 'auto';
                     printIndividualButton.setAttribute('aria-disabled', 'false');
                     
-                    addPaymentButton.href = `/payment/individual/${individualId}/create/`;
+                    addPaymentButton.href = `/payment/create/individual/${individualId}/`; // Updated URL
                     printIndividualButton.href = `/individual/${individualId}/print_payments/`; // Assuming this URL exists
                     console.log('Buttons ENABLED.');
                 } else {
@@ -273,8 +274,14 @@
             console.log('loadMemberDetails called for ID:', individualId);
             updateActionButtons(individualId);
 
-            // Show individual details card and loading states for both sections
-            individualDetailsCard.classList.remove('hidden'); // Show the card
+            // Ensure individual details card is visible (not hidden by overall initial setup)
+            // But its content should remain hidden until expanded by user
+            individualDetailsCard.classList.remove('hidden'); 
+            individualInfoContent.classList.add('hidden'); // Ensure content is hidden on new load
+            if (toggleDetailsIcon) {
+                toggleDetailsIcon.classList.remove('rotate'); // Ensure icon is "down"
+            }
+
             individualInfoContent.innerHTML = `
                 <div class="text-center py-6">
                     <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div> {# Primary color for spinner #}
@@ -296,7 +303,6 @@
                 console.log('AJAX response data for details:', data);
 
                 // Populate Individual Details with enhanced styling (English translations)
-                // MODIFIED: Changed to 2-column grid and smaller text/icons
                 individualInfoContent.innerHTML = `
                     <div class="grid grid-cols-2 gap-x-6 gap-y-3"> {# Two columns with adjusted gaps #}
                         <div class="detail-row">
@@ -390,7 +396,7 @@
                         
                         const actionsHtml = `
                             <div class="flex items-center space-x-2">
-                                <a href="/payment/${payment.id}/detail/" class="btn btn-xs btn-outline btn-primary">View</a>
+                                <a href="/payment/${payment.id}/" class="btn btn-xs btn-outline btn-primary">View</a> {# Updated URL here #}
                                 ${payment.status !== 'CANCELLED' && payment.status !== 'LEGACY' ? 
                                     `<button type="button" class="btn btn-xs btn-outline btn-error cancel-payment-btn" 
                                             data-payment-id="${payment.id}" data-receipt-number="${payment.receipt_number || 'N/A'}">Cancel</button>` : ''}
@@ -451,10 +457,10 @@
 
                 if (individualId) {
                     loadMemberDetails(individualId);
-                    // Ensure individual details content is shown if card was hidden by toggle
-                    individualInfoContent.classList.remove('hidden');
+                    // The individualInfoContent is initially hidden and will stay hidden until toggle.
+                    // No need to remove 'hidden' here as the user will toggle it.
                     if (toggleDetailsIcon) {
-                        toggleDetailsIcon.classList.remove('rotate'); // Ensure icon is 'up' (chevron-down pointing down) initially after loading
+                        toggleDetailsIcon.classList.remove('rotate'); // Ensure icon is 'down' (chevron-down pointing down)
                         feather.replace(); // Re-render icon
                     }
                 } else {
@@ -473,9 +479,13 @@
                 });
                 // Disable action buttons
                 updateActionButtons(null);
-                // Hide individual details card and clear its content
-                individualDetailsCard.classList.add('hidden');
+                // Hide individual details card content and clear its content
+                individualInfoContent.classList.add('hidden'); // Ensure content is hidden
+                individualDetailsCard.classList.remove('hidden'); // Ensure card header is visible
                 individualInfoContent.innerHTML = `<p class="text-center text-base-content/70 py-4">Select a member from the left to view details.</p>`;
+                if (toggleDetailsIcon) {
+                    toggleDetailsIcon.classList.remove('rotate'); // Reset toggle icon
+                }
                 // Clear payments list
                 paymentListBody.innerHTML = '<tr><td colspan="8" class="text-center text-xs text-base-content/60 py-1">Select a member to view payments.</td></tr>';
             });
@@ -512,9 +522,13 @@
                         loadMemberDetails(firstVisibleMemberId); // Load details for the first visible item
                     }
                 } else {
-                    // If no members found after search, hide details and disable buttons
-                    individualDetailsCard.classList.add('hidden'); 
+                    // If no members found after search, hide details content and disable buttons
+                    individualInfoContent.classList.add('hidden'); // Ensure content is hidden
+                    individualDetailsCard.classList.remove('hidden'); // Ensure card header is visible
                     individualInfoContent.innerHTML = `<p class="text-center text-base-content/70 py-4">No member selected.</p>`;
+                    if (toggleDetailsIcon) {
+                        toggleDetailsIcon.classList.remove('rotate'); // Reset toggle icon
+                    }
                     paymentListBody.innerHTML = '<tr><td colspan="8" class="text-center text-xs text-base-content/60 py-1">No payments found.</td></tr>';
                     updateActionButtons(null);
                 }
@@ -528,9 +542,13 @@
             item.classList.remove('active');
         });
         
-        // Hide individual details card and display placeholder
-        individualDetailsCard.classList.add('hidden'); 
+        // Ensure individual details card header is visible, but content is hidden
+        individualDetailsCard.classList.remove('hidden'); 
+        individualInfoContent.classList.add('hidden'); // Ensure content is hidden on initial load
         individualInfoContent.innerHTML = `<p class="text-center text-base-content/70 py-4">Select a member from the left to view details.</p>`;
+        if (toggleDetailsIcon) {
+            toggleDetailsIcon.classList.remove('rotate'); // Ensure icon is "down"
+        }
         
         // Display placeholder for payments list
         paymentListBody.innerHTML = '<tr><td colspan="8" class="text-center text-xs text-base-content/60 py-1">Select a member to view payments.</td></tr>';
@@ -597,6 +615,5 @@
         }
     });
 </script>
-
 
 {% endblock %}

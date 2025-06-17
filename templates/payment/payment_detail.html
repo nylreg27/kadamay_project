@@ -1,49 +1,174 @@
-{# PAYMENT_DETAIL #}
+{# apps/payment/templates/payment/payment_detail.html #}
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Payment Details{% endblock %}
+{% block title %}
+    {{ page_title }} - Kadamay Mortuary System
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Custom styles for the refined payment detail page */
+    .payment-detail-container {
+        background-color: var(--fallback-b1, oklch(var(--b1) / 1)); /* DaisyUI base-100 */
+        border-radius: 1rem; /* More rounded corners */
+        padding: 1.25rem; /* Further reduced padding for maximum compactness */
+        box-shadow: 0 15px 25px -5px rgba(0, 0, 0, 0.15), 0 5px 10px -5px rgba(0, 0, 0, 0.08); /* Softer, deeper shadow */
+    }
+    .detail-group {
+        margin-bottom: 0.5rem; /* Further reduced spacing between detail groups */
+    }
+    .detail-label {
+        font-weight: 700; /* Bolder for labels */
+        color: var(--fallback-bc, oklch(var(--bc) / 0.7)); /* Slightly muted text for labels */
+        font-size: 0.8rem; /* Closer to 12px, for a very compact feel */
+        margin-bottom: 0.05rem; /* Minimal space between label and value */
+        display: block; /* Ensure label is on its own line */
+    }
+    .detail-value {
+        font-size: 0.875rem; /* Tailwind's text-sm (14px), for the actual value */
+        color: var(--fallback-bc, oklch(var(--bc) / 1)); /* Full color for values */
+        word-break: break-word; /* Ensure long values break */
+    }
+    .badge {
+        font-size: 0.7rem; /* Even smaller badge text */
+        padding: 0.25rem 0.5rem; /* Reduced padding for badges */
+        border-radius: 9999px; /* Fully rounded badges */
+    }
+    .divider {
+        margin-top: 0.75rem; /* Further reduced margin */
+        margin-bottom: 0.75rem; /* Further reduced margin */
+        height: 1px;
+        background-color: theme('colors.base-content / 10%');
+        width: 100%;
+    }
+    .covered-members-section ul li {
+        font-size: 0.875rem; /* text-sm for covered members list */
+        margin-bottom: 0.25rem; /* Slight spacing for list items */
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="flex justify-center items-center min-h-screen bg-gray-100 py-6">
-    <div class="w-full max-w-2xl bg-white shadow-xl rounded-lg p-8 md:p-10 border border-gray-200">
-        <h1 class="text-4xl font-extrabold text-indigo-700 mb-8 text-center border-b-2 border-indigo-200 pb-4">
-            Payment Details
-        </h1>
+<div class="container mx-auto p-4 max-w-4xl h-full flex flex-col justify-center items-center">
+    {% if payment %}
+        <div class="payment-detail-container w-full">
+            <h1 class="text-3xl font-extrabold text-primary mb-5 text-center">Payment Details</h1>
 
-        {% if payment %}
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8 text-gray-800 text-lg mb-8">
-                <p><strong class="font-semibold text-gray-700">Receipt No:</strong> <span class="text-indigo-600">{{ payment.receipt_no }}</span></p>
-                <p><strong class="font-semibold text-gray-700">Amount:</strong> <span class="text-green-600 font-bold">₱{{ payment.amount|floatformat:2 }}</span></p>
-                <p><strong class="font-semibold text-gray-700">Date Paid:</strong> {{ payment.date_paid|date:"F d, Y" }}</p>
-                <p><strong class="font-semibold text-gray-700">Paid By:</strong> {{ payment.individual.full_name }}</p>
-                <p><strong class="font-semibold text-gray-700">Contribution Type:</strong> {{ payment.contribution_type.name }}</p>
-
-                {% if payment.deceased_member %}
-                    <p><strong class="font-semibold text-gray-700">Share For Deceased:</strong> {{ payment.deceased_member.full_name }}</p>
-                {% endif %}
-                <p class="md:col-span-2"><strong class="font-semibold text-gray-700">Remarks:</strong> {{ payment.remarks|default:"N/A" }}</p>
+            {# First Main Row of Details #}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 mb-5"> {# Two columns on medium screens, single on small #}
+                <div>
+                    <div class="detail-group">
+                        <span class="detail-label">Receipt #:</span>
+                        <span class="detail-value">{{ payment.receipt_number|default:"N/A" }}</span>
+                    </div>
+                    <div class="detail-group">
+                        <span class="detail-label">Payer:</span>
+                        <span class="detail-value">{{ payment.individual.full_name|default:"N/A" }}</span>
+                    </div>
+                    <div class="detail-group">
+                        <span class="detail-label">Contribution Type:</span>
+                        <span class="detail-value">{{ payment.contribution_type.name|default:"N/A" }}</span>
+                    </div>
+                    <div class="detail-group">
+                        <span class="detail-label">Amount:</span>
+                        <span class="detail-value">₱{{ payment.amount|floatformat:2 }}</span>
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="detail-group">
+                        <span class="detail-label">Date Paid:</span>
+                        <span class="detail-value">{{ payment.date_paid|date:"F d, Y" }}</span>
+                    </div>
+                    <div class="detail-group">
+                        <span class="detail-label">Payment Method:</span>
+                        <span class="detail-value">{{ payment.get_payment_method_display }}</span>
+                    </div>
+                    <div class="detail-group">
+                        <span class="detail-label">Status:</span>
+                        <span class="badge 
+                            {% if payment.payment_status == 'VALIDATED' %}badge-success
+                            {% elif payment.payment_status == 'PENDING_VALIDATION' %}badge-warning
+                            {% elif payment.payment_status == 'CANCELLED' %}badge-error
+                            {% elif payment.payment_status == 'LEGACY' %}badge-info
+                            {% else %}badge-ghost{% endif %}">
+                            {{ payment.get_payment_status_display }}
+                        </span>
+                    </div>
+                    {% if payment.series_prefix %}
+                    <div class="detail-group">
+                        <span class="detail-label">Series Prefix:</span>
+                        <span class="detail-value">{{ payment.series_prefix }}</span>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
 
-            {% if covered_members %}
-                <div class="mt-8 pt-6 border-t-2 border-gray-200">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Covered Members:</h2>
-                    <ul class="list-disc list-inside space-y-2 text-lg text-gray-700">
-                    {% for member in covered_members %}
-                        <li class="flex items-center">
-                            <svg class="w-5 h-5 text-indigo-500 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
-                            {{ member.full_name }}
+            {# Second Main Row of Details #}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 mb-5">
+                 <div>
+                    {% if payment.is_legacy_record %}
+                    <div class="detail-group">
+                        <span class="detail-label">Legacy Record:</span>
+                        <span class="detail-value">Yes</span>
+                    </div>
+                    {% endif %}
+                    {% if payment.deceased_member %}
+                    <div class="detail-group">
+                        <span class="detail-label">For Deceased Member:</span>
+                        <span class="detail-value">{{ payment.deceased_member.full_name }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="detail-group">
+                        <span class="detail-label">Notes:</span>
+                        <span class="detail-value">{{ payment.notes|default:"N/A" }}</span>
+                    </div>
+                </div>
+                <div>
+                    {% if payment.cancellation_reason %}
+                    <div class="detail-group">
+                        <span class="detail-label">Cancelled:</span>
+                        <span class="detail-value">Yes ({{ payment.cancellation_reason }})</span>
+                    </div>
+                    {% endif %}
+                    {% if payment.cancelled_by %}
+                    <div class="detail-group">
+                        <span class="detail-label">Cancelled By:</span>
+                        <span class="detail-value">{{ payment.cancelled_by.get_full_name|default:payment.cancelled_by.username }}</span>
+                    </div>
+                    {% endif %}
+                    {% if payment.cancellation_date %}
+                    <div class="detail-group">
+                        <span class="detail-label">Cancelled On:</span>
+                        <span class="detail-value">{{ payment.cancellation_date|date:"F d, Y P" }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if payment.individual_allocations.all %}
+                <div class="divider"></div>
+
+                <div class="covered-members-section">
+                    <h2 class="text-xl font-bold text-base-content mb-3 text-center">Covered Members</h2>
+                    <ul class="list-disc list-inside space-y-0.5 text-base"> 
+                    {% for member in payment.individual_allocations.all %}
+                        <li>
+                            {{ member.individual.full_name }} - ₱{{ member.allocated_amount|floatformat:2 }} {% if member.is_payer %}<span class="badge badge-sm badge-outline badge-primary ml-1">Payer</span>{% endif %}
                         </li>
                     {% endfor %}
                     </ul>
                 </div>
             {% endif %}
 
-            <div class="mt-10 flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
-                <a href="{% url 'payment:payment_update' payment.id %}" class="w-full sm:w-auto px-8 py-3 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold rounded-lg shadow-md transition duration-200 ease-in-out text-center transform hover:scale-105">
-                    Edit Payment
+            <div class="mt-6 flex flex-col sm:flex-row justify-center space-y-2 sm:space-y-0 sm:space-x-3">
+                {# Button to go back to the individual dashboard, or all payments list #}
+                <a href="{% url 'individual:individual_dashboard' %}" class="btn btn-neutral px-5 py-2 font-semibold rounded-lg shadow-md transition duration-200 ease-in-out text-center transform hover:scale-105">
+                    <i data-feather="arrow-left" class="w-4 h-4 mr-1"></i> Back to Dashboard
                 </a>
-                <a href="{% url 'payment:payment_list' %}" class="w-full sm:w-auto px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow-md transition duration-200 ease-in-out text-center transform hover:scale-105">
-                    Back to List
+                <a href="{% url 'payment:payment_list' %}" class="btn btn-info px-5 py-2 font-semibold rounded-lg shadow-md transition duration-200 ease-in-out text-center transform hover:scale-105">
+                    <i data-feather="list" class="w-4 h-4 mr-1"></i> All Payments
                 </a>
             </div>
 
@@ -54,6 +179,12 @@
 </div>
 {% endblock %}
 
-{% block scripts %}
-{# You can add any page-specific JavaScript here if needed #}
-{% endblock scripts %}
+{% block extra_js %}
+{{ block.super }}
+<script src="https://unpkg.com/feather-icons"></script> 
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace();
+    });
+</script>
+{% endblock %}

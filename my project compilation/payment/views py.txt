@@ -3,25 +3,17 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required, user_passes_test # Import user_passes_test
-from django.db import transaction
-from django.http import JsonResponse
-import json
-from django.views.decorators.http import require_http_methods
-from django.utils import timezone # Import timezone for setting validation_date
+from django.contrib.auth.decorators import login_required
+from django.db import transaction # Para sa atomic operations
+from django.http import JsonResponse # Para sa AJAX responses
+import json # Para sa JSON parsing gikan sa request body
+from django.views.decorators.http import require_http_methods # NEW IMPORT: Add this line!
 
 from .forms import PaymentForm
 from .models import Payment, Individual, ContributionType # Import necessary models
 from apps.family.models import Family # Need to import Family for get_family_details_api_view
 
-# Helper function to check if user is an admin or cashier (for validation)
-# You might need to define what makes a user an 'admin' or 'cashier' in your system.
-# For now, let's assume superusers are admins, or you can add a custom group/permission check.
-def is_admin_or_cashier(user):
-    # Example: User is superuser, or belongs to a 'Cashier' group
-    return user.is_superuser # Or user.groups.filter(name='Cashiers').exists()
-
-# Function-based view for payment creation
+# Function-based view for payment creation (from your existing flow)
 @login_required
 def payment_create_full_form_view(request, individual_id=None):
     individual = None
@@ -34,22 +26,6 @@ def payment_create_full_form_view(request, individual_id=None):
             payment = form.save(commit=False)
             payment._request_user = request.user # Pass the request user to the model's save method
             
-            # Set 'collected_by' to the user creating the payment
-            payment.collected_by = request.user 
-            
-            # === NEW LOGIC: DIRECT VALIDATION FOR ADMINS/CASHIERS ===
-            if is_admin_or_cashier(request.user):
-                payment.payment_status = 'VALIDATED'
-                payment.validated_by = request.user
-                payment.validation_date = timezone.now()
-                messages.success(request, f"Payment record for {payment.individual.full_name} saved and directly validated!")
-            else:
-                # Payment status will default to 'PENDING_VALIDATION' as per Payment model's default value.
-                # If not admin/cashier, it remains PENDING_VALIDATION by default.
-                payment.payment_status = 'PENDING_VALIDATION' # Explicitly set for clarity
-                messages.success(request, f"Payment record for {payment.individual.full_name} saved successfully and awaiting validation!")
-            # === END NEW LOGIC ===
-
             # --- Handle selected_members_ids from hidden input ---
             selected_members_ids_json = request.POST.get('selected_members_ids', '[]')
             try:
@@ -66,15 +42,18 @@ def payment_create_full_form_view(request, individual_id=None):
                     # Logic to create PaymentIndividualAllocation instances
                     for member_id in selected_members_ids:
                         member = get_object_or_404(Individual, pk=member_id)
+                        # For now, we assume allocated_amount is the per-member amount
+                        # You might need to refine this if allocation is more complex
                         from .models import PaymentIndividualAllocation # Import here to avoid circular dependency
                         PaymentIndividualAllocation.objects.create(
                             payment=payment,
                             individual=member,
-                            allocated_amount=payment.contribution_type.amount if payment.contribution_type else 0
+                            allocated_amount=payment.contribution_type.amount if payment.contribution_type else 0 # Use actual contribution amount
                         )
 
-                    # Redirect to individual dashboard
-                    return redirect(reverse('individual:individual_dashboard')) 
+                    messages.success(request, f"Payment record for {payment.individual.full_name} saved successfully!")
+                    # Redirect to individual dashboard instead of payment list
+                    return redirect(reverse('individual:individual_dashboard', kwargs={'pk': payment.individual.pk}))
             except Exception as e:
                 messages.error(request, f"Error saving payment record: {e}")
                 # Re-render form with errors if save fails
@@ -124,7 +103,7 @@ def payment_detail_view(request, pk):
     return render(request, 'payment/payment_detail.html', context)
 
 
-# === API endpoint for fetching family details (used by payment_form.html) ===
+# === RESTORED: API endpoint for fetching family details (used by payment_form.html) ===
 @require_http_methods(["GET"])
 @login_required
 def get_family_details_api_view(request, individual_id):
@@ -160,7 +139,7 @@ def get_family_details_api_view(request, individual_id):
         return JsonResponse({'error': str(e)}, status=500)
 
 
-# === API endpoint for fetching contribution type amount (used by payment_form.html) ===
+# === RESTORED: API endpoint for fetching contribution type amount (used by payment_form.html) ===
 @require_http_methods(["GET"])
 @login_required
 def get_contribution_amount_api_view(request, pk):
@@ -173,7 +152,7 @@ def get_contribution_amount_api_view(request, pk):
         return JsonResponse({'error': str(e)}, status=500)
 
 
-# === CANCELLATION VIEW ===
+# === NEW CANCELLATION VIEW ===
 @login_required
 def cancel_payment_view(request, pk):
     # Ensure it's a POST request for security
@@ -212,42 +191,3 @@ def cancel_payment_view(request, pk):
     # If not a POST request, return Method Not Allowed
     return JsonResponse({'error': 'Method not allowed.'}, status=405)
 
-
-# === NEW: View to list payments pending validation ===
-@login_required
-@user_passes_test(is_admin_or_cashier) # Only admins/cashiers can view this
-def pending_payments_list_view(request):
-    pending_payments = Payment.objects.filter(payment_status='PENDING_VALIDATION').order_by('-date_paid', '-created_at')
-    context = {
-        'pending_payments': pending_payments,
-        'page_title': 'Payments Pending Validation'
-    }
-    return render(request, 'payment/pending_payments_list.html', context)
-
-
-# === NEW: API endpoint to validate a payment ===
-@require_http_methods(["POST"])
-@login_required
-@user_passes_test(is_admin_or_cashier) # Only admins/cashiers can perform validation
-def validate_payment_view(request, pk):
-    try:
-        payment = get_object_or_404(Payment, pk=pk)
-
-        # Check if the payment is actually pending validation
-        if payment.payment_status != 'PENDING_VALIDATION':
-            return JsonResponse({'error': 'Payment is not in pending validation status.'}, status=400)
-
-        with transaction.atomic():
-            payment.payment_status = 'VALIDATED'
-            payment.validated_by = request.user
-            payment.validation_date = timezone.now()
-            payment.save(update_fields=['payment_status', 'validated_by', 'validation_date', 'updated_at']) # Save updated_at too
-
-        messages.success(request, f"Payment (OR: {payment.receipt_number or 'N/A'}) has been successfully validated.")
-        return JsonResponse({'message': 'Payment validated successfully.'})
-
-    except Payment.DoesNotExist:
-        return JsonResponse({'error': 'Payment not found.'}, status=404)
-    except Exception as e:
-        messages.error(request, f"Failed to validate payment: {e}")
-        return JsonResponse({'error': f'An error occurred: {e}'}, status=500)

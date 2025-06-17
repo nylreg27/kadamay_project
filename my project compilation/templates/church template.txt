@@ -1,0 +1,823 @@
+template/church
+
+church_list
+{% extends 'base.html' %}
+
+{% block title %}Church List - Kadamay Mortuary System{% endblock %}
+
+{% block content %}
+<div class="card bg-base-100 shadow-xl p-4 md:p-6 text-base-content rounded-xl my-4 mx-auto max-w-6xl">
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-3">
+        <h1 class="text-2xl font-extrabold text-primary">Churches</h1>
+        
+        <div class="flex flex-col md:flex-row items-stretch md:items-center gap-2 w-full md:w-auto">
+            <form action="{% url 'church:church_list' %}" method="GET" class="flex flex-grow md:flex-grow-0" id="searchForm">
+                <input
+                    type="text"
+                    name="search"
+                    placeholder="Search churches..."
+                    value="{{ request.GET.search }}"
+                    class="input input-bordered input-sm w-full rounded-r-none"
+                    id="searchInput"
+                    aria-label="Search churches"
+                />
+                <button
+                    type="submit"
+                    class="btn btn-primary btn-sm rounded-l-none"
+                    aria-label="Submit search"
+                >
+                    <i data-feather="search" class="w-4 h-4"></i>
+                </button>
+            </form>
+            
+            {% if request.GET.search %}
+            <a href="{% url 'church:church_list' %}"
+               class="btn btn-outline btn-primary btn-sm flex items-center gap-2 tooltip tooltip-bottom" {# Updated classes here #}
+               data-tip="Clear Search"
+               aria-label="Clear search and refresh list"
+            >
+                <i data-feather="refresh-cw" class="w-4 h-4"></i> Refresh {# Added text #}
+            </a>
+            {% endif %}
+
+            {% if user.is_superuser %}
+            <a href="{% url 'church:church_create' %}"
+               class="btn btn-primary btn-sm w-full md:w-auto flex items-center gap-2 transition-all duration-300 hover:scale-105"
+               aria-label="Add new church"
+            >
+              <i data-feather="plus" class="w-4 h-4"></i> Add Church
+            </a>
+            {% endif %}
+        </div>
+    </header>
+
+    {% if messages %}
+        <div class="mb-4">
+            {% for message in messages %}
+                <div class="alert 
+                    {% if message.tags == 'success' %}alert-success
+                    {% elif message.tags == 'warning' %}alert-warning
+                    {% elif message.tags == 'error' %}alert-error
+                    {% else %}alert-info
+                    {% endif %} shadow-lg mb-2">
+                    <div>
+                        <i data-feather="info" class="w-6 h-6"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="flex gap-2 mb-4">
+        <a href="#" id="viewChurchBtn" class="btn btn-info btn-square tooltip btn-sm" data-tip="View Selected" aria-label="View selected church" disabled>
+            <i data-feather="eye" class="w-4 h-4"></i>
+        </a>
+        {% if user.is_superuser %}
+        <a href="#" id="editChurchBtn" class="btn btn-warning btn-square tooltip btn-sm" data-tip="Edit Selected" aria-label="Edit selected church" disabled>
+            <i data-feather="edit" class="w-4 h-4"></i>
+        </a>
+        <a href="#" id="deleteChurchBtn" class="btn btn-error btn-square tooltip btn-sm" data-tip="Delete Selected" aria-label="Delete selected church" disabled>
+            <i data-feather="trash-2" class="w-4 h-4"></i>
+        </a>
+        {% endif %}
+    </div>
+
+    {% if churches %}
+        <div class="hidden md:block overflow-x-auto rounded-lg shadow-md border border-base-300">
+            <table class="table table-zebra w-full table-sm">
+                <thead>
+                    <tr>
+                        <th class="w-8"></th>
+                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Church Name</th>
+                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Address</th>
+                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Contact Number</th>
+                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Email</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for church in churches %}
+                    <tr class="hover:bg-base-200 cursor-pointer" data-church-id="{{ church.id }}">
+                        <td class="w-8">
+                            <label class="label cursor-pointer justify-center p-0">
+                                <input type="checkbox" name="selected_church" value="{{ church.id }}" class="checkbox checkbox-primary checkbox-xs church-checkbox" />
+                            </label>
+                        </td>
+                        <td class="whitespace-nowrap text-xs">
+                            <a href="{% url 'church:church_detail' church.id %}" class="link link-hover link-primary font-medium">
+                                {{ church.name|upper }}
+                            </a>
+                        </td>
+                        <td class="whitespace-nowrap text-xs">{{ church.address|default:"N/A" }}</td>
+                        <td class="whitespace-nowrap text-xs">{{ church.contact_number|default:"N/A" }}</td>
+                        <td class="whitespace-nowrap text-xs">{{ church.email|default:"N/A" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {# Mobile View (Updated for selection) #}
+        <div class="md:hidden space-y-3">
+            <div class="flex gap-2 mb-4">
+                <a href="#" id="viewChurchBtnMobile" class="btn btn-info btn-square tooltip btn-sm" data-tip="View Selected" aria-label="View selected church" disabled>
+                    <i data-feather="eye" class="w-4 h-4"></i>
+                </a>
+                {% if user.is_superuser %}
+                <a href="#" id="editChurchBtnMobile" class="btn btn-warning btn-square tooltip btn-sm" data-tip="Edit Selected" aria-label="Edit selected church" disabled>
+                    <i data-feather="edit" class="w-4 h-4"></i>
+                </a>
+                <a href="#" id="deleteChurchBtnMobile" class="btn btn-error btn-square tooltip btn-sm" data-tip="Delete Selected" aria-label="Delete selected church" disabled>
+                    <i data-feather="trash-2" class="w-4 h-4"></i>
+                </a>
+                {% endif %}
+            </div>
+            {% for church in churches %}
+            <div class="card bg-base-100 shadow-md rounded-lg p-3 flex items-center">
+                <label class="label cursor-pointer justify-center p-0 mr-3">
+                    <input type="checkbox" name="selected_church" value="{{ church.id }}" class="checkbox checkbox-primary checkbox-xs church-checkbox" />
+                </label>
+                <div class="flex-grow">
+                    <h2 class="text-base font-semibold text-primary mb-1">
+                        <a href="{% url 'church:church_detail' church.id %}" class="link link-hover">
+                            {{ church.name|upper }}
+                        </a>
+                    </h2>
+                    <div class="text-xs text-base-content/80 space-y-0.5">
+                        <p><strong>Address:</strong> {{ church.address|default:"N/A" }}</p>
+                        <p><strong>Contact:</strong> {{ church.contact_number|default:"N/A" }}</p>
+                        <p><strong>Email:</strong> {{ church.email|default:"N/A" }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if is_paginated %}
+        <div class="flex justify-center mt-4">
+            <div class="join join-sm">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="join-item btn btn-sm">«</a>
+                {% else %}
+                <button class="join-item btn btn-sm btn-disabled">«</button>
+                {% endif %}
+
+                <button class="join-item btn btn-sm">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</button>
+
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="join-item btn btn-sm">»</a>
+                {% else %}
+                <button class="join-item btn btn-sm btn-disabled">»</button>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+    {% else %}
+        <div class="hero bg-base-200 rounded-lg p-8 text-center shadow-lg border border-base-300">
+            <div class="hero-content flex flex-col items-center">
+                <i data-feather="home" class="w-16 h-16 text-base-content/50 mb-4"></i>
+                <p class="text-lg font-bold mb-2 text-base-content">No churches found.</p>
+                <p class="text-sm text-base-content/80 mb-4">It looks like there are no churches in the system yet. You can add one by clicking the button below.</p>
+                {% if user.is_superuser %}
+                <a href="{% url 'church:church_create' %}" class="btn btn-primary flex items-center gap-2 btn-sm">
+                    <i data-feather="plus" class="w-4 h-4"></i> Add First Church
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace();
+
+        const searchInput = document.getElementById('searchInput');
+        const searchForm = document.getElementById('searchForm');
+
+        if (searchInput && searchForm) {
+            searchInput.addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    searchForm.submit();
+                }
+            });
+        }
+
+        // --- Handle Row Selection for Action Buttons ---
+        const checkboxes = document.querySelectorAll('.church-checkbox');
+        
+        // Desktop Buttons
+        const viewBtn = document.getElementById('viewChurchBtn');
+        const editBtn = document.getElementById('editChurchBtn');
+        const deleteBtn = document.getElementById('deleteChurchBtn');
+
+        // Mobile Buttons
+        const viewBtnMobile = document.getElementById('viewChurchBtnMobile');
+        const editBtnMobile = document.getElementById('editChurchBtnMobile');
+        const deleteBtnMobile = document.getElementById('deleteChurchBtnMobile');
+
+        function updateActionButtons() {
+            const checkedBoxes = document.querySelectorAll('.church-checkbox:checked');
+            const selectedChurchId = checkedBoxes.length === 1 ? checkedBoxes[0].value : null;
+
+            const viewUrl = selectedChurchId ? `{% url 'church:church_detail' 0 %}`.replace('0', selectedChurchId) : '#';
+            const editUrl = selectedChurchId ? `{% url 'church:church_update' 0 %}`.replace('0', selectedChurchId) : '#';
+            const deleteUrl = selectedChurchId ? `{% url 'church:church_delete' 0 %}`.replace('0', selectedChurchId) : '#';
+
+            function applyButtonState(viewB, editB, deleteB, isSuperuser) {
+                if (viewB) {
+                    if (selectedChurchId) {
+                        viewB.removeAttribute('disabled');
+                        viewB.href = viewUrl;
+                        
+                        if (isSuperuser) {
+                            if (editB) { editB.removeAttribute('disabled'); editB.href = editUrl; }
+                            if (deleteB) { deleteB.removeAttribute('disabled'); deleteB.href = deleteUrl; }
+                        }
+                    } else {
+                        viewB.setAttribute('disabled', 'disabled');
+                        viewB.href = '#';
+                        
+                        if (isSuperuser) {
+                            if (editB) { editB.setAttribute('disabled', 'disabled'); editB.href = '#'; }
+                            if (deleteB) { deleteB.setAttribute('disabled', 'disabled'); deleteB.href = '#'; }
+                        }
+                    }
+                }
+            }
+
+            applyButtonState(viewBtn, editBtn, deleteBtn, {% if user.is_superuser %}true{% else %}false{% endif %});
+            applyButtonState(viewBtnMobile, editBtnMobile, deleteBtnMobile, {% if user.is_superuser %}true{% else %}false{% endif %});
+        }
+
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    checkboxes.forEach(otherCheckbox => {
+                        if (otherCheckbox !== this) {
+                            otherCheckbox.checked = false;
+                        }
+                    });
+                }
+                updateActionButtons();
+            });
+        });
+
+        const tableRows = document.querySelectorAll('tbody tr');
+        tableRows.forEach(row => {
+            row.addEventListener('click', function(event) {
+                if (event.target.tagName === 'INPUT' || event.target.tagName === 'A' || event.target.closest('a') || event.target.closest('label')) {
+                    return; 
+                }
+
+                const checkbox = this.querySelector('.church-checkbox');
+                if (checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    if (checkbox.checked) {
+                        checkboxes.forEach(otherCheckbox => {
+                            if (otherCheckbox !== checkbox) {
+                                otherCheckbox.checked = false;
+                            }
+                        });
+                    }
+                    updateActionButtons();
+                }
+            });
+        });
+
+        updateActionButtons();
+    });
+</script>
+{% endblock %}
+
+church_form
+{# church_form.html #}
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{% if form.instance.pk %}Edit{% else %}Create{% endif %} Church - Kadamay Mortuary System{% endblock %}
+
+{% block content %}
+{# Reduced max-w from 3xl to 2xl, and padding from p-6/p-8 to p-5/p-6 #}
+<div class="card bg-base-100 shadow-xl p-5 md:p-6 text-base-content max-w-2xl mx-auto my-5 rounded-xl"> 
+    <div class="flex flex-col md:flex-row justify-between items-center mb-5 gap-3"> {# Reduced bottom margin and gap #}
+        {# Slightly smaller title #}
+        <h1 class="text-2xl font-extrabold text-primary">{% if form.instance.pk %}Edit{% else %}Add New{% endif %} Church</h1>
+        <a href="{% url 'church:church_list' %}" class="btn btn-ghost btn-sm flex items-center gap-1"> {# Added btn-sm, reduced gap #}
+            <i data-feather="arrow-left" class="w-4 h-4"></i> {# Reduced icon size #}
+            Back to List
+        </a>
+    </div>
+
+    <form method="post" class="space-y-4" novalidate> {# Reduced space-y for less vertical spacing #}
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+        <div role="alert" class="alert alert-error py-2 text-sm"> {# Reduced vertical padding, slightly smaller text #}
+            <i data-feather="alert-triangle" class="w-5 h-5 stroke-current shrink-0"></i> {# Reduced icon size #}
+            <div>
+                {% for error in form.non_field_errors %}
+                    <p class="font-bold">Error:</p>
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4"> {# Reduced gap #}
+            <div class="form-control">
+                <label for="{{ form.name.id_for_label }}" class="label">
+                    <span class="label-text text-base font-medium">Church Name</span> {# Reduced label text size #}
+                    {% if form.name.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                </label>
+                <input type="text" name="{{ form.name.name }}" id="{{ form.name.id_for_label }}"
+                       value="{{ form.name.value|default:'' }}"
+                       placeholder="Enter church name"
+                       class="input input-bordered w-full text-base uppercase transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent {% if form.name.errors %}input-error{% endif %}" autocomplete="off" /> {# Reduced input text size #}
+                {% if form.name.errors %}
+                <label class="label">
+                    <span class="label-text-alt text-error text-xs">{{ form.name.errors }}</span> {# Reduced error text size #}
+                </label>
+                {% endif %}
+            </div>
+
+            <div class="form-control">
+                <label for="{{ form.district.id_for_label }}" class="label">
+                    <span class="label-text text-base font-medium">District</span> {# Reduced label text size #}
+                    {% if form.district.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                </label>
+                <select name="{{ form.district.name }}" id="{{ form.district.id_for_label }}"
+                        class="select select-bordered w-full text-base uppercase transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent {% if form.district.errors %}select-error{% endif %}"> {# Reduced select text size #}
+                    <option value="">Select District</option>
+                    {% for district in form.fields.district.queryset %}
+                        <option value="{{ district.pk }}" {% if district.pk|stringformat:"s" == form.district.value|stringformat:"s" %}selected{% endif %}>{{ district.name|upper }}</option>
+                    {% endfor %}
+                </select>
+                {% if form.district.errors %}
+                <label class="label">
+                    <span class="label-text-alt text-error text-xs">{{ form.district.errors }}</span> {# Reduced error text size #}
+                </label>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="form-control">
+            <label for="{{ form.address.id_for_label }}" class="label">
+                <span class="label-text text-base font-medium">Address</span> {# Reduced label text size #}
+                {% if form.address.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+            </label>
+            {# Reduced height from h-24 to h-20, and text size to base #}
+            <textarea name="{{ form.address.name }}" id="{{ form.address.id_for_label }}" rows="3"
+                      placeholder="Enter church address"
+                      class="textarea textarea-bordered h-20 w-full text-base uppercase transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent {% if form.address.errors %}textarea-error{% endif %} resize-y">{{ form.address.value|default:'' }}</textarea>
+            {% if form.address.errors %}
+            <label class="label">
+                <span class="label-text-alt text-error text-xs">{{ form.address.errors }}</span> {# Reduced error text size #}
+            </label>
+            {% endif %}
+        </div>
+
+        <div class="form-control">
+            <label for="{{ form.in_charge.id_for_label }}" class="label">
+                <span class="label-text text-base font-medium">In-Charge</span> {# Reduced label text size #}
+                {% if form.in_charge.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+            </label>
+            <select name="{{ form.in_charge.name }}" id="{{ form.in_charge.id_for_label }}"
+                    class="select select-bordered w-full text-base uppercase transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent {% if form.in_charge.errors %}select-error{% endif %}"> {# Reduced select text size #}
+                <option value="">Select In-Charge</option>
+                {% for user in form.fields.in_charge.queryset %}
+                    <option value="{{ user.pk }}" {% if user.pk|stringformat:"s" == form.in_charge.value|stringformat:"s" %}selected{% endif %}>{{ user.username|upper }}</option>
+                {% endfor %}
+            </select>
+            {% if form.in_charge.errors %}
+            <label class="label">
+                <span class="label-text-alt text-error text-xs">{{ form.in_charge.errors }}</span> {# Reduced error text size #}
+            </label>
+            {% endif %}
+        </div>
+
+        <div class="form-control flex-row items-center gap-1"> {# Reduced gap #}
+            <label class="label cursor-pointer flex-grow justify-start gap-1"> {# Reduced gap #}
+                <input type="checkbox" name="{{ form.is_active.name }}" id="{{ form.is_active.id_for_label }}"
+                        {% if form.is_active.value %}checked{% endif %}
+                        class="checkbox checkbox-primary checkbox-sm" /> {# Added checkbox-sm #}
+                <span class="label-text text-base font-medium">Is Active</span> {# Reduced label text size #}
+            </label>
+            {% if form.is_active.errors %}
+            <label class="label">
+                <span class="label-text-alt text-error text-xs">{{ form.is_active.errors }}</span> {# Reduced error text size #}
+            </label>
+            {% endif %}
+        </div>
+
+        <div class="flex justify-end mt-6 space-x-3"> {# Reduced top margin and space-x #}
+            <a href="{% url 'church:church_list' %}" class="btn btn-secondary btn-outline btn-sm transition-all duration-300 hover:scale-105"> {# Added btn-sm #}
+                Cancel
+            </a>
+            <button type="submit" class="btn btn-primary btn-sm flex items-center gap-1 transition-all duration-300 hover:scale-105"> {# Added btn-sm, reduced gap #}
+                <i data-feather="save" class="w-4 h-4"></i> {# Reduced icon size #}
+                {% if form.instance.pk %}Update{% else %}Create{% endif %} Church
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace();
+    });
+</script>
+{% endblock %}
+
+church_detail
+{# church_detail.html #}
+{% extends 'base.html' %}
+
+{% block title %}
+{{ church.name|upper }} - Kadamay Mortuary System
+{% endblock %}
+
+{% block content %}
+{# Reduced max-w from 7xl to 5xl, and padding from p-6/p-8 to p-5/p-6 #}
+<div class="card bg-base-100 shadow-xl p-5 md:p-6 text-base-content rounded-xl my-5 mx-auto max-w-5xl">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-3"> {# Reduced bottom margin and gap #}
+        <div>
+            {# Slightly smaller title #}
+            <h1 class="text-2xl font-extrabold text-primary">{{ church.name|upper }}</h1>
+            {# Reduced text size and margin #}
+            <p class="text-base-content/80 mt-0.5 text-base max-w-prose">{{ church.address|upper }}</p>
+        </div>
+        <div class="flex flex-wrap md:flex-nowrap gap-2 w-full md:w-auto justify-end"> {# Reduced gap #}
+            <a href="{% url 'church:church_list' %}"
+               class="btn btn-ghost btn-sm flex items-center gap-1 transition-all duration-300 hover:scale-105 w-full md:w-auto"> {# Added btn-sm, reduced gap #}
+                <i data-feather="arrow-left" class="w-4 h-4"></i> Back to List {# Reduced icon size #}
+            </a>
+            {% if user.is_superuser %}
+            <a href="{% url 'church:church_update' church.id %}"
+               class="btn btn-primary btn-sm flex items-center gap-1 transition-all duration-300 hover:scale-105 w-full md:w-auto"> {# Added btn-sm, reduced gap #}
+                <i data-feather="edit" class="w-4 h-4"></i> Edit Church {# Reduced icon size #}
+            </a>
+            <a href="{% url 'church:church_delete' church.id %}"
+               class="btn btn-error btn-sm flex items-center gap-1 transition-all duration-300 hover:scale-105 w-full md:w-auto"> {# Added btn-sm, reduced gap #}
+                <i data-feather="trash-2" class="w-4 h-4"></i> Delete Church {# Reduced icon size #}
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8"> {# Reduced gaps and bottom margin #}
+        <div class="card bg-base-200 rounded-xl p-5 shadow-md border border-base-300"> {# Reduced padding #}
+            {# Changed text-secondary to text-primary for consistency #}
+            <h2 class="text-xl font-bold mb-3 text-primary">Church Information</h2> {# Reduced title size and margin #}
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3"> {# Reduced gaps #}
+                <div class="space-y-0.5"> {# Reduced space-y #}
+                    {# Changed text-base-content/70 to text-base-content/60 for lighter effect #}
+                    <h3 class="text-xs font-medium text-base-content/60">District</h3> {# Reduced text size #}
+                    {# Reduced text size #}
+                    <p class="text-base font-semibold text-base-content">{{ church.district|default:"-"|upper }}</p>
+                </div>
+                <div class="space-y-0.5">
+                    <h3 class="text-xs font-medium text-base-content/60">In-Charge</h3>
+                    <p class="text-base font-semibold text-base-content">{{ church.in_charge.get_full_name|default:"-"|upper }}</p>
+                </div>
+                <div class="space-y-0.5">
+                    <h3 class="text-xs font-medium text-base-content/60">Status</h3>
+                    <p class="text-base font-semibold text-base-content">
+                        {% if church.is_active %}
+                            <span class="badge badge-success badge-md font-semibold">ACTIVE</span> {# Reduced badge size to md #}
+                        {% else %}
+                            <span class="badge badge-error badge-md font-semibold">INACTIVE</span> {# Reduced badge size to md #}
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-200 rounded-xl p-5 shadow-md border border-base-300"> {# Reduced padding #}
+            {# Changed text-secondary to text-primary for consistency #}
+            <h2 class="text-xl font-bold mb-3 text-primary">Quick Stats</h2> {# Reduced title size and margin #}
+            <div class="stats stats-vertical lg:stats-horizontal shadow w-full">
+                {# Stat colors adjusted for better theme integration #}
+                <div class="stat place-items-center bg-base-100"> {# Added bg-base-100 for a subtle break #}
+                    <div class="stat-figure text-primary">
+                        <i data-feather="home" class="w-6 h-6"></i> {# Reduced icon size #}
+                    </div>
+                    <div class="stat-title text-xs">Total Families</div> {# Reduced title size #}
+                    {# UPDATED: Use the context variable from views.py #}
+                    <div class="stat-value text-primary text-3xl">{{ total_families_count }}</div> {# Reduced value size #}
+                </div>
+                <div class="stat place-items-center bg-base-100">
+                    <div class="stat-figure text-success"> {# Changed to text-success for general positive count #}
+                        <i data-feather="users" class="w-6 h-6"></i>
+                    </div>
+                    <div class="stat-title text-xs">Total Members</div>
+                    {# UPDATED: Use the context variable from views.py #}
+                    <div class="stat-value text-success text-3xl">{{ total_members_count }}</div>
+                </div>
+                <div class="stat place-items-center bg-base-100">
+                    <div class="stat-figure text-info"> {# Changed to text-info for active status #}
+                        <i data-feather="user-check" class="w-6 h-6"></i>
+                    </div>
+                    <div class="stat-title text-xs">Active Members</div>
+                    <div class="stat-value text-info text-3xl">
+                      {# This is already correct #}
+                      {{ active_members_count }}
+                    </div>
+                </div>
+                <div class="stat place-items-center bg-base-100">
+                    <div class="stat-figure text-error"> {# Changed to text-error for deceased #}
+                        <i data-feather="crosshair" class="w-6 h-6"></i>
+                    </div>
+                    <div class="stat-title text-xs">Deceased</div>
+                    <div class="stat-value text-error text-3xl">
+                      {# This is already correct #}
+                      {{ deceased_members_count }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tabs tabs-boxed mb-5 bg-base-200 shadow-sm rounded-lg"> {# Reduced bottom margin #}
+        <button
+            id="families-tab-btn"
+            class="tab tab-active text-base font-semibold" {# Reduced text size #}
+            onclick="openTab(event, 'families-tab')"
+        >
+            Families
+        </button>
+        <button
+            id="members-tab-btn"
+            class="tab text-base font-semibold" {# Reduced text size #}
+            onclick="openTab(event, 'members-tab')"
+        >
+            Members
+        </button>
+    </div>
+
+    {# MODIFIED: Added flex flex-col to the tab-content div #}
+    <div id="families-tab" class="tab-content flex flex-col">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 gap-2"> {# Adjusted for small screen responsiveness, reduced gap #}
+            <h3 class="text-lg font-bold text-base-content">Recent Families</h3> {# Reduced title size #}
+            <a href="{% url 'family:church_families' church.id %}"
+               class="link link-hover link-primary flex items-center gap-0.5 font-semibold transition-all duration-300 hover:scale-105 text-sm"> {# Reduced gap, added text-sm #}
+                View All <i data-feather="arrow-right" class="w-4 h-4"></i> {# Reduced icon size #}
+            </a>
+        </div>
+
+        {# UPDATED: Use recent_families context variable #}
+        {% if recent_families %}
+        <div class="overflow-x-auto rounded-lg shadow-md border border-base-300"> {# Added border #}
+            <table class="table table-sm w-full"> {# Added table-sm for compact #}
+                <thead class="bg-primary text-primary-content">
+                    <tr>
+                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider">Family Name</th> {# Reduced padding and text size #}
+                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider">Address</th>
+                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider">Members</th>
+                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {# UPDATED: Iterate over recent_families directly #}
+                    {% for family in recent_families %}
+                    <tr class="border-b border-base-200 hover:bg-base-200 transition-colors duration-200">
+                        <td class="px-4 py-2 whitespace-nowrap"> {# Reduced padding #}
+                            <a href="{% url 'family:family_detail' family.id %}" class="link link-hover link-primary font-medium text-sm"> {# Reduced text size #}
+                                {{ family.family_name|upper }}
+                            </a>
+                        </td>
+                        <td class="px-4 py-2 text-xs">{{ family.address|truncatechars:30|upper }}</td> {# Reduced truncate, added text-xs #}
+                        <td class="px-4 py-2 text-xs">{{ family.individual_set.count }}</td> {# This is correct: individual_set is the default related_name from Family to Individual #}
+                        <td class="px-4 py-2">
+                            {% if family.is_active %}
+                                <span class="badge badge-success badge-md font-semibold">ACTIVE</span> {# Reduced badge size to md #}
+                            {% else %}
+                                <span class="badge badge-error badge-md font-semibold">INACTIVE</span> {# Reduced badge size to md #}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="hero bg-base-200 rounded-lg p-8 text-center shadow-lg"> {# Reduced padding #}
+            <div class="hero-content flex flex-col items-center">
+                <i data-feather="users" class="w-16 h-16 text-base-content/50 mb-3"></i> {# Reduced icon size and margin #}
+                <p class="text-lg font-bold mb-3 text-base-content">No families found for this church.</p> {# Reduced text size and margin #}
+                {% if user.is_superuser %}
+                <a href="{% url 'family:family_create_in_church' church.id %}"
+                   class="btn btn-primary btn-md flex items-center gap-1 transition-all duration-300 hover:scale-105"> {# Reduced button size, reduced gap #}
+                    <i data-feather="plus" class="w-4 h-4"></i> Add First Family {# Reduced icon size #}
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    {# MODIFIED: Added flex flex-col to the tab-content div #}
+    <div id="members-tab" class="tab-content hidden flex flex-col">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 gap-2"> {# Adjusted for small screen responsiveness, reduced gap #}
+            <h3 class="text-lg font-bold text-base-content">Recent Members</h3> {# Reduced title size #}
+            <a href="{% url 'individual:church_individuals' church.id %}"
+               class="link link-hover link-primary flex items-center gap-0.5 font-semibold transition-all duration-300 hover:scale-105 text-sm"> {# Reduced gap, added text-sm #}
+                View All <i data-feather="arrow-right" class="w-4 h-4"></i> {# Reduced icon size #}
+            </a>
+        </div>
+
+        {# UPDATED: Use recent_members context variable #}
+        {% if recent_members %}
+        <div class="overflow-x-auto rounded-lg shadow-md border border-base-300"> {# Added border #}
+            <table class="table table-sm w-full"> {# Added table-sm for compact #}
+                <thead class="bg-primary text-primary-content">
+                    <tr>
+                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider">Name</th> {# Reduced padding and text size #}
+                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider">Family</th>
+                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider">Relationship</th>
+                        <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {# UPDATED: Iterate over recent_members directly #}
+                    {% for member in recent_members %}
+                    <tr class="border-b border-base-200 hover:bg-base-200 transition-colors duration-200">
+                        <td class="px-4 py-2 whitespace-nowrap"> {# Reduced padding #}
+                            <a href="{% url 'individual:individual_detail' member.id %}" class="link link-hover link-primary font-medium text-sm"> {# Reduced text size #}
+                                {{ member.surname|upper }}, {{ member.given_name|upper }} {{ member.middle_name|default:""|upper }}
+                            </a>
+                        </td>
+                        <td class="px-4 py-2 text-xs"> {# Added text-xs #}
+                            <a href="{% url 'family:family_detail' member.family.id %}" class="link link-hover link-primary">
+                                {{ member.family.family_name|upper }}
+                            </a>
+                        </td>
+                        <td class="px-4 py-2 text-xs">{{ member.get_relationship_display|upper }}</td> {# Added text-xs #}
+                        <td class="px-4 py-2">
+                            {% if member.is_active_member and member.is_alive %}
+                                <span class="badge badge-success badge-md font-semibold">ACTIVE</span> {# Reduced badge size to md #}
+                            {% elif not member.is_alive %}
+                                <span class="badge badge-info badge-md font-semibold">DECEASED</span> {# Reduced badge size to md #}
+                            {% else %}
+                                <span class="badge badge-error badge-md font-semibold">INACTIVE</span> {# Reduced badge size to md #}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="hero bg-base-200 rounded-lg p-8 text-center shadow-lg"> {# Reduced padding #}
+            <div class="hero-content flex flex-col items-center">
+                <i data-feather="user" class="w-16 h-16 text-base-content/50 mb-3"></i> {# Reduced icon size and margin #}
+                <p class="text-lg font-bold mb-3 text-base-content">No members found for this church.</p> {# Reduced text size and margin #}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        function openTab(evt, tabName) {
+            document.querySelectorAll(".tab-content").forEach(tab => tab.classList.add("hidden"));
+            document.querySelectorAll(".tab").forEach(btn => {
+                btn.classList.remove("tab-active");
+            });
+            document.getElementById(tabName).classList.remove("hidden");
+            evt.currentTarget.classList.add("tab-active");
+
+            if (typeof feather !== 'undefined') {
+                feather.replace();
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            // Directly activate the families tab on load
+            const initialTabContentId = 'families-tab';
+            const initialTabButtonId = 'families-tab-btn';
+
+            // Hide all tab content
+            document.querySelectorAll(".tab-content").forEach(tab => tab.classList.add("hidden"));
+            // Remove active class from all buttons
+            document.querySelectorAll(".tab").forEach(btn => {
+                btn.classList.remove("tab-active");
+            });
+
+            // Show the initial tab content
+            const initialTabContent = document.getElementById(initialTabContentId);
+            if (initialTabContent) {
+                initialTabContent.classList.remove("hidden");
+            } else {
+                console.error(`Tab content with ID '${initialTabContentId}' not found.`);
+            }
+
+            // Add active class to the initial tab button
+            const initialTabButton = document.getElementById(initialTabButtonId);
+            if (initialTabButton) {
+                initialTabButton.classList.add("tab-active");
+            } else {
+                console.error(`Tab button with ID '${initialTabButtonId}' not found.`);
+            }
+
+            if (typeof feather !== 'undefined') {
+                feather.replace();
+            } else {
+                console.error("Feather Icons library is not loaded.");
+            }
+        });
+    </script>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{# No additional JS needed here as the inline script handles feather.replace() for dynamic content. #}
+{% endblock %}
+
+church_confirm_delete
+{# church_confirm_delete.html #}
+{% extends 'base.html' %}
+
+{% block title %}Confirm Delete - Kadamay Mortuary System{% endblock %}
+
+{% block content %}
+<div class="card bg-base-100 shadow-xl p-6 md:p-8 text-base-content max-w-4xl mx-auto my-6 rounded-xl">
+
+  <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+    <h1 class="text-3xl font-extrabold text-error">Confirm Church Deletion</h1> {# Added text-error for severity #}
+    <a href="{% url 'church:church_detail' church.id %}"
+       class="btn btn-ghost flex items-center gap-2 transition-all duration-300 hover:scale-105"> {# Added transition #}
+      <i data-feather="arrow-left" class="w-5 h-5"></i> Back to Details {# Added w-5 h-5 #}
+    </a>
+  </header>
+
+  <section class="alert alert-warning mb-10 shadow-md"> {# Added shadow #}
+    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-8 w-8" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+    <div>
+      <h2 class="text-xl font-bold">Warning: Irreversible Action!</h2> {# Stronger heading #}
+      <p class="text-lg leading-relaxed text-base-content/90"> {# Slightly darker text #}
+        You are about to permanently delete the church "<strong class="font-bold">{{ church.name|upper }}</strong>". <br>
+        This action <span class="underline font-extrabold text-error">cannot be undone</span> and will remove:
+      </p>
+    </div>
+  </section>
+
+  <section class="mb-10">
+    <h3 class="text-2xl font-semibold mb-4 border-b-2 pb-2 text-base-content/90">Church Details</h3> {# Consistent text color #}
+    <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+      <div>
+        <dt class="font-medium text-base-content/70">Name</dt>
+        <dd class="mt-1 text-lg font-semibold text-base-content">{{ church.name|upper }}</dd> {# Added font-semibold, uppercase #}
+      </div>
+      <div>
+        <dt class="font-medium text-base-content/70">Date Established</dt>
+        <dd class="mt-1 text-lg font-semibold text-base-content">{{ church.date_established|date:"F d, Y"|default:"N/A" }}</dd> {# Added font-semibold, default #}
+      </div>
+      <div class="md:col-span-2">
+        <dt class="font-medium text-base-content/70">Address</dt>
+        <dd class="mt-1 text-lg font-semibold text-base-content">{{ church.address|upper }}</dd> {# Added font-semibold, uppercase #}
+      </div>
+    </dl>
+  </section>
+
+  <section class="alert alert-info mb-12 shadow-md"> {# Added shadow #}
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+    <div>
+      <h3 class="text-xl font-bold">Associated Data to be Removed</h3> {# More descriptive heading #}
+      <ul class="list-disc list-inside space-y-2 text-lg font-medium text-base-content/90">
+        <li><strong class="text-xl font-extrabold text-info">{{ church.family_set.count }}</strong> Families</li> {# Used family_set, added text-xl font-extrabold #}
+        <li><strong class="text-xl font-extrabold text-info">{{ church.individual_set.count }}</strong> Members</li> {# Used individual_set, added text-xl font-extrabold #}
+        <li>All associated payments and related records will also be permanently deleted.</li> {# Rephrased for clarity #}
+      </ul>
+    </div>
+  </section>
+
+  <form method="post" class="flex justify-end space-x-4">
+    {% csrf_token %}
+    <a href="{% url 'church:church_detail' church.id %}"
+       class="btn btn-ghost transition-all duration-300 hover:scale-105"> {# Added transition #}
+      Cancel
+    </a>
+    <button type="submit"
+            class="btn btn-error transition-all duration-300 hover:scale-105"> {# Added transition #}
+      Confirm Delete
+    </button>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace();
+    });
+</script>
+{% endblock %}
+
