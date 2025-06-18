@@ -15,11 +15,11 @@ class ReportLog(models.Model):
     ]
 
     generated_by = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='generated_reports')
+        User, on_delete=models.CASCADE, related_name='generated_report')
     report_type = models.CharField(max_length=20, choices=REPORT_TYPE_CHOICES)
     timestamp = models.DateTimeField(auto_now_add=True)
     church = models.ForeignKey(
-        Church, on_delete=models.CASCADE, related_name='reports', null=True, blank=True)
+        Church, on_delete=models.CASCADE, related_name='report', null=True, blank=True)
 
     class Meta:
         verbose_name = 'Report Log'

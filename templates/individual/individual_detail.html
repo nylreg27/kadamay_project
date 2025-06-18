@@ -1,146 +1,167 @@
-{# apps/individual/templates/individual/individual_detail.html #}
-{% extends 'base.html' %}
+{# templates/individual/individual_detail.html #}
+{% extends "base.html" %}
+{% load static %} {# Ensure this is loaded if you use static files like icons #}
 
-{% block title %}{{ individual.given_name|upper }} {{ individual.surname|upper }} - Kadamay Mortuary System{% endblock %} {# Consistent title #}
+{% block title %}Individual Details - {{ individual.full_name }}{% endblock %}
 
 {% block content %}
-<div class="card bg-base-100 shadow-xl p-4 md:p-6 text-base-content rounded-xl my-4 mx-auto max-w-7xl"> {# Adjusted padding and margin #}
-    <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-3"> {# Adjusted margin and gap #}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-8">
         <div>
-            <h1 class="text-2xl font-extrabold text-primary"> {# Changed to text-2xl #}
-                {{ individual.surname|upper }}, {{ individual.given_name|upper }} 
-                {% if individual.middle_name %}{{ individual.middle_name|upper }}{% endif %}
-                {% if individual.suffix_name %}{{ individual.suffix_name|upper }}{% endif %}
-            </h1>
-            <p class="text-base-content/70 mt-0.5 text-base"> {# Adjusted mt and text size #}
-                {% if individual.family %}
-                    From <a href="{% url 'family:family_detail' individual.family.id %}" class="link link-hover link-primary">{{ individual.family.family_name|upper }}</a>
-                {% else %}
-                    <span class="italic text-base-content/60 text-sm">No Family Assigned</span> {# Italicized, muted, and text-sm #}
-                {% endif %}
-            </p>
+            <h1 class="text-3xl font-extrabold text-base-content">{{ individual.full_name }}</h1>
+            <p class="text-base-content/80 text-md mt-2">Details and associated records for this individual.</p>
         </div>
-        <div class="flex flex-wrap md:flex-nowrap gap-2 w-full md:w-auto justify-end"> {# Adjusted gap #}
-            <a href="{% url 'individual:individual_list' %}"
-               class="btn btn-ghost flex items-center gap-2 transition-all duration-300 hover:scale-105 w-full md:w-auto btn-sm"> {# Added btn-sm #}
-                <i data-feather="arrow-left" class="w-4 h-4"></i> Back to List {# Reduced icon size #}
+        <div class="flex space-x-3">
+            <a href="{% url 'individual:individual_list' %}" class="btn btn-md btn-outline btn-neutral flex items-center gap-2 rounded-lg font-semibold">
+                <i data-feather="arrow-left" class="w-5 h-5"></i>
+                Back to List
             </a>
-            {% if user.is_superuser %}
-            <a href="{% url 'individual:individual_update' individual.id %}"
-               class="btn btn-primary flex items-center gap-2 transition-all duration-300 hover:scale-105 w-full md:w-auto btn-sm"> {# Added btn-sm #}
-                <i data-feather="edit" class="w-4 h-4"></i> Edit Member {# Reduced icon size #}
+            <a href="{% url 'individual:individual_update' pk=individual.pk %}" class="btn btn-md btn-primary flex items-center gap-2 rounded-lg font-semibold">
+                <i data-feather="edit" class="w-5 h-5"></i>
+                Edit Individual
             </a>
-            <a href="{% url 'individual:individual_delete' individual.id %}"
-               class="btn btn-error flex items-center gap-2 transition-all duration-300 hover:scale-105 w-full md:w-auto btn-sm"> {# Added btn-sm #}
-                <i data-feather="trash-2" class="w-4 h-4"></i> Delete Member {# Reduced icon size #}
-            </a>
-            {% endif %}
         </div>
-    </header>
+    </div>
 
-    <hr class="border-base-300 my-4"> {# Replaced "---" with proper hr and adjusted margin #}
-
-    <section class="card bg-base-200 rounded-xl p-4 shadow-md border border-base-300 mb-6"> {# Adjusted padding and margin #}
-        <h2 class="text-xl font-bold mb-3 text-secondary">Personal Information</h2> {# Changed to text-xl and adjusted mb #}
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3"> {# Adjusted gaps #}
-            <div class="space-y-0.5"> {# Adjusted space-y #}
-                <h3 class="text-xs font-medium text-base-content/70">Full Name</h3> {# Changed to text-xs #}
-                <p class="text-base font-semibold text-base-content"> {# Changed to text-base #}
-                    {{ individual.surname|upper }}, {{ individual.given_name|upper }} 
-                    {% if individual.middle_name %}{{ individual.middle_name|upper }}{% endif %}
-                    {% if individual.suffix_name %}{{ individual.suffix_name|upper }}{% endif %}
-                </p>
-            </div>
-            <div class="space-y-0.5"> {# Adjusted space-y #}
-                <h3 class="text-xs font-medium text-base-content/70">Birth Date</h3> {# Changed to text-xs #}
-                <p class="text-base font-semibold text-base-content"> {# Changed to text-base #}
-                    {{ individual.birth_date|date:"F d, Y"|default:"N/A" }}
-                </p>
-            </div>
-            <div class="space-y-0.5"> {# Adjusted space-y #}
-                <h3 class="text-xs font-medium text-base-content/70">Contact Number</h3> {# Changed to text-xs #}
-                <p class="text-base font-semibold text-base-content"> {# Changed to text-base #}
-                    {{ individual.contact_number|default:"N/A" }}
-                </p>
-            </div>
-            <div class="space-y-0.5"> {# Adjusted space-y #}
-                <h3 class="text-xs font-medium text-base-content/70">Email Address</h3> {# Changed to text-xs #}
-                <p class="text-base font-semibold text-base-content"> {# Changed to text-base #}
-                    {{ individual.email_address|default:"N/A" }}
-                </p>
-            </div>
-            <div class="space-y-0.5"> {# Adjusted space-y #}
-                <h3 class="text-xs font-medium text-base-content/70">Sex</h3> {# Changed to text-xs #}
-                <p class="text-base font-semibold text-base-content"> {# Changed to text-base #}
-                    {{ individual.get_sex_display|default:"N/A"|upper }}
-                </p>
-            </div>
-            <div class="space-y-0.5"> {# Adjusted space-y #}
-                <h3 class="text-xs font-medium text-base-content/70">Civil Status</h3> {# Changed to text-xs #}
-                <p class="text-base font-semibold text-base-content"> {# Changed to text-base #}
-                    {{ individual.get_civil_status_display|default:"N/A"|upper }}
-                </p>
-            </div>
-        </div>
-    </section>
-
-    <hr class="border-base-300 my-4"> {# Replaced "---" with proper hr and adjusted margin #}
-
-    <section class="card bg-base-200 rounded-xl p-4 shadow-md border border-base-300"> {# Adjusted padding #}
-        <h2 class="text-xl font-bold mb-3 text-secondary">Membership Information</h2> {# Changed to text-xl and adjusted mb #}
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3"> {# Adjusted gaps #}
-            <div class="space-y-0.5"> {# Adjusted space-y #}
-                <h3 class="text-xs font-medium text-base-content/70">Family</h3> {# Changed to text-xs #}
-                <p class="text-base font-semibold text-base-content"> {# Changed to text-base #}
+    {# Basic Individual Information Card #}
+    <div class="card bg-base-100 shadow-lg rounded-lg p-6 mb-8">
+        {# Added a button with an arrow icon to toggle visibility #}
+        <h2 class="text-2xl font-bold text-base-content mb-4 flex items-center gap-3 cursor-pointer" id="personalInfoToggle">
+            <i data-feather="info" class="w-5 h-5 text-blue-500"></i>
+            Personal Information
+            <i data-feather="chevron-down" class="w-6 h-6 ml-auto transition-transform duration-300 transform" id="toggleArrow"></i>
+        </h2>
+        {# The content to be toggled, hidden by default with 'hidden' class #}
+        <div id="personalInfoContent" class="hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div>
+                    <p class="font-bold">Full Name:</p>
+                    <p>{{ individual.full_name }}</p>
+                </div>
+                <div>
+                    <p class="font-bold">Contact Number:</p>
+                    <p>{{ individual.contact_number|default:"N/A" }}</p>
+                </div>
+                <div>
+                    <p class="font-bold">Address:</p>
+                    <p>{{ individual.address|default:"N/A" }}</p>
+                </div>
+                <div>
+                    <p class="font-bold">Birth Date:</p>
+                    <p>{{ individual.birth_date|date:"F j, Y"|default:"N/A" }}</p>
+                </div>
+                <div>
+                    <p class="font-bold">Family:</p>
+                    {# Check if Family object exists before accessing Family name #}
                     {% if individual.family %}
-                        <a href="{% url 'family:family_detail' individual.family.id %}" class="link link-hover link-primary">
-                            {{ individual.family.family_name|upper }}
-                        </a>
+                        <p><a href="{% url 'family:family_detail' pk=individual.family.pk %}" class="link link-primary">{{ individual.family.family_name }}</a></p>
                     {% else %}
-                        <span class="italic text-base-content/60 text-sm">N/A</span> {# Italicized, muted, and text-sm #}
+                        <p>Not assigned to a family.</p>
                     {% endif %}
-                </p>
-            </div>
-            <div class="space-y-0.5"> {# Adjusted space-y #}
-                <h3 class="text-xs font-medium text-base-content/70">Church</h3> {# Changed to text-xs #}
-                <p class="text-base font-semibold text-base-content"> {# Changed to text-base #}
-                    {% if individual.family and individual.family.church %}
-                        <a href="{% url 'church:church_detail' individual.family.church.id %}" class="link link-hover link-primary">
-                            {{ individual.family.church.name|upper }}
-                        </a>
-                    {% else %}
-                        <span class="italic text-base-content/60 text-sm">N/A</span> {# Italicized, muted, and text-sm #}
-                    {% endif %}
-                </p>
-            </div>
-            <div class="space-y-0.5"> {# Adjusted space-y #}
-                <h3 class="text-xs font-medium text-base-content/70">Relationship</h3> {# Changed to text-xs #}
-                <p class="text-base font-semibold text-base-content"> {# Changed to text-base #}
-                    {{ individual.get_relationship_display|default:"N/A"|upper }}
-                </p>
-            </div>
-            <div class="space-y-0.5"> {# Adjusted space-y #}
-                <h3 class="text-xs font-medium text-base-content/70">Status</h3> {# Changed to text-xs #}
-                <p class="text-base font-semibold text-base-content"> {# Changed to text-base #}
-                    {% if individual.is_active_member and individual.is_alive %}
-                        <span class="badge badge-success badge-sm font-semibold">ACTIVE</span> {# Changed to badge-sm #}
-                    {% elif not individual.is_alive %}
-                        <span class="badge badge-info badge-sm font-semibold">DECEASED</span> {# Changed to badge-sm #}
-                    {% else %}
-                        <span class="badge badge-error badge-sm font-semibold">INACTIVE</span> {# Changed to badge-sm #}
-                    {% endif %}
-                </p>
+                </div>
+                <div>
+                    <p class="font-bold">Membership Status:</p>
+                    <span class="badge
+                        {% if individual.membership_status == 'ACTIVE' %}badge-success
+                        {% elif individual.membership_status == 'INACTIVE' %}badge-error
+                        {% elif individual.membership_status == 'PENDING' %}badge-warning
+                        {% else %}badge-info{% endif %}
+                    ">{{ individual.get_membership_status_display }}</span>
+                </div>
+                <div>
+                    <p class="font-bold">Registration Date:</p>
+                    <p>{{ individual.date_added|date:"F j, Y" }}</p> {# Assumed 'date_added' is the field for registration date #}
+                </div>
+                <div>
+                    <p class="font-bold">Civil Status:</p>
+                    <p>{{ individual.get_civil_status_display|default:"N/A" }}</p>
+                </div>
+                <div>
+                    <p class="font-bold">Gender:</p>
+                    <p>{{ individual.get_sex_display|default:"N/A" }}</p> {# Calling from 'sex' field, 'get_sex_display' method #}
+                </div>
+                <div>
+                    <p class="font-bold">Relationship to Head of Family:</p>
+                    <p>{{ individual.get_relationship_display_value|default:"N/A" }}</p> {# Using the property 'get_relationship_display_value' #}
+                </div>
             </div>
         </div>
-    </section>
+    </div>
+
+    {# Payment History Section - Direct Payments by this Individual #}
+    <div class="mb-8">
+        <h2 class="text-2xl font-bold text-base-content mb-4 flex items-center gap-3">
+            <i data-feather="dollar-sign" class="w-5 h-5 text-green-500"></i>
+            Payment History (Direct Payments)
+        </h2>
+
+        {# Use the 'direct_payments' context variable from the view #}
+        {% if direct_payments %}
+            <div class="overflow-x-auto">
+                <table class="table w-full">
+                    <thead>
+                        <tr>
+                            <th>Receipt No.</th>
+                            <th>Amount</th>
+                            <th>Date Paid</th>
+                            <th>Contribution Type</th>
+                            <th>Status</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in direct_payments %} {# Loop through each payment #}
+                            <tr class="hover:bg-base-200">
+                                <td class="font-medium">{{ payment.receipt_number|default:"N/A" }}</td>
+                                <td class="text-green-700">₱{{ payment.amount|floatformat:2 }}</td>
+                                <td>{{ payment.date_paid|date:"F j, Y" }}</td>
+                                <td>{{ payment.contribution_type.name|default:"N/A" }}</td>
+                                <td>
+                                    <span class="badge
+                                        {% if payment.payment_status == 'VALIDATED' %}badge-success
+                                        {% elif payment.payment_status == 'PENDING_VALIDATION' %}badge-warning
+                                        {% elif payment.payment_status == 'CANCELLED' %}badge-error
+                                        {% else %}badge-info{% endif %}
+                                    ">{{ payment.get_payment_status_display }}</span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'payment:payment_detail' pk=payment.pk %}" class="btn btn-xs btn-outline btn-info">View</a>
+                                </td>
+                            </tr>
+                        {% endfor %} {# End of payment loop #}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-12 bg-base-200 rounded-lg shadow-inner">
+                <i data-feather="slash" class="w-12 h-12 text-base-content/40 mx-auto mb-3"></i>
+                <p class="text-base-content/70 text-lg">No direct payment history found for this individual.</p>
+            </div>
+        {% endif %}
+    </div> {# End of Payment History Section #}
+
 </div>
 {% endblock %}
 
 {% block extra_js %}
-{{ block.super }}
+<script src="https://unpkg.com/feather-icons"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        feather.replace(); // Re-initialize Feather Icons
+        feather.replace(); // Initialize Feather icons
+
+        const personalInfoToggle = document.getElementById('personalInfoToggle');
+        const personalInfoContent = document.getElementById('personalInfoContent');
+        const toggleArrow = document.getElementById('toggleArrow');
+
+        if (personalInfoToggle && personalInfoContent && toggleArrow) {
+            personalInfoToggle.addEventListener('click', function() {
+                // Toggle the 'hidden' class to show/hide the content
+                personalInfoContent.classList.toggle('hidden');
+
+                // Rotate the arrow icon
+                toggleArrow.classList.toggle('rotate-180');
+            });
+        }
     });
 </script>
 {% endblock %}

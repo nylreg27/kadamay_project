@@ -38,11 +38,15 @@ def individual_details_api(request, pk):
     try:
         individual = get_object_or_404(Individual, pk=pk)
         
-        # --- NEW: Fetch payment history for this individual ---
-        # Only fetch relevant payments (e.g., exclude fully cancelled ones from sum)
+        # --- FIXED: Fetch payment history for this individual as payer OR covered member ---
+        # Filter payments where:
+        # 1. The individual is the primary 'payer' of the payment (payment.individual)
+        # OR
+        # 2. The individual is listed as a 'covered_member' through PaymentIndividualAllocation
         all_payments = Payment.objects.filter(
-            individual=individual
-        ).order_by('-date_paid', '-created_at')
+            Q(individual=individual) | 
+            Q(individual_allocations__individual=individual)
+        ).distinct().order_by('-date_paid', '-created_at') # Use distinct to avoid duplicate payments if an individual is both payer and covered member on the same payment.
 
         payments_data = []
         for payment in all_payments:

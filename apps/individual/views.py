@@ -140,15 +140,50 @@ class IndividualListView(LoginRequiredMixin, ListView):
         context['search_query'] = self.request.GET.get('search', '')
         return context
 
+
 # Individual Detail View
-class IndividualDetailView(LoginRequiredMixin, DetailView):
+class IndividualDetailView(DetailView):
     model = Individual
-    template_name = 'individual/individual_detail.html'
+    template_name = 'individual/individual_detail.html' # Make sure this path is correct
     context_object_name = 'individual'
+
+    def get_queryset(self):
+        """
+        Optimizes fetching of Individual data along with related payments.
+        Prefetches:
+        - Payments directly made by this individual ('payments' related_name on Payment model).
+            - Includes related ContributionType and Church for these direct payments.
+        - PaymentIndividualAllocation objects where this individual is a 'covered_member'
+          ('payment_allocations' related_name on PaymentIndividualAllocation model).
+            - Includes the actual Payment object for each allocation.
+            - Includes related ContributionType and Church for payments associated with allocations.
+        """
+        return Individual.objects.all().prefetch_related(
+            # Prefetch for payments where this individual is the primary payer
+            'payments__contribution_type',
+            'payments__church',
+
+            # Prefetch for the intermediary PaymentIndividualAllocation objects
+            # (where this individual is a 'covered_member')
+            'payment_allocations',
+            # Further prefetch the Payment object linked to each allocation,
+            # and its related ContributionType and Church.
+            'payment_allocations__payment__contribution_type',
+            'payment_allocations__payment__church'
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = f'Individual Details - {self.object.full_name}'
+        individual = self.object # The individual object is now prefetched efficiently
+
+        # Accessing the prefetched relationships:
+        # Payments where this individual is the primary payer (from Payment.individual ForeignKey)
+        context['direct_payments'] = individual.payments.all()
+
+        # Payments where this individual is covered as an allocated member
+        # (through PaymentIndividualAllocation M2M table)
+        context['covered_payment_allocations'] = individual.payment_allocations.all()
+
         return context
 
 # Individual Create View
@@ -284,39 +319,3 @@ class IndividualCreateInFamilyView(LoginRequiredMixin, CreateView):
         print("-------------------------------------\n")
         messages.error(self.request, "Please correct the errors below.")
         return super().form_invalid(form)
-
-# COMMENTED OUT: This class was a duplicate from payment/views.py.
-# All payment creation logic should be in apps/payment/views.py.
-# class PaymentCreateView(LoginRequiredMixin, CreateView):
-#     model = Payment
-#     form_class = PaymentForm  # You'll need to define this in apps/payment/forms.py
-#     template_name = 'payment/payment_form.html'  # Create this template
-
-#     def get_initial(self):
-#         initial = super().get_initial()
-#         individual_id = self.kwargs.get('individual_id')
-#         if individual_id:
-#             initial['individual'] = get_object_or_404(
-#                 Individual, pk=individual_id)
-#         return initial
-
-#     def get_context_data(self, **kwargs):
-#         context = super().get_context_data(**kwargs)
-#         individual_id = self.kwargs.get('individual_id')
-#         if individual_id:
-#             individual = get_object_or_404(Individual, pk=individual_id)
-#             context['title'] = f'Add Payment for {individual.full_name}'
-#             context['individual'] = individual
-#         else:
-#             context['title'] = 'Add New Payment'
-#         return context
-
-#     def form_valid(self, form):
-#         messages.success(self.request, "Payment added successfully!")
-#         return super().form_valid(form)
-
-#     def get_success_url(self):
-#         individual_id = self.kwargs.get('individual_id')
-#         if individual_id:
-#             return reverse_lazy('individual:individual_dashboard')
-#         return reverse_lazy('individual:individual_list')
