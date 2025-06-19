@@ -48,6 +48,7 @@
         </div>
     </header>
 
+    {# Django messages integration with DaisyUI alerts #}
     {% if messages %}
         <div class="mb-4">
             {% for message in messages %}
@@ -58,7 +59,7 @@
                     {% else %}alert-info
                     {% endif %} shadow-lg mb-2">
                     <div>
-                        <i data-feather="info" class="w-6 h-6"></i>
+                        <i data-feather="info" class="w-6 h-6"></i> {# Consider changing icon based on message.tags #}
                         <span>{{ message }}</span>
                     </div>
                 </div>
@@ -207,6 +208,7 @@
             {% endfor %}
         </div>
 
+        {# Pagination Controls #}
         {% if is_paginated %}
         <div class="flex justify-center mt-4">
             <div class="join join-sm">
@@ -248,7 +250,7 @@
 {{ block.super }}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        feather.replace();
+        feather.replace(); // Ensure feather icons are replaced
 
         const searchInput = document.getElementById('searchInput');
         const searchForm = document.getElementById('searchForm');
@@ -279,19 +281,20 @@
             const checkedBoxes = document.querySelectorAll('.individual-checkbox:checked');
             const selectedIndividualId = checkedBoxes.length === 1 ? checkedBoxes[0].value : null;
 
-            const viewUrl = selectedIndividualId ? `{% url 'individual:individual_detail' 0 %}`.replace('0', selectedIndividualId) : '#';
-            const editUrl = selectedIndividualId ? `{% url 'individual:individual_update' 0 %}`.replace('0', selectedIndividualId) : '#';
-            const deleteUrl = selectedIndividualId ? `{% url 'individual:individual_delete' 0 %}`.replace('0', selectedIndividualId) : '#';
+            // Base URLs (will be replaced with actual ID if selected)
+            const viewBaseUrl = `{% url 'individual:individual_detail' 0 %}`;
+            const editBaseUrl = `{% url 'individual:individual_update' 0 %}`;
+            const deleteBaseUrl = `{% url 'individual:individual_delete' 0 %}`;
 
             function applyButtonState(viewB, editB, deleteB, isSuperuser) {
-                if (viewB) {
+                if (viewB) { // Check if button element exists
                     if (selectedIndividualId) {
                         viewB.removeAttribute('disabled');
-                        viewB.href = viewUrl;
+                        viewB.href = viewBaseUrl.replace('0', selectedIndividualId);
                         
                         if (isSuperuser) {
-                            if (editB) { editB.removeAttribute('disabled'); editB.href = editUrl; }
-                            if (deleteB) { deleteB.removeAttribute('disabled'); deleteB.href = deleteUrl; }
+                            if (editB) { editB.removeAttribute('disabled'); editB.href = editBaseUrl.replace('0', selectedIndividualId); }
+                            if (deleteB) { deleteB.removeAttribute('disabled'); deleteB.href = deleteBaseUrl.replace('0', selectedIndividualId); }
                         }
                     } else {
                         viewB.setAttribute('disabled', 'disabled');
@@ -322,29 +325,33 @@
             });
         });
 
+        // Event listener for clicking on table rows (excluding specific interactive elements)
         const tableRows = document.querySelectorAll('tbody tr');
         tableRows.forEach(row => {
             row.addEventListener('click', function(event) {
+                // Prevent toggling checkbox if a link, input, or label within the row was clicked
                 if (event.target.tagName === 'INPUT' || event.target.tagName === 'A' || event.target.closest('a') || event.target.closest('label')) {
                     return; 
                 }
 
                 const checkbox = this.querySelector('.individual-checkbox');
                 if (checkbox) {
-                    checkbox.checked = !checkbox.checked;
-                    if (checkbox.checked) {
+                    checkbox.checked = !checkbox.checked; // Toggle the checkbox
+                    if (checkbox.checked) { // If it's now checked, uncheck others
                         checkboxes.forEach(otherCheckbox => {
                             if (otherCheckbox !== checkbox) {
                                 otherCheckbox.checked = false;
                             }
                         });
                     }
-                    updateActionButtons();
+                    updateActionButtons(); // Update button states
                 }
             });
         });
 
+        // Initial call to set button states on page load
         updateActionButtons();
     });
 </script>
 {% endblock %}
+

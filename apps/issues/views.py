@@ -10,7 +10,7 @@ class AdminRequiredMixin(UserPassesTestMixin):
     def test_func(self):
         return self.request.user.is_superuser
 
-# 1. Admin list: all issue reports
+# 1. Admin list: all issue report
 
 
 class IssueReportListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
