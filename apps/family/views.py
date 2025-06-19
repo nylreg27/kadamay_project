@@ -5,19 +5,14 @@ from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib import messages
 from django.db.models import Q, Count
-# <-- Add Sum, Case, When, DecimalField for family_detail payments
 from django.db.models import Sum, Case, When, DecimalField
-
 from decimal import Decimal
 from .models import Family
 from apps.church.models import Church
-# You might still need Individual for other contexts, keep it if so:
 from apps.individual.models import Individual
-from apps.payment.models import Payment  # <-- I-UNCOMMENT KINI NGA LINYA!
-# <-- I-DUGANG KINI PARA SA ALOCATION
+from apps.payment.models import Payment
 from apps.payment.models import PaymentIndividualAllocation
 from .forms import FamilyForm
-# <-- I-DUGANG KINI PARA SA Coalesce
 from django.db.models.functions import Coalesce
 
 
@@ -30,17 +25,24 @@ class FamilyListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         queryset = super().get_queryset()
 
-        # --- NEW: Annotate individual_count for each family ---
-        # Assuming your related_name for Family in Individual model is 'members'
-        queryset = queryset.annotate(individual_count=Count('members'))
-        # If your related_name is still default (individual_set), use Count('individual')
+        # FIXED: Add prefetch_related for head_of_family (kaniadto 'in_charge')
+        # Ug prefetch 'members' para sa count
+        queryset = queryset.prefetch_related('head_of_family', 'members').annotate(
+            # 'members' ang related_name gikan sa Individual ngadto sa Family
+            individual_count=Count('members')
+        )
 
         search_query = self.request.GET.get('search')
         if search_query:
             queryset = queryset.filter(
                 Q(family_name__icontains=search_query) |
                 Q(address__icontains=search_query) |
-                Q(church__name__icontains=search_query)
+                Q(church__name__icontains=search_query) |
+                # NEW: Gitugotan ang pagpangita gamit ang ngalan sa ulo sa pamilya
+                # <-- GI-CHANGE SA head_of_family
+                Q(head_of_family__given_name__icontains=search_query) |
+                # <-- GI-CHANGE SA head_of_family
+                Q(head_of_family__surname__icontains=search_query)
             )
         church_id = self.request.GET.get('church')
         if church_id:
@@ -48,7 +50,7 @@ class FamilyListView(LoginRequiredMixin, ListView):
                 queryset = queryset.filter(church_id=int(church_id))
             except ValueError:
                 pass
-        return queryset.order_by('family_name')  # Already there, good!
+        return queryset.order_by('family_name')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -57,42 +59,40 @@ class FamilyListView(LoginRequiredMixin, ListView):
         context['selected_church'] = self.request.GET.get('church', '')
         return context
 
-# --- Family Detail View (NO CHANGES NEEDED FOR THE COUNT HERE, it's already working via direct access to individual_set/members.all().count()) ---
-
 
 class FamilyDetailView(LoginRequiredMixin, DetailView):
     model = Family
     template_name = 'family/family_detail.html'
     context_object_name = 'family'
 
+    def get_queryset(self):
+        # Pre-fetch ang head_of_family (kaniadto 'in_charge')
+        # <-- GI-CHANGE SA head_of_family
+        return super().get_queryset().prefetch_related('head_of_family', 'members')
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         family = self.get_object()
 
-        # All individuals related to this family
-        # FIXED: Changed family.individual_set.all() to family.members.all()
-        all_individuals = family.members.all()  # Correct if related_name is 'members'
+        # Tanan nga individuals nga konektado niining pamilya
+        all_individuals = family.members.all()
 
         context['total_members_count'] = all_individuals.count()
-
         context['active_members_count'] = all_individuals.filter(
             is_active_member=True, is_alive=True).count()
-
         context['deceased_members_count'] = all_individuals.filter(
             is_alive=False).count()
 
-        # Get Family Head
-        # Corrected to use 'HEAD' as per Individual model choices
-        context['family_head'] = all_individuals.filter(
-            relationship='HEAD').first()
+        # GI-FIX: Kuhaon direkta ang Ulo sa Pamilya gikan sa 'head_of_family' field sa Family
+        # <-- GI-CHANGE SA head_of_family
+        context['family_head'] = family.head_of_family
 
-        # Get recent payments for this family's members
+        # Kuhaon ang bag-ong bayad para sa mga miyembro niining pamilya
         context['family_payments'] = Payment.objects.filter(
             individual__family=family
         ).order_by('-date_paid')[:10]
 
-        # Calculate total payments made by members of this family
-        # This aggregates the 'amount' field from the Payment model
+        # Kwentahon ang kinatibuk-ang bayad nga gihimo sa mga miyembro niining pamilya
         context['total_family_contributions'] = Payment.objects.filter(
             individual__family=family
         ).aggregate(
@@ -100,20 +100,17 @@ class FamilyDetailView(LoginRequiredMixin, DetailView):
                 '0.00'), output_field=DecimalField())
         )['total_sum']
 
-        # Calculate total allocated amount to members of this family
-        # from PaymentIndividualAllocation model where is_payer is True
-        # This will filter PaymentIndividualAllocation records where the individual is a member of this family
-        # AND they are marked as the payer.
+        # Kwentahon ang kinatibuk-ang kantidad nga gi-allocate sa mga miyembro niining pamilya
         total_allocated_payer_contributions = PaymentIndividualAllocation.objects.filter(
-            individual__in=all_individuals,  # Filter by individuals belonging to this family
-            is_payer=True  # This field should now exist on PaymentIndividualAllocation
+            individual__in=all_individuals,
+            is_payer=True
         ).aggregate(
             total_sum=Coalesce(Sum('allocated_amount'), Decimal(
                 '0.00'), output_field=DecimalField())
         )['total_sum']
         context['total_allocated_payer_contributions'] = total_allocated_payer_contributions
 
-        # Also pass all_individuals to the context for use in the template
+        # Ipasa usab ang all_individuals sa context para magamit sa template
         context['all_individuals'] = all_individuals
 
         return context
@@ -130,17 +127,17 @@ class FamilyCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = 'Create New Family'
+        context['title'] = 'Paghimo Bag-ong Pamilya'
         return context
 
     def form_valid(self, form):
         messages.success(
-            self.request, f"Family '{form.instance.family_name}' created successfully!")
+            self.request, f"Pamilya '{form.instance.family_name}' malampusong nahimo!")
         return super().form_valid(form)
 
     def form_invalid(self, form):
         messages.error(
-            self.request, "There was an error creating the family. Please check the form.")
+            self.request, "May sayop sa paghimo sa pamilya. Palihog susiha ang imong input.")
         return super().form_invalid(form)
 
 
@@ -164,18 +161,18 @@ class FamilyCreateInChurchView(LoginRequiredMixin, UserPassesTestMixin, CreateVi
         context = super().get_context_data(**kwargs)
         church_id = self.kwargs.get('church_id')
         church = get_object_or_404(Church, pk=church_id)
-        context['title'] = f'Add Family to {church.name}'
+        context['title'] = f'Dugang Pamilya sa {church.name}'
         context['church'] = church
         return context
 
     def get_success_url(self):
         messages.success(
-            self.request, f"Family '{self.object.family_name}' added to {self.object.church.name} successfully!")
+            self.request, f"Pamilya '{self.object.family_name}' nadugang sa {self.object.church.name} malampusong!")
         return reverse_lazy('church:church_detail', kwargs={'pk': self.kwargs['church_id']})
 
     def form_invalid(self, form):
         messages.error(
-            self.request, "There was an error adding the family. Please check the form.")
+            self.request, "May sayop sa pagdugang sa pamilya. Palihog susiha ang imong input.")
         return super().form_invalid(form)
 
 
@@ -190,17 +187,17 @@ class FamilyUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
 
     def get_success_url(self):
         messages.success(
-            self.request, f"Family '{self.object.family_name}' updated successfully!")
+            self.request, f"Pamilya '{self.object.family_name}' malampusong na-update!")
         return reverse_lazy('family:family_detail', kwargs={'pk': self.object.pk})
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = f'Edit Family: {self.object.family_name}'
+        context['title'] = f'I-edit ang Pamilya: {self.object.family_name}'
         return context
 
     def form_invalid(self, form):
         messages.error(
-            self.request, "There was an error updating the family. Please check the form.")
+            self.request, "May sayop sa pag-update sa pamilya. Palihog susiha ang imong input.")
         return super().form_invalid(form)
 
 
@@ -215,7 +212,7 @@ class FamilyDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 
     def form_valid(self, form):
         messages.success(
-            self.request, f"Family '{self.object.family_name}' deleted successfully!")
+            self.request, f"Pamilya '{self.object.family_name}' malampusong natangtang!")
         return super().form_valid(form)
 
 
@@ -229,16 +226,20 @@ class FamilyListInChurchView(LoginRequiredMixin, ListView):
         church_id = self.kwargs.get('church_id')
         church = get_object_or_404(Church, pk=church_id)
 
-        # --- NEW: Annotate individual_count for families in a specific church ---
-        # Again, use 'members' if that's your related_name
-        queryset = Family.objects.filter(church=church).annotate(
+        # FIXED: Add prefetch_related for head_of_family (kaniadto 'in_charge')
+        queryset = Family.objects.filter(church=church).prefetch_related('head_of_family', 'members').annotate(
             individual_count=Count('members'))
 
         search_query = self.request.GET.get('search')
         if search_query:
             queryset = queryset.filter(
                 Q(family_name__icontains=search_query) |
-                Q(address__icontains=search_query)
+                Q(address__icontains=search_query) |
+                # NEW: Gitugotan ang pagpangita gamit ang ngalan sa ulo sa pamilya
+                # <-- GI-CHANGE SA head_of_family
+                Q(head_of_family__given_name__icontains=search_query) |
+                # <-- GI-CHANGE SA head_of_family
+                Q(head_of_family__surname__icontains=search_query)
             )
         return queryset.order_by('family_name')
 
@@ -247,7 +248,7 @@ class FamilyListInChurchView(LoginRequiredMixin, ListView):
         church_id = self.kwargs.get('church_id')
         church = get_object_or_404(Church, pk=church_id)
         context['church'] = church
-        context['title'] = f'Families of {church.name}'
+        context['title'] = f'Mga Pamilya sa {church.name}'
         context['search_query'] = self.request.GET.get(
             'search', '')
         context['churches'] = Church.objects.all().order_by('name')

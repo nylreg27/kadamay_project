@@ -1,450 +1,209 @@
+{# templates/individual/individual_form.html #}
 {% extends 'base.html' %}
-{% load crispy_forms_tags %} {# Optional: if you use crispy forms, but we'll manually render for more control #}
+{% load static %} {# If you use static files like images/icons #}
+{% load widget_tweaks %} {# RE-ADDED: For easy application of DaisyUI classes. This is NOT crispy_tailwind and will not cause errors. #}
 
 {% block title %}{{ page_title }} - Kadamay Mortuary System{% endblock %}
 
 {% block content %}
-<div class="container mx-auto p-4 lg:p-8">
+{# FIXED: Adjusted the main container div to make it wider (max-w-6xl) and centered #}
+<div class="container mx-auto p-4 lg:p-8 max-w-6xl">
     <div class="bg-base-100 shadow-xl rounded-lg p-6 lg:p-8">
         <h1 class="text-3xl font-bold text-base-content mb-6">{{ page_title }}</h1>
 
+        {# Display Django messages (e.g., success/error) #}
+        {# NOTE: base.html now also handles messages via JavaScript for toast notifications. #}
+        {# You can keep this block if you want messages to also appear directly here, or remove if the toast is enough. #}
         {% if messages %}
-            <div id="django_messages_container">
+            <div id="django_messages_container_form" class="mb-4"> {# Renamed ID to avoid conflict with base.html #}
                 {% for message in messages %}
-                    <div class="django-message {% if message.tags %}" data-tag="{{ message.tags }}{% endif %}">
-                        {{ message }}
+                    <div class="alert
+                        {% if message.tags == 'success' %}alert-success
+                        {% elif message.tags == 'error' %}alert-error
+                        {% elif message.tags == 'warning' %}alert-warning
+                        {% else %}alert-info{% endif %}
+                        shadow-lg mb-2 rounded-lg">
+                        <span class="text-sm">{{ message }}</span>
                     </div>
                 {% endfor %}
             </div>
         {% endif %}
 
-        <form method="post" class="space-y-6" id="payment-form">
+        <form method="post" class="space-y-6" enctype="multipart/form-data"> {# Added enctype for potential file uploads #}
             {% csrf_token %}
 
-            {# Main Payment Form Fields #}
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="label">Payee (Head of Family)</label>
-                    {{ form.individual }}
-                    {% if form.individual.errors %}<div class="text-error text-sm mt-1">{{ form.individual.errors }}</div>{% endif %}
+            {# Form Errors - Display non-field errors if any #}
+            {% if form.non_field_errors %}
+                <div class="alert alert-error shadow-lg rounded-lg">
+                    <ul class="list-disc list-inside">
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
                 </div>
-                <div>
-                    <label class="label">Church</label>
-                    {{ form.church }}
+            {% endif %}
+
+            {# Personal Information Section #}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+                {# Name Fields #}
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">{{ form.given_name.label }}</span>
+                        {% if form.given_name.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                    </label>
+                    {{ form.given_name|add_class:"input input-bordered w-full" }}
+                    {% if form.given_name.errors %}<div class="text-error text-sm mt-1">{{ form.given_name.errors }}</div>{% endif %}
+                </div> {# REQUIRED: models.CharField (no blank=True) #}
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">{{ form.middle_name.label }}</span>
+                        {% if form.middle_name.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                    </label>
+                    {{ form.middle_name|add_class:"input input-bordered w-full" }}
+                    {% if form.middle_name.errors %}<div class="text-error text-sm mt-1">{{ form.middle_name.errors }}</div>{% endif %}
+                </div> {# OPTIONAL: models.CharField(blank=True, null=True) #}
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">{{ form.surname.label }}</span>
+                        {% if form.surname.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                    </label>
+                    {{ form.surname|add_class:"input input-bordered w-full" }}
+                    {% if form.surname.errors %}<div class="text-error text-sm mt-1">{{ form.surname.errors }}</div>{% endif %}
+                </div> {# REQUIRED: models.CharField (no blank=True) #}
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">{{ form.suffix_name.label }}</span>
+                        {% if form.suffix_name.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                    </label>
+                    {{ form.suffix_name|add_class:"input input-bordered w-full" }}
+                    {% if form.suffix_name.errors %}<div class="text-error text-sm mt-1">{{ form.suffix_name.errors }}</div>{% endif %}
+                </div> {# OPTIONAL: models.CharField(blank=True, null=True) #}
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+                {# Demographic Fields #}
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">{{ form.sex.label }}</span>
+                        {% if form.sex.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                    </label>
+                    {{ form.sex|add_class:"select select-bordered w-full" }}
+                    {% if form.sex.errors %}<div class="text-error text-sm mt-1">{{ form.sex.errors }}</div>{% endif %}
+                </div> {# OPTIONAL: models.CharField(blank=True, null=True) #}
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">{{ form.civil_status.label }}</span>
+                        {% if form.civil_status.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                    </label>
+                    {{ form.civil_status|add_class:"select select-bordered w-full" }}
+                    {% if form.civil_status.errors %}<div class="text-error text-sm mt-1">{{ form.civil_status.errors }}</div>{% endif %}
+                </div> {# OPTIONAL: models.CharField(blank=True, null=True) #}
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">{{ form.birth_date.label }}</span>
+                        {% if form.birth_date.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                    </label>
+                    {{ form.birth_date|add_class:"input input-bordered w-full" }}
+                    {% if form.birth_date.errors %}<div class="text-error text-sm mt-1">{{ form.birth_date.errors }}</div>{% endif %}
+                </div> {# OPTIONAL: models.DateField(blank=True, null=True) #}
+
+                {# Contact Info #}
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">{{ form.contact_number.label }}</span>
+                        {% if form.contact_number.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                    </label>
+                    {{ form.contact_number|add_class:"input input-bordered w-full" }}
+                    {% if form.contact_number.errors %}<div class="text-error text-sm mt-1">{{ form.contact_number.errors }}</div>{% endif %}
+                </div> {# OPTIONAL: models.CharField(blank=True, null=True) #}
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">{{ form.email_address.label }}</span>
+                        {% if form.email_address.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                    </label>
+                    {{ form.email_address|add_class:"input input-bordered w-full" }}
+                    {% if form.email_address.errors %}<div class="text-error text-sm mt-1">{{ form.email_address.errors }}</div>{% endif %}
+                </div> {# OPTIONAL: models.EmailField(blank=True, null=True) #}
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">{{ form.address.label }}</span>
+                        {% if form.address.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                    </label>
+                    {{ form.address|add_class:"input input-bordered w-full" }}
+                    {% if form.address.errors %}<div class="text-error text-sm mt-1">{{ form.address.errors }}</div>{% endif %}
+                </div> {# OPTIONAL: models.CharField(blank=True, null=True) #}
+
+                {# Membership Details (EXCLUDING membership_id as it's auto-generated) #}
+                {# Removed the div for membership_id field #}
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">{{ form.relationship.label }}</span>
+                        {% if form.relationship.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                    </label>
+                    {{ form.relationship|add_class:"select select-bordered w-full" }}
+                    {% if form.relationship.errors %}<div class="text-error text-sm mt-1">{{ form.relationship.errors }}</div>{% endif %}
+                </div> {# REQUIRED: models.CharField (no blank=True) #}
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">{{ form.membership_status.label }}</span>
+                        {% if form.membership_status.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                    </label>
+                    {{ form.membership_status|add_class:"select select-bordered w-full" }}
+                    {% if form.membership_status.errors %}<div class="text-error text-sm mt-1">{{ form.membership_status.errors }}</div>{% endif %}
+                </div> {# REQUIRED: models.CharField (has default but still required in form unless blank=True is explicitly set) #}
+
+                {# Boolean Fields as Checkboxes #}
+                <div class="form-control col-span-full md:col-span-1">
+                    <label class="label cursor-pointer justify-start gap-2">
+                        {{ form.is_active_member|add_class:"checkbox checkbox-primary" }} {# Added DaisyUI checkbox classes #}
+                        <span class="label-text">
+                            {{ form.is_active_member.label }}
+                            {% if form.is_active_member.field.required %}<span class="text-error ml-1">*</span>{% endif %} {# Add asterisk next to label text #}
+                        </span>
+                    </label>
+                    {% if form.is_active_member.errors %}<div class="text-error text-sm mt-1">{{ form.is_active_member.errors }}</div>{% endif %}
+                </div> {# REQUIRED: models.BooleanField (defaults to True, but no blank=True means required in form) #}
+                <div class="form-control col-span-full md:col-span-1">
+                    <label class="label cursor-pointer justify-start gap-2">
+                        {{ form.is_alive|add_class:"checkbox checkbox-primary" }} {# Added DaisyUI checkbox classes #}
+                        <span class="label-text">
+                            {{ form.is_alive.label }}
+                            {% if form.is_alive.field.required %}<span class="text-error ml-1">*</span>{% endif %} {# Add asterisk next to label text #}
+                        </span>
+                    </label>
+                    {% if form.is_alive.errors %}<div class="text-error text-sm mt-1">{{ form.is_alive.errors }}</div>{% endif %}
+                </div> {# REQUIRED: models.BooleanField (defaults to True, but no blank=True means required in form) #}
+
+                {# Family Field #}
+                <div class="form-control col-span-full"> {# Occupy full width for better alignment #}
+                    <label class="label">
+                        <span class="label-text">{{ form.family.label }}</span>
+                        {% if form.family.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                    </label>
+                    {{ form.family|add_class:"select select-bordered w-full" }}
+                    {% if form.family.errors %}<div class="text-error text-sm mt-1">{{ form.family.errors }}</div>{% endif %}
+                </div> {# OPTIONAL: models.ForeignKey(null=True, blank=True) #}
+                
+                {# Church Field for Individual if directly linked #}
+                {# Assuming Individual model has a direct 'church' field #}
+                <div class="form-control col-span-full">
+                    <label class="label">
+                        <span class="label-text">{{ form.church.label }}</span>
+                        {% if form.church.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                    </label>
+                    {{ form.church|add_class:"select select-bordered w-full" }}
                     {% if form.church.errors %}<div class="text-error text-sm mt-1">{{ form.church.errors }}</div>{% endif %}
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="label">Contribution Type</label>
-                    {{ form.contribution_type }}
-                    {% if form.contribution_type.errors %}<div class="text-error text-sm mt-1">{{ form.contribution_type.errors }}</div>{% endif %}
-                </div>
-                <div>
-                    <label class="label">Date Paid</label>
-                    {{ form.date_paid }}
-                    {% if form.date_paid.errors %}<div class="text-error text-sm mt-1">{{ form.date_paid.errors }}</div>{% endif %}
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="label">Total Amount</label>
-                    {{ form.amount }}
-                    {% if form.amount.errors %}<div class="text-error text-sm mt-1">{{ form.amount.errors }}</div>{% endif %}
-                    <div id="allocated-amount-feedback" class="text-sm mt-1"></div>
-                </div>
-                <div>
-                    <label class="label">Payment Method</label>
-                    {{ form.payment_method }}
-                    {% if form.payment_method.errors %}<div class="text-error text-sm mt-1">{{ form.payment_method.errors }}</div>{% endif %}
-                </div>
-            </div>
-
-            <div>
-                <label class="label">Remarks</label>
-                {{ form.remarks }}
-                {% if form.remarks.errors %}<div class="text-error text-sm mt-1">{{ form.remarks.errors }}</div>{% endif %}
-            </div>
-
-            <div>
-                <label class="label">Remarks (Deceased Member)</label>
-                {{ form.deceased_member }}
-                {% if form.deceased_member.errors %}<div class="text-error text-sm mt-1">{{ form.deceased_member.errors }}</div>{% endif %}
-            </div>
-
-            <div class="form-control">
-                <label class="label cursor-pointer justify-start gap-2">
-                    {{ form.is_legacy_record }}
-                    <span class="label-text">Is this a Legacy Record (Manual OR Number)?</span>
-                </label>
-                {% if form.is_legacy_record.errors %}<div class="text-error text-sm mt-1">{{ form.is_legacy_record.errors }}</div>{% endif %}
-            </div>
-            
-            <div id="receipt-number-section" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div id="series-prefix-field">
-                    <label class="label">Receipt Series Prefix</label>
-                    {{ form.series_prefix }}
-                    {% if form.series_prefix.errors %}<div class="text-error text-sm mt-1">{{ form.series_prefix.errors }}</div>{% endif %}
-                </div>
-                <div id="receipt-number-field">
-                    <label class="label">Receipt Number</label>
-                    {{ form.receipt_number }}
-                    {% if form.receipt_number.errors %}<div class="text-error text-sm mt-1">{{ form.receipt_number.errors }}</div>{% endif %}
-                </div>
-            </div>
-
-            <hr class="my-6 border-base-content/20">
-
-            {# Payment Individual Allocations Formset #}
-            <h2 class="text-2xl font-bold text-base-content mb-4">Individual Allocations</h2>
-            <p class="text-sm text-base-content/70 mb-4">Allocate the total payment amount to one or more family members.</p>
-            
-            {{ formset.management_form }}
-            {% if formset.non_form_errors %}
-                <div class="alert alert-error">
-                    {% for error in formset.non_form_errors %}
-                        <p>{{ error }}</p>
-                    {% endfor %}
-                </div>
-            {% endif %}
-
-            <div id="allocation-formset-container" class="space-y-4">
-                {% for allocation_form in formset %}
-                    <div class="allocation-form bg-base-200 p-4 rounded-lg border border-base-content/10">
-                        {% if allocation_form.instance.pk %} {# Existing form #}
-                            <h3 class="font-semibold text-lg mb-2">Allocation #{{ forloop.counter }} - {{ allocation_form.instance.individual.full_name }}</h3>
-                        {% else %} {# New form #}
-                            <h3 class="font-semibold text-lg mb-2">New Allocation #{{ forloop.counter }}</h3>
-                        {% endif %}
-                        
-                        {# Hidden ID field for existing forms #}
-                        {% if allocation_form.instance.pk %}
-                            {{ allocation_form.id }}
-                        {% endif %}
-
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
-                            <div>
-                                <label class="label label-text-alt">Covered Member</label>
-                                {{ allocation_form.individual }}
-                                {% if allocation_form.individual.errors %}<div class="text-error text-xs mt-1">{{ allocation_form.individual.errors }}</div>{% endif %}
-                            </div>
-                            <div>
-                                <label class="label label-text-alt">Allocated Amount</label>
-                                {{ allocation_form.allocated_amount }}
-                                {% if allocation_form.allocated_amount.errors %}<div class="text-error text-xs mt-1">{{ allocation_form.allocated_amount.errors }}</div>{% endif %}
-                            </div>
-                            <div>
-                                <label class="label label-text-alt">Remarks (Optional)</label>
-                                {{ allocation_form.remarks }}
-                                {% if allocation_form.remarks.errors %}<div class="text-error text-xs mt-1">{{ allocation_form.remarks.errors }}</div>{% endif %}
-                            </div>
-                        </div>
-                        <div class="flex justify-end mt-3">
-                            {% if allocation_form.instance.pk %} {# Allow deleting only existing allocations #}
-                                <div class="form-control">
-                                    <label class="label cursor-pointer justify-start gap-2">
-                                        {{ allocation_form.DELETE }}
-                                        <span class="label-text">Delete Allocation</span>
-                                    </label>
-                                </div>
-                            {% else %}
-                                <button type="button" class="btn btn-error btn-sm remove-allocation-btn">Remove</button>
-                            {% endif %}
-                        </div>
-                        {% if allocation_form.non_field_errors %}
-                            <div class="alert alert-error mt-2 text-sm">
-                                {% for error in allocation_form.non_field_errors %}
-                                    <p>{{ error }}</p>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
-                {% endfor %}
-            </div>
-
-            <button type="button" id="add-allocation" class="btn btn-primary btn-outline btn-sm mt-4">
-                <i data-feather="plus" class="w-4 h-4"></i> Add Another Allocation
-            </button>
-
             <div class="flex justify-end gap-4 mt-8">
-                <a href="{% url 'payment:payment_list' %}" class="btn btn-ghost">Cancel</a>
-                <button type="submit" class="btn btn-success">Save Payment</button>
+                <a href="{% url 'individual:individual_list' %}" class="btn btn-ghost">Cancel</a>
+                <button type="submit" class="btn btn-success">Save Individual</button>
             </div>
         </form>
     </div>
 </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        feather.replace(); // Initialize Feather Icons
-
-        const individualSelect = document.getElementById('id_individual');
-        const churchSelect = document.getElementById('id_church');
-        const contributionTypeSelect = document.getElementById('id_contribution_type');
-        const amountInput = document.getElementById('id_amount');
-        const isLegacyRecordCheckbox = document.getElementById('id_is_legacy_record');
-        const receiptNumberSection = document.getElementById('receipt-number-section');
-        const receiptNumberInput = document.getElementById('id_receipt_number');
-        const seriesPrefixField = document.getElementById('series-prefix-field');
-        const seriesPrefixInput = document.getElementById('id_series_prefix');
-        const allocationFormsetContainer = document.getElementById('allocation-formset-container');
-        const addAllocationButton = document.getElementById('add-allocation');
-        const totalFormsInput = document.querySelector('input[name="allocations-TOTAL_FORMS"]');
-        const allocatedAmountFeedback = document.getElementById('allocated-amount-feedback');
-
-        // Initial setup for legacy record fields
-        function toggleLegacyFields() {
-            if (isLegacyRecordCheckbox.checked) {
-                receiptNumberSection.classList.remove('hidden');
-                seriesPrefixField.classList.add('hidden');
-                receiptNumberInput.removeAttribute('readonly');
-                // Make receipt_number required for legacy
-                receiptNumberInput.setAttribute('required', 'required');
-                // Clear series_prefix and make it non-required
-                seriesPrefixInput.value = '';
-                seriesPrefixInput.removeAttribute('required');
-                seriesPrefixInput.style.display = 'none'; // Hide the input visually
-            } else {
-                receiptNumberSection.classList.remove('hidden'); // Ensure section is visible
-                seriesPrefixField.classList.remove('hidden');
-                receiptNumberInput.setAttribute('readonly', 'readonly'); // Auto-generated is read-only
-                receiptNumberInput.removeAttribute('required');
-                receiptNumberInput.value = ''; // Clear for auto-generation
-                seriesPrefixInput.style.display = ''; // Show the input visually
-                // seriesPrefixInput.setAttribute('required', 'required'); // Optional: make prefix required for auto-gen
-            }
-        }
-
-        // Run on page load
-        toggleLegacyFields();
-        isLegacyRecordCheckbox.addEventListener('change', toggleLegacyFields);
-
-        // Fetch Church from Payee's Family (if Payee is selected)
-        individualSelect.addEventListener('change', function() {
-            const individualId = this.value;
-            if (individualId) {
-                fetch(`/payment/api/individual/${individualId}/family_details/`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.church_name) {
-                            // Find the option in the church select and set it
-                            const churchOptions = Array.from(churchSelect.options);
-                            const foundChurch = churchOptions.find(option => option.textContent.trim() === data.church_name.trim());
-                            if (foundChurch) {
-                                churchSelect.value = foundChurch.value;
-                            } else {
-                                // If church not found, maybe disable or show an error
-                                console.warn(`Church "${data.church_name}" not found in dropdown.`);
-                            }
-                        }
-                    })
-                    .catch(error => console.error('Error fetching family details:', error));
-            } else {
-                churchSelect.value = ''; // Clear church if no individual selected
-            }
-            updateAllocationIndividualOptions(); // Update allocation dropdowns based on new family
-        });
-
-        // Function to update the options for the 'individual' field in each allocation form
-        function updateAllocationIndividualOptions() {
-            const currentPayeeId = individualSelect.value;
-            if (!currentPayeeId) {
-                // If no payee, clear all options or show a message
-                document.querySelectorAll('.allocation-form select[name$="-individual"]').forEach(select => {
-                    select.innerHTML = '<option value="">--- Select Payee First ---</option>';
-                    select.disabled = true;
-                });
-                return;
-            }
-
-            fetch(`/payment/api/individual/${currentPayeeId}/family_details/`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        console.error("API Error:", data.error);
-                        return;
-                    }
-                    const familyMembers = data.family_members;
-                    const optionsHtml = familyMembers.map(member => `<option value="${member.id}">${member.full_name} (${member.membership_id})</option>`).join('');
-
-                    document.querySelectorAll('.allocation-form select[name$="-individual"]').forEach(select => {
-                        select.disabled = false;
-                        const currentValue = select.value; // Keep current value if it exists
-                        select.innerHTML = '<option value="">--- Select Covered Member ---</option>' + optionsHtml;
-                        if (currentValue && select.querySelector(`option[value="${currentValue}"]`)) {
-                            select.value = currentValue;
-                        }
-                    });
-                })
-                .catch(error => console.error('Error fetching family members for allocations:', error));
-        }
-
-        // Call on initial load if individual_id is present (e.g. edit mode)
-        if (individualSelect.value) {
-            updateAllocationIndividualOptions();
-        }
-
-
-        // Dynamic formset for PaymentIndividualAllocation
-        let formCount = parseInt(totalFormsInput.value);
-
-        function updateElementIndex(el, prefix, ndx) {
-            const id_regex = new RegExp('(' + prefix + '-\\d+-)|(' + prefix + '__prefix__-)');
-            const name_regex = new RegExp('(' + prefix + '-\\d+-)|(' + prefix + '__prefix__-)');
-
-            el.id = el.id.replace(id_regex, prefix + '-' + ndx + '-');
-            el.name = el.name.replace(name_regex, prefix + '-' + ndx + '-');
-
-            if (el.dataset.select2Id) {
-                // Re-initialize select2 if used
-                $(el).select2('destroy');
-                $(el).select2();
-            }
-        }
-
-        function addAllocationForm(prefix, emptyFormHtml) {
-            const newForm = emptyFormHtml.replace(/__prefix__/g, formCount);
-            const newFormDiv = document.createElement('div');
-            newFormDiv.innerHTML = newForm;
-            newFormDiv.className = "allocation-form bg-base-200 p-4 rounded-lg border border-base-content/10 mt-4";
-            
-            allocationFormsetContainer.appendChild(newFormDiv);
-            totalFormsInput.value = formCount + 1;
-            formCount++;
-
-            // Re-initialize Feather icons for new buttons
-            feather.replace();
-
-            // Attach event listener for the new remove button
-            newFormDiv.querySelector('.remove-allocation-btn')?.addEventListener('click', function() {
-                deleteForm(newFormDiv, prefix);
-            });
-            
-            // Re-apply styling for new inputs
-            newFormDiv.querySelectorAll('select, input[type="number"], input[type="text"]').forEach(input => {
-                let currentClasses = input.classList.value;
-                if (input.tagName === 'SELECT') {
-                    input.classList.add('select', 'select-bordered', 'w-full', 'select-sm');
-                } else if (input.type === 'number') {
-                    input.classList.add('input', 'input-bordered', 'w-full', 'input-sm');
-                } else if (input.type === 'text') {
-                    input.classList.add('input', 'input-bordered', 'w-full', 'input-sm');
-                }
-            });
-            updateAllocationIndividualOptions(); // Update individual options for new form
-            attachAmountListener(newFormDiv.querySelector('input[name$="-allocated_amount"]'));
-        }
-
-        function deleteForm(formDiv, prefix) {
-            formDiv.remove();
-            formCount--;
-            totalFormsInput.value = formCount;
-            // Re-index forms after deletion
-            document.querySelectorAll('.allocation-form').forEach((formEl, index) => {
-                formEl.querySelectorAll('[id^="' + prefix + '-"], [name^="' + prefix + '-"]').forEach(field => {
-                    updateElementIndex(field, prefix, index);
-                });
-                formEl.querySelector('h3').textContent = `Allocation #${index + 1}`;
-            });
-            updateAllocatedTotal(); // Recalculate total after deletion
-        }
-
-        // Template for new empty form
-        const emptyFormTemplate = `
-            <div class="allocation-form bg-base-200 p-4 rounded-lg border border-base-content/10">
-                <h3 class="font-semibold text-lg mb-2">New Allocation #__prefix_human__</h3>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
-                    <div>
-                        <label class="label label-text-alt">Covered Member</label>
-                        {{ formset.empty_form.individual }}
-                        <div class="text-error text-xs mt-1"></div>
-                    </div>
-                    <div>
-                        <label class="label label-text-alt">Allocated Amount</label>
-                        {{ formset.empty_form.allocated_amount }}
-                        <div class="text-error text-xs mt-1"></div>
-                    </div>
-                    <div>
-                        <label class="label label-text-alt">Remarks (Optional)</label>
-                        {{ formset.empty_form.remarks }}
-                        <div class="text-error text-xs mt-1"></div>
-                    </div>
-                </div>
-                <div class="flex justify-end mt-3">
-                    <button type="button" class="btn btn-error btn-sm remove-allocation-btn">Remove</button>
-                </div>
-            </div>
-        `.replace(/__prefix__/g, '__prefix_human__'); // Temporarily replace __prefix__ for template string
-
-        addAllocationButton.addEventListener('click', function() {
-            // Replace the temporary human-readable prefix with the actual Django __prefix__
-            const newFormHtml = emptyFormTemplate.replace(/__prefix_human__/g, formCount);
-            addAllocationForm('allocations', newFormHtml);
-        });
-
-        // Event listeners for existing remove buttons
-        document.querySelectorAll('.remove-allocation-btn').forEach(button => {
-            button.addEventListener('click', function() {
-                const formDiv = this.closest('.allocation-form');
-                const formIndex = Array.from(allocationFormsetContainer.children).indexOf(formDiv);
-                
-                // If it's an existing form (has an ID and not new), mark for deletion
-                const deleteInput = formDiv.querySelector('input[name$="-DELETE"]');
-                if (deleteInput) {
-                    deleteInput.checked = true;
-                    formDiv.style.display = 'none'; // Hide it
-                    updateAllocatedTotal(); // Recalculate total after marking for deletion
-                } else {
-                    deleteForm(formDiv, 'allocations');
-                }
-            });
-        });
-
-        // Calculate and display total allocated amount vs. main payment amount
-        function updateAllocatedTotal() {
-            let totalAllocated = 0;
-            document.querySelectorAll('input[name$="-allocated_amount"]').forEach(input => {
-                const formDiv = input.closest('.allocation-form');
-                const deleteCheckbox = formDiv.querySelector('input[name$="-DELETE"]');
-                
-                // Only sum if the form is visible (not marked for deletion)
-                if (!deleteCheckbox || !deleteCheckbox.checked) {
-                    const value = parseFloat(input.value) || 0;
-                    totalAllocated += value;
-                }
-            });
-
-            const mainAmount = parseFloat(amountInput.value) || 0;
-            const difference = mainAmount - totalAllocated;
-
-            allocatedAmountFeedback.textContent = `Allocated: ₱${totalAllocated.toFixed(2)} | Remaining: ₱${difference.toFixed(2)}`;
-            if (Math.abs(difference) < 0.01) { // Allow for tiny floating point discrepancies
-                allocatedAmountFeedback.className = "text-success text-sm mt-1";
-            } else {
-                allocatedAmountFeedback.className = "text-warning text-sm mt-1 font-semibold";
-                if (difference < 0) {
-                     allocatedAmountFeedback.textContent += " (Over-allocated!)";
-                     allocatedAmountFeedback.className = "text-error text-sm mt-1 font-semibold";
-                } else if (difference > 0) {
-                     allocatedAmountFeedback.textContent += " (Under-allocated!)";
-                }
-            }
-        }
-
-        // Attach listeners to all existing and future allocated amount inputs
-        function attachAmountListener(input) {
-            if (input) {
-                input.addEventListener('input', updateAllocatedTotal);
-            }
-        }
-        document.querySelectorAll('input[name$="-allocated_amount"]').forEach(attachAmountListener);
-        amountInput.addEventListener('input', updateAllocatedTotal);
-
-        // Initial calculation on page load
-        updateAllocatedTotal();
-
-    });
-</script>
+{# No extra JS needed for this simple form, unless you want date pickers, etc. #}
 {% endblock %}

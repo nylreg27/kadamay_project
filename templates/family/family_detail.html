@@ -1,186 +1,192 @@
-{# apps/family/templates/family/family_detail.html #}
-{% extends 'base.html' %}
-{% load static %}
+{# templates/individual/individual_detail.html #}
+{% extends "base.html" %}
+{% load static %} {# Ensure this is loaded if you use static files like icons #}
+
+{% block title %}Individual Details - {{ individual.full_name }}{% endblock %}
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold text-base-content">{{ family.family_name }} Details</h1>
-        <div class="space-x-2">
-            <a href="{% url 'family:family_update' family.pk %}" class="btn btn-warning btn-outline btn-sm">
-                <i data-feather="edit" class="w-4 h-4"></i> Edit Family
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-extrabold text-base-content">{{ individual.full_name }}</h1>
+            <p class="text-base-content/80 text-md mt-2">Details and associated records for this individual.</p>
+        </div>
+        <div class="flex space-x-3">
+            <a href="{% url 'individual:individual_list' %}" class="btn btn-md btn-outline btn-neutral flex items-center gap-2 rounded-lg font-semibold">
+                <i data-feather="arrow-left" class="w-5 h-5"></i>
+                Back to List
             </a>
-            <a href="{% url 'family:family_list' %}" class="btn btn-ghost btn-sm">
-                <i data-feather="arrow-left" class="w-4 h-4"></i> Back to List
+            <a href="{% url 'individual:individual_update' pk=individual.pk %}" class="btn btn-md btn-primary flex items-center gap-2 rounded-lg font-semibold">
+                <i data-feather="edit" class="w-5 h-5"></i>
+                Edit Individual
             </a>
         </div>
     </div>
 
-    {% if messages %}
-        <div class="mb-4">
-            {% for message in messages %}
-                <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %} shadow-lg">
-                    <div>
-                        <i data-feather="{% if message.tags == 'success' %}check-circle{% else %}alert-circle{% endif %}" class="w-6 h-6"></i>
-                        <span>{{ message }}</span>
-                    </div>
+    {# Basic Individual Information Card #}
+    <div class="card bg-base-100 shadow-lg rounded-lg p-6 mb-8">
+        <h2 class="text-2xl font-bold text-base-content mb-4 flex items-center gap-3 cursor-pointer" id="personalInfoToggle">
+            <i data-feather="info" class="w-5 h-5 text-blue-500"></i>
+            Personal Information
+            <i data-feather="chevron-down" class="w-6 h-6 ml-auto transition-transform duration-300 transform" id="toggleArrow"></i>
+        </h2>
+        <div id="personalInfoContent" class="hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {# NEW: Display Membership ID #}
+                <div>
+                    <p class="font-bold">Membership ID:</p>
+                    <p>{{ individual.membership_id|default:"N/A" }}</p>
                 </div>
-            {% endfor %}
-        </div>
-    {% endif %}
-
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div class="card bg-base-100 shadow-xl">
-            <div class="card-body">
-                <h2 class="card-title text-primary">Family Information</h2>
-                <div class="text-base-content/80">
-                    <p class="mb-2"><strong class="text-base-content">Name:</strong> {{ family.family_name }}</p>
-                    <p class="mb-2"><strong class="text-base-content">Address:</strong> {{ family.address }}</p>
-                    <p class="mb-2"><strong class="text-base-content">Church:</strong> <a href="{% url 'church:church_detail' family.church.pk %}" class="link link-hover link-info">{{ family.church.name }}</a></p>
-                    <p class="mb-2"><strong class="text-base-content">Status:</strong>
-                        <span class="badge {% if family.is_active %}badge-success{% else %}badge-error{% endif %} badge-md">
-                            {% if family.is_active %}Active{% else %}Inactive{% endif %}
-                        </span>
-                    </p>
-                    {% if family.in_charge %}
-                        <p class="mb-2"><strong class="text-base-content">In Charge:</strong> {{ family.in_charge.full_name }}</p>
+                {# Existing fields #}
+                <div>
+                    <p class="font-bold">Full Name:</p>
+                    <p>{{ individual.full_name }}</p>
+                </div>
+                <div>
+                    <p class="font-bold">Contact Number:</p>
+                    <p>{{ individual.contact_number|default:"N/A" }}</p>
+                </div>
+                <div>
+                    <p class="font-bold">Address:</p>
+                    <p>{{ individual.address|default:"N/A" }}</p>
+                </div>
+                <div>
+                    <p class="font-bold">Birth Date:</p>
+                    <p>{{ individual.birth_date|date:"F j, Y"|default:"N/A" }}</p>
+                </div>
+                <div>
+                    <p class="font-bold">Family:</p>
+                    {% if individual.family %}
+                        <p><a href="{% url 'family:family_detail' pk=individual.family.pk %}" class="link link-primary">{{ individual.family.family_name }}</a></p>
                     {% else %}
-                        <p class="mb-2"><strong class="text-base-content">In Charge:</strong> Not assigned</p>
+                        <p>Not assigned to a family.</p>
                     {% endif %}
                 </div>
+                <div>
+                    <p class="font-bold">Membership Status:</p>
+                    <span class="badge
+                        {% if individual.membership_status == 'ACTIVE' %}badge-success
+                        {% elif individual.membership_status == 'INACTIVE' %}badge-error
+                        {% elif individual.membership_status == 'PENDING' %}badge-warning
+                        {% else %}badge-info{% endif %}
+                    ">{{ individual.get_membership_status_display }}</span>
+                </div>
+                <div>
+                    <p class="font-bold">Registration Date:</p>
+                    <p>{{ individual.date_added|date:"F j, Y" }}</p>
+                </div>
+                <div>
+                    <p class="font-bold">Civil Status:</p>
+                    <p>{{ individual.get_civil_status_display|default:"N/A" }}</p>
+                </div>
+                <div>
+                    <p class="font-bold">Gender:</p>
+                    <p>{{ individual.get_sex_display|default:"N/A" }}</p>
+                </div>
+                <div>
+                    <p class="font-bold">Relationship to Head of Family:</p>
+                    <p>{{ individual.get_relationship_display_value|default:"N/A" }}</p>
+                </div>
             </div>
         </div>
+    </div>
 
-        <div class="card bg-base-100 shadow-xl">
-            <div class="card-body">
-                <h2 class="card-title text-primary">Key Metrics</h2>
-                <div class="stats stats-vertical lg:stats-horizontal shadow mb-6">
-                    <div class="stat">
-                        <div class="stat-title">Total Members</div>
-                        <div class="stat-value">{{ total_members_count }}</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-title">Active Members</div>
-                        <div class="stat-value text-success">{{ active_members_count }}</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-title">Deceased Members</div>
-                        <div class="stat-value text-error">{{ deceased_members_count }}</div>
-                    </div>
-                </div>
+    {# Combined Payment History Section for Auditor View #}
+    <div class="mb-8">
+        <h2 class="text-2xl font-bold text-base-content mb-4 flex items-center gap-3">
+            <i data-feather="file-text" class="w-5 h-5 text-gray-500"></i>
+            Consolidated Payment Records (Auditor's View)
+        </h2>
 
-                {% if family_head %}
-                    <p class="text-lg font-semibold mb-4">Family Head: <span class="text-primary">{{ family_head.given_name }} {{ family_head.surname }}</span></p>
-                {% else %}
-                    <p class="text-base-content/70 mb-4">No Family Head designated yet.</p>
-                {% endif %}
+        {% if combined_payments %}
+            <div class="overflow-x-auto">
+                <table class="table w-full table-zebra">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Receipt No.</th>
+                            <th>Total Amt.</th>
+                            <th>Allocated Amt.</th>
+                            <th>Date Paid</th>
+                            <th>Contribution Type</th>
+                            <th>Primary Payer</th>
+                            <th>Status</th>
+                            <th>View</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment_entry in combined_payments %}
+                            <tr class="hover:bg-base-200">
+                                <td>
+                                    <span class="badge
+                                        {% if payment_entry.payment_type == 'Direct Payment' %}badge-primary
+                                        {% else %}badge-secondary{% endif %}
+                                        badge-sm"
+                                    >{{ payment_entry.payment_type }}</span>
+                                </td>
+                                <td class="font-medium">{{ payment_entry.receipt_number|default:"N/A" }}</td>
+                                <td class="text-green-700">₱{{ payment_entry.amount|floatformat:2 }}</td>
+                                <td class="text-green-700">₱{{ payment_entry.allocated_amount|floatformat:2 }}</td>
+                                <td>{{ payment_entry.date_paid|date:"F j, Y" }}</td>
+                                <td>{{ payment_entry.contribution_type_name|default:"N/A" }}</td>
+                                <td>
+                                    {% if payment_entry.primary_payer_id %}
+                                        <a href="{% url 'individual:individual_detail' payment_entry.primary_payer_id %}" class="link link-primary">
+                                            {{ payment_entry.primary_payer_name|default:"N/A" }}
+                                        </a>
+                                    {% else %}
+                                        {{ payment_entry.primary_payer_name|default:"N/A" }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge
+                                        {% if payment_entry.payment_status_display == 'Validated' %}badge-success
+                                        {% elif payment_entry.payment_status_display == 'Pending Validation' %}badge-warning
+                                        {% elif payment_entry.payment_status_display == 'Cancelled' %}badge-error
+                                        {% else %}badge-info{% endif %}
+                                    ">{{ payment_entry.payment_status_display }}</span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'payment:payment_detail' pk=payment_entry.payment_id %}" class="btn btn-xs btn-outline btn-info">View</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-        </div>
-    </div>
+        {% else %}
+            <div class="text-center py-12 bg-base-200 rounded-lg shadow-inner">
+                <i data-feather="search-off" class="w-12 h-12 text-base-content/40 mx-auto mb-3"></i>
+                <p class="text-base-content/70 text-lg">No payment records found for this individual.</p>
+            </div>
+        {% endif %}
+    </div> {# End of Combined Payment History Section #}
 
-    <div class="card bg-base-100 shadow-xl mb-8">
-        <div class="card-body">
-            <h2 class="card-title text-primary">Family Members</h2>
-            {% if total_members_count > 0 %}
-                <div class="overflow-x-auto">
-                    <table class="table w-full">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Relationship</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for individual in all_individuals %}
-                                <tr>
-                                    <td><a href="{% url 'individual:individual_detail' individual.pk %}" class="link link-hover link-primary">{{ individual.full_name }}</a></td>
-                                    <td>{{ individual.get_relationship_display_value }}</td> {# Use the display value #}
-                                    <td>
-                                        <span class="badge {% if individual.is_active_member %}badge-success{% else %}badge-error{% endif %} badge-md">
-                                            {% if individual.is_active_member %}ACTIVE{% else %}INACTIVE{% endif %}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div class="flex gap-1">
-                                            <a href="{% url 'individual:individual_detail' individual.pk %}" class="btn btn-xs btn-info btn-square tooltip" data-tip="View Member">
-                                                <i data-feather="eye" class="w-4 h-4"></i>
-                                            </a>
-                                            <a href="{% url 'individual:individual_update' individual.pk %}" class="btn btn-xs btn-warning btn-square tooltip" data-tip="Edit Member">
-                                                <i data-feather="edit-3" class="w-4 h-4"></i>
-                                            </a>
-                                            {# Add delete button if needed #}
-                                        </div>
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                <div class="mt-4 text-right">
-                    <a href="{% url 'individual:family_individual_create' family.pk %}" class="btn btn-primary btn-md">
-                        <i data-feather="plus-circle" class="w-5 h-5"></i> Add New Member
-                    </a>
-                </div>
-            {% else %}
-                <div class="alert alert-info shadow-lg mt-6">
-                    <div>
-                        <i data-feather="info" class="w-6 h-6"></i>
-                        <span>This family currently has no registered members.</span>
-                    </div>
-                </div>
-                <div class="mt-4 text-center">
-                    <a href="{% url 'individual:family_individual_create' family.pk %}" class="btn btn-primary btn-md">
-                        <i data-feather="plus-circle" class="w-5 h-5"></i> Add First Member
-                    </a>
-                </div>
-            {% endif %}
-        </div>
-    </div>
-
-    <div class="card bg-base-100 shadow-xl">
-        <div class="card-body">
-            <h2 class="card-title text-primary">Recent Payments by Family Members</h2>
-            {% if family_payments %}
-                <div class="overflow-x-auto">
-                    <table class="table w-full">
-                        <thead>
-                            <tr>
-                                <th>Individual</th>
-                                <th>Amount</th>
-                                <th>Date Paid</th>
-                                <th>Payment Type</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for payment in family_payments %}
-                                <tr>
-                                    <td><a href="{% url 'individual:individual_detail' payment.individual.pk %}" class="link link-hover link-primary">{{ payment.individual.full_name }}</a></td>
-                                    <td>{{ payment.amount|floatformat:2 }}</td>
-                                    <td>{{ payment.date_paid|date:"M j, Y" }}</td>
-                                    <td>{{ payment.get_payment_type_display }}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <div class="alert alert-warning shadow-lg mt-6">
-                    <div>
-                        <i data-feather="alert-triangle" class="w-6 h-6"></i>
-                        <span>No recent payments found for this family.</span>
-                    </div>
-                </div>
-            {% endif %}
-        </div>
-    </div>
 </div>
-
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://unpkg.com/feather-icons"></script>
 <script>
-    feather.replace();
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace(); // Initialize Feather icons
+
+        const personalInfoToggle = document.getElementById('personalInfoToggle');
+        const personalInfoContent = document.getElementById('personalInfoContent');
+        const toggleArrow = document.getElementById('toggleArrow');
+
+        if (personalInfoToggle && personalInfoContent && toggleArrow) {
+            personalInfoToggle.addEventListener('click', function() {
+                // Toggle the 'hidden' class to show/hide the content
+                personalInfoContent.classList.toggle('hidden');
+
+                // Rotate the arrow icon
+                toggleArrow.classList.toggle('rotate-180');
+            });
+            // Optional: Initially show the personal info content if you prefer
+            // personalInfoContent.classList.remove('hidden');
+            // toggleArrow.classList.add('rotate-180');
+        }
+    });
 </script>
 {% endblock %}

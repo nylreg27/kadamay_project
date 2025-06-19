@@ -121,10 +121,9 @@
                 {# Navigation links #}
                 <li><a href="{% url 'report:dashboard' %}" class="{% if 'report' in request.resolver_match.app_names and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><i data-feather="home"></i> Dashboard</a></li>
                 
-                {# Individual Dashboard link #}
-                <li><a href="{% url 'individual:individual_dashboard' %}" class="{% if 'individual' in request.resolver_match.app_names and request.resolver_match.url_name == 'individual_dashboard' %}active{% endif %}"><i data-feather="activity"></i> Individual Dashboard</a></li>
+                {# Individual List/Dashboard link - Corrected to point to individual_list #}
+                <li><a href="{% url 'individual:individual_list' %}" class="{% if 'individual' in request.resolver_match.app_names and request.resolver_match.url_name == 'individual_list' %}active{% endif %}"><i data-feather="users"></i> Individual Members</a></li>
 
-                <li><a href="{% url 'individual:individual_list' %}" class="{% if 'individual' in request.resolver_match.app_names and request.resolver_match.url_name == 'individual_list' %}active{% endif %}"><i data-feather="users"></i> Members List</a></li>
                 <li><a href="{% url 'family:family_list' %}" class="{% if 'family' in request.resolver_match.app_names %}active{% endif %}"><i data-feather="user-check"></i> Families</a></li>
                 <li><a href="{% url 'church:church_list' %}" class="{% if 'church' in request.resolver_match.app_names %}active{% endif %}"><i data-feather="layout"></i> Churches</a></li>
                 

@@ -1,283 +1,212 @@
 # apps/individual/views.py
 
-from django.shortcuts import render, get_object_or_404
-from django.http import JsonResponse
-from django.views.decorators.http import require_http_methods
-from django.contrib.auth.decorators import login_required
-from django.views.generic import TemplateView, ListView, DetailView, CreateView, UpdateView, DeleteView
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.urls import reverse_lazy
-from django.db.models import Q, Sum, Max # <--- ADD Sum, Max IMPORTS!
-from django.contrib import messages
-from apps.payment.models import Payment # <--- Make sure this is imported correctly
+from django.views.generic import (
+    CreateView, DetailView, ListView, UpdateView, DeleteView
+)
+from django.urls import reverse_lazy  # For redirecting after form submission
+from django.db.models import Q  # NEW: Import Q object for complex lookups
+
 from apps.individual.models import Individual
-from apps.family.models import Family
 from apps.church.models import Church
-from .forms import IndividualForm # Assuming you have apps/individual/forms.py
-
-# Your existing IndividualDashboardView
-class IndividualDashboardView(LoginRequiredMixin, TemplateView):
-    template_name = 'individual/individual_dashboard.html'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['title'] = 'Kadamay Dashboard'
-
-        # Fetch individuals for the sidebar list
-        context['individuals'] = Individual.objects.filter(
-            is_active_member=True,
-            is_alive=True
-        ).order_by('surname', 'given_name')
-
-        return context
+from apps.family.models import Family
+from apps.individual.forms import IndividualForm
+# NEW: Added UserPassesTestMixin for permission checks
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+# NEW: For fetching Church/Family object
+from django.shortcuts import get_object_or_404
 
 
-@require_http_methods(["GET"])
-@login_required
-def individual_details_api(request, pk):
-    try:
-        individual = get_object_or_404(Individual, pk=pk)
-        
-        # --- FIXED: Fetch payment history for this individual as payer OR covered member ---
-        # Filter payments where:
-        # 1. The individual is the primary 'payer' of the payment (payment.individual)
-        # OR
-        # 2. The individual is listed as a 'covered_member' through PaymentIndividualAllocation
-        all_payments = Payment.objects.filter(
-            Q(individual=individual) | 
-            Q(individual_allocations__individual=individual)
-        ).distinct().order_by('-date_paid', '-created_at') # Use distinct to avoid duplicate payments if an individual is both payer and covered member on the same payment.
-
-        payments_data = []
-        for payment in all_payments:
-            payments_data.append({
-                'id': payment.id,
-                'date': payment.date_paid.strftime('%Y-%m-%d'), # Format date
-                'description': payment.contribution_type.name if payment.contribution_type else 'N/A',
-                'amount': float(payment.amount), # Convert Decimal to float for JSON
-                'receipt_number': payment.receipt_number if payment.receipt_number else 'N/A',
-                'status': payment.payment_status, # Send raw status for badge logic
-                'status_display': payment.get_payment_status_display(), # Send display for convenience
-                'method_display': payment.get_payment_method_display(),
-                'deceased_member_name': payment.deceased_member.full_name if payment.deceased_member else 'N/A',
-                'is_cancelled': payment.is_cancelled, # Send cancellation flag
-                'is_legacy_record': payment.is_legacy_record, # Send legacy flag
-            })
-        
-        # --- Calculate financial summary ---
-        # Exclude 'CANCELLED' payments from total contributions unless explicitly needed for audit report
-        active_payments = all_payments.exclude(payment_status='CANCELLED')
-        total_contributions = active_payments.aggregate(Sum('amount'))['amount__sum'] or 0.00
-        latest_payment_date = active_payments.aggregate(Max('date_paid'))['date_paid__max']
-
-        data = {
-            'id': individual.id,
-            'full_name': individual.full_name,
-            'given_name': individual.given_name,
-            'middle_name': individual.middle_name,
-            'surname': individual.surname,
-            'suffix_name': individual.suffix_name,
-            'membership_id': individual.membership_id, # Corrected from 'code'
-            'relationship': individual.relationship,
-            'membership_status': individual.membership_status,
-            'is_alive': individual.is_alive,
-            'is_active_member': individual.is_active_member,
-            'sex': individual.get_sex_display(), # Get display value
-            'civil_status': individual.get_civil_status_display(), # Get display value
-            'birth_date': individual.birth_date.strftime('%Y-%m-%d') if individual.birth_date else 'N/A',
-            'contact_no': individual.contact_number or 'N/A', # Use contact_number
-            'email_address': individual.email_address or 'N/A',
-            'address': individual.address or 'N/A', # Assuming address is CharField
-            'date_added': individual.date_added.strftime('%Y-%m-%d') if individual.date_added else 'N/A',
-            
-            # Family details (adjust based on your Family model structure)
-            'family_id': individual.family.id if individual.family else None,
-            'family_name': individual.family.family_name if individual.family else "N/A",
-            'family_head_name': individual.family.head_of_family.full_name if individual.family and hasattr(individual.family, 'head_of_family') else "N/A",
-            'other_family_members': [
-                {'id': m.id, 'full_name': m.full_name, 'relationship': m.get_relationship_display_value()} 
-                for m in individual.family.members.all() if m != individual
-            ] if individual.family else [],
-
-            # --- Financial Summary and Payments Data ---
-            'total_contributions': total_contributions,
-            'latest_payment_date': latest_payment_date.strftime('%Y-%m-%d') if latest_payment_date else 'N/A',
-            'payments': payments_data, # Include the payment history
-        }
-        return JsonResponse(data)
-    except Individual.DoesNotExist:
-        return JsonResponse({'error': 'Individual not found'}, status=404)
-    except Exception as e:
-        print(f"Error in individual_details_api: {e}")
-        return JsonResponse({'error': str(e)}, status=500)
-
-# Individual List View - MODIFIED FOR SEARCH
-class IndividualListView(LoginRequiredMixin, ListView):
+class IndividualListView(ListView):
+    """
+    Lists all Individual objects with search functionality.
+    """
     model = Individual
     template_name = 'individual/individual_list.html'
     context_object_name = 'individuals'
     paginate_by = 10
 
     def get_queryset(self):
-        queryset = Individual.objects.filter(
-            is_active_member=True, is_alive=True)
+        """
+        Returns the queryset for listing Individuals, ordered by surname and given name.
+        Adds search functionality for full name, family name, church name,
+        and now, membership ID.
+        """
+        queryset = super().get_queryset()
+
+        # Prefetch related data for efficiency if displayed in the list
+        queryset = queryset.select_related('family', 'church')
+
         search_query = self.request.GET.get('search')
         if search_query:
             queryset = queryset.filter(
-                Q(surname__icontains=search_query) |
                 Q(given_name__icontains=search_query) |
                 Q(middle_name__icontains=search_query) |
-                Q(suffix_name__icontains=search_query) |
-                Q(membership_id__icontains=search_query) |
-                Q(family__family_name__icontains=search_query) 
-                # Q(family__church__name__icontains=search_query) # Uncomment if you have Church foreign key in Family
+                Q(surname__icontains=search_query) |
+                Q(contact_number__icontains=search_query) |
+                Q(address__icontains=search_query) |
+                Q(family__family_name__icontains=search_query) |
+                Q(church__name__icontains=search_query) |
+                # NEW: Allow searching by membership_id
+                Q(membership_id__icontains=search_query)
             )
         return queryset.order_by('surname', 'given_name')
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['title'] = 'Members'
-        context['search_query'] = self.request.GET.get('search', '')
-        return context
 
-
-# Individual Detail View
-class IndividualDetailView(DetailView):
-    model = Individual
-    template_name = 'individual/individual_detail.html' # Make sure this path is correct
-    context_object_name = 'individual'
-
-    def get_queryset(self):
-        """
-        Optimizes fetching of Individual data along with related payments.
-        Prefetches:
-        - Payments directly made by this individual ('payments' related_name on Payment model).
-            - Includes related ContributionType and Church for these direct payments.
-        - PaymentIndividualAllocation objects where this individual is a 'covered_member'
-          ('payment_allocations' related_name on PaymentIndividualAllocation model).
-            - Includes the actual Payment object for each allocation.
-            - Includes related ContributionType and Church for payments associated with allocations.
-        """
-        return Individual.objects.all().prefetch_related(
-            # Prefetch for payments where this individual is the primary payer
-            'payments__contribution_type',
-            'payments__church',
-
-            # Prefetch for the intermediary PaymentIndividualAllocation objects
-            # (where this individual is a 'covered_member')
-            'payment_allocations',
-            # Further prefetch the Payment object linked to each allocation,
-            # and its related ContributionType and Church.
-            'payment_allocations__payment__contribution_type',
-            'payment_allocations__payment__church'
-        )
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        individual = self.object # The individual object is now prefetched efficiently
-
-        # Accessing the prefetched relationships:
-        # Payments where this individual is the primary payer (from Payment.individual ForeignKey)
-        context['direct_payments'] = individual.payments.all()
-
-        # Payments where this individual is covered as an allocated member
-        # (through PaymentIndividualAllocation M2M table)
-        context['covered_payment_allocations'] = individual.payment_allocations.all()
-
-        return context
-
-# Individual Create View
-class IndividualCreateView(LoginRequiredMixin, CreateView):
+# Added UserPassesTestMixin
+class IndividualCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    """
+    View for creating a new Individual record.
+    Requires user to be logged in and to be a superuser.
+    """
     model = Individual
     form_class = IndividualForm
     template_name = 'individual/individual_form.html'
     success_url = reverse_lazy('individual:individual_list')
-    extra_context = {'title': 'Add New Individual'}
+
+    def test_func(self):
+        return self.request.user.is_superuser  # Only superusers can create individuals
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = 'Add New Individual'
+        return context
 
     def form_valid(self, form):
-        if not form.cleaned_data.get('membership_status'):
-            form.instance.membership_status = 'ACTIVE'
-        messages.success(self.request, "Individual added successfully!")
+        # The membership_id is now automatically generated in the model's save method,
+        # so no need to set it here.
         return super().form_valid(form)
 
-    def form_invalid(self, form):
-        print("\n--- IndividualCreateView FORM IS INVALID! ---")
-        print("Field errors:", form.errors)
-        print("Non-field errors:", form.non_field_errors)
-        print("-------------------------------------\n")
-        messages.error(self.request, "Please correct the errors below.")
-        return super().form_invalid(form)
 
-
-# Individual Update View
-class IndividualUpdateView(LoginRequiredMixin, UpdateView):
+# Added UserPassesTestMixin
+class IndividualUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    """
+    View for updating an existing Individual record.
+    Requires user to be logged in and to be a superuser.
+    """
     model = Individual
     form_class = IndividualForm
     template_name = 'individual/individual_form.html'
     success_url = reverse_lazy('individual:individual_list')
-    extra_context = {'title': 'Edit Individual'}
 
-    def form_valid(self, form):
-        messages.success(self.request, "Individual updated successfully!")
-        return super().form_valid(form)
+    def test_func(self):
+        return self.request.user.is_superuser  # Only superusers can update individuals
 
-    def form_invalid(self, form):
-        print("\n--- IndividualUpdateView FORM IS INVALID! ---")
-        print("Field errors:", form.errors)
-        print("Non-field errors:", form.non_field_errors)
-        print("-------------------------------------\n")
-        messages.error(self.request, "Please correct the errors below.")
-        return super().form_invalid(form)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = 'Update Individual Details'
+        return context
 
-# Individual Delete View
-class IndividualDeleteView(LoginRequiredMixin, DeleteView):
+
+# Added UserPassesTestMixin
+class IndividualDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    """
+    View for deleting an Individual record.
+    Requires user to be logged in and to be a superuser.
+    """
     model = Individual
     template_name = 'individual/individual_confirm_delete.html'
     success_url = reverse_lazy('individual:individual_list')
 
-    def form_valid(self, form):
-        messages.success(self.request, "Individual deleted successfully!")
-        return super().form_valid(form)
+    def test_func(self):
+        return self.request.user.is_superuser  # Only superusers can delete individuals
 
-# URL for listing individuals within a specific church - MODIFIED FOR SEARCH
-class IndividualListInChurchView(LoginRequiredMixin, ListView):
+
+class IndividualDetailView(DetailView):
+    """
+    Detailed view for an Individual, designed to efficiently fetch all related
+    payment information using prefetch_related for optimal database performance.
+    """
+    model = Individual
+    template_name = 'individual/individual_detail.html'
+    context_object_name = 'individual'
+
+    def get_queryset(self):
+        queryset = Individual.objects.all().prefetch_related(
+            'payments__contribution_type',
+            'payments__church',
+            'payment_allocations',
+            'payment_allocations__payment__contribution_type',
+            'payment_allocations__payment__church'
+        )
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        individual = self.object
+
+        combined_payments = []
+
+        for payment in individual.payments.all():
+            combined_payments.append({
+                'payment_type': 'Direct Payment',
+                'receipt_number': payment.receipt_number,
+                'amount': payment.amount,
+                'allocated_amount': payment.amount,
+                'date_paid': payment.date_paid,
+                'contribution_type_name': payment.contribution_type.name if payment.contribution_type else 'N/A',
+                'payment_status_display': payment.get_payment_status_display(),
+                'primary_payer_name': individual.full_name,
+                'primary_payer_id': individual.pk,
+                'payment_id': payment.pk,
+            })
+
+        for allocation in individual.payment_allocations.all():
+            combined_payments.append({
+                'payment_type': 'Allocation',
+                'receipt_number': allocation.payment.receipt_number,
+                'amount': allocation.payment.amount,
+                'allocated_amount': allocation.allocated_amount,
+                'date_paid': allocation.payment.date_paid,
+                'contribution_type_name': allocation.payment.contribution_type.name if allocation.payment.contribution_type else 'N/A',
+                'payment_status_display': allocation.payment.get_payment_status_display(),
+                'primary_payer_name': allocation.payment.individual.full_name if allocation.payment.individual else 'N/A',
+                'primary_payer_id': allocation.payment.individual.pk if allocation.payment.individual else None,
+                'payment_id': allocation.payment.pk,
+            })
+
+        combined_payments.sort(key=lambda x: x['date_paid'], reverse=True)
+
+        context['combined_payments'] = combined_payments
+        return context
+
+
+class IndividualListByChurchView(ListView):
     model = Individual
     template_name = 'individual/individual_list.html'
     context_object_name = 'individuals'
+    paginate_by = 10
 
     def get_queryset(self):
         church_id = self.kwargs['church_id']
-        church = get_object_or_404(Church, id=church_id)
+        queryset = Individual.objects.filter(church__id=church_id)
 
-        queryset = Individual.objects.filter(
-            family__church=church,
-            is_active_member=True,
-            is_alive=True
-        )
+        # Prefetch related data for efficiency if displayed in the list
+        queryset = queryset.select_related('family', 'church')
+
         search_query = self.request.GET.get('search')
         if search_query:
             queryset = queryset.filter(
-                Q(surname__icontains=search_query) |
                 Q(given_name__icontains=search_query) |
                 Q(middle_name__icontains=search_query) |
-                Q(suffix_name__icontains=search_query) |
-                Q(membership_id__icontains=search_query) |
-                Q(family__family_name__icontains=search_query)
+                Q(surname__icontains=search_query) |
+                Q(contact_number__icontains=search_query) |
+                Q(address__icontains=search_query) |
+                Q(family__family_name__icontains=search_query) |
+                # NEW: Allow searching by membership_id
+                Q(membership_id__icontains=search_query)
             )
         return queryset.order_by('surname', 'given_name')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         church_id = self.kwargs['church_id']
-        church = get_object_or_404(Church, id=church_id)
-        context['title'] = f'Individuals in {church.name}'
-        context['church'] = church
-        context['search_query'] = self.request.GET.get(
-            'search', '')
+        church = get_object_or_404(Church, pk=church_id)
+        context['page_title'] = f'Members of {church.name}'
+        context['current_church'] = church
         return context
 
-# NEW URL: For creating an individual within a specific family context
-class IndividualCreateInFamilyView(LoginRequiredMixin, CreateView):
+
+class IndividualCreateForFamilyView(LoginRequiredMixin, CreateView):
     model = Individual
     form_class = IndividualForm
     template_name = 'individual/individual_form.html'
@@ -286,18 +215,18 @@ class IndividualCreateInFamilyView(LoginRequiredMixin, CreateView):
         initial = super().get_initial()
         family_id = self.kwargs.get('family_id')
         if family_id:
-            initial['family'] = get_object_or_404(Family, id=family_id)
+            initial['family'] = get_object_or_404(Family, pk=family_id)
         return initial
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         family_id = self.kwargs.get('family_id')
         if family_id:
-            family = get_object_or_404(Family, id=family_id)
-            context['title'] = f'Add Individual to {family.family_name}'
-            context['family'] = family
+            family = get_object_or_404(Family, pk=family_id)
+            # Corrected to family.family_name
+            context['page_title'] = f'Add Member to Family: {family.family_name}'
         else:
-            context['title'] = 'Add New Individual'
+            context['page_title'] = 'Add New Individual'
         return context
 
     def get_success_url(self):
@@ -305,17 +234,3 @@ class IndividualCreateInFamilyView(LoginRequiredMixin, CreateView):
         if family_id:
             return reverse_lazy('family:family_detail', kwargs={'pk': family_id})
         return reverse_lazy('individual:individual_list')
-
-    def form_valid(self, form):
-        if not form.cleaned_data.get('membership_status'):
-            form.instance.membership_status = 'ACTIVE'
-        messages.success(self.request, "Individual added successfully!")
-        return super().form_valid(form)
-
-    def form_invalid(self, form):
-        print("\n--- IndividualCreateInFamilyView FORM IS INVALID! ---")
-        print("Field errors:", form.errors)
-        print("Non-field errors:", form.non_field_errors)
-        print("-------------------------------------\n")
-        messages.error(self.request, "Please correct the errors below.")
-        return super().form_invalid(form)
