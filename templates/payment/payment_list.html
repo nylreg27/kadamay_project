@@ -1,15 +1,32 @@
+{# apps/payment/templates/payment/payment_list.html #}
 {% extends 'base.html' %}
-{% load static %} {# Make sure static is loaded if you use static files like images/icons #}
+{% load static %}
+{% load crispy_forms_tags %}
 
-{% block title %}PAYMENTS - KADAMAY MORTUARY SYSTEM{% endblock %}
+{% block title %}
+    {{ page_title }} - Kadamay Mortuary System
+{% endblock %}
+
+{% block extra_css %}
+{# Add any specific CSS for this page here if needed #}
+<style>
+    /* Add basic card styles for the payment list items */
+    .payment-card {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+    .payment-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="card bg-base-100 shadow-sm p-4 md:p-6 text-base-content rounded-lg my-4 mx-auto max-w-7xl">
-    <!-- Header Section -->
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <div>
+<div class="container mx-auto px-4 py-8">
+    <div class="flex flex-col md:flex-row md:items-center justify-between mb-8">
+        <div class="mb-4 md:mb-0">
             <h1 class="text-2xl md:text-3xl font-bold text-primary flex items-center uppercase">
-                <i data-feather="credit-card" class="w-6 h-6 md:w-7 md:h-7 mr-2"></i> 
+                <i data-feather="credit-card" class="w-6 h-6 md:w-7 md:h-7 mr-2"></i>
                 PAYMENT RECORDS
             </h1>
             <p class="text-sm text-base-content/70 mt-1 uppercase">
@@ -17,8 +34,8 @@
             </p>
         </div>
         <div class="flex items-center space-x-2">
-            {# FIXED: Changed URL from 'individual:individual_dashboard' to 'payment:payment_create' #}
-            <a href="{% url 'payment:payment_create' %}" 
+            {# FIXED: Changed URL from 'payment:payment_create' to 'payment:add_payment' #}
+            <a href="{% url 'payment:add_payment' %}" 
                class="btn btn-primary btn-sm md:btn-md flex items-center gap-2 transition-all hover:shadow-md uppercase">
                 <i data-feather="plus" class="w-4 h-4"></i> 
                 <span class="hidden sm:inline">NEW PAYMENT</span>
@@ -26,243 +43,155 @@
         </div>
     </div>
 
-    <!-- Filter Card -->
+    {# Display Django messages #}
+    {% if messages %}
+        <div class="mb-6">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} shadow-lg mb-3 rounded-lg text-sm">
+                    <div>
+                        {% if message.tags == 'success' %}
+                            <i data-feather="check-circle" class="w-6 h-6"></i>
+                        {% elif message.tags == 'error' %}
+                            <i data-feather="alert-circle" class="w-6 h-6"></i>
+                        {% else %}
+                            <i data-feather="info" class="w-6 h-6"></i>
+                        {% endif %}
+                        <span class="font-medium">{{ message }}</span>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
     <div class="card bg-base-200/50 shadow-sm p-4 rounded-lg mb-6 border border-base-300">
         <div class="flex flex-col md:flex-row md:items-center justify-between mb-3">
-            <h2 class="text-lg font-semibold text-secondary uppercase">FILTER PAYMENTS</h2>
-            <a href="{% url 'payment:payment_list' %}" class="text-xs link link-hover link-primary mt-1 md:mt-0 uppercase">
-                CLEAR FILTERS
-            </a>
-        </div>
-        <form method="get" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
-            <div class="form-control">
-                <label for="contribution_type" class="label label-text text-sm uppercase">CONTRIBUTION TYPE</label>
-                <select name="contribution_type" id="contribution_type" class="select select-bordered select-sm w-full uppercase">
-                    <option value="">ALL TYPES</option>
-                    {% for type in contribution_types %}
-                    <option value="{{ type.id }}" {% if request.GET.contribution_type == type.id|stringformat:"s" %}selected{% endif %}>
-                        {{ type.name|upper }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="form-control">
-                <label for="start_date" class="label label-text text-sm uppercase">FROM DATE</label>
-                <input type="date" name="start_date" id="start_date" 
-                       value="{{ request.GET.start_date|default:'' }}" 
-                       class="input input-bordered input-sm w-full uppercase">
-            </div>
-            <div class="form-control">
-                <label for="end_date" class="label label-text text-sm uppercase">TO DATE</label>
-                <input type="date" name="end_date" id="end_date" 
-                       value="{{ request.GET.end_date|default:'' }}" 
-                       class="input input-bordered input-sm w-full uppercase">
-            </div>
-            <div class="form-control">
-                <button type="submit" class="btn btn-primary btn-sm flex items-center gap-2 uppercase">
-                    <i data-feather="filter" class="w-4 h-4"></i> 
-                    FILTER
-                </button>
-            </div>
-        </form>
-    </div>
+            <h3 class="text-lg font-semibold text-base-content mb-2 md:mb-0">Filter Payments</h3>
+            <div class="flex items-center space-x-3">
+                <form method="GET" action="{% url 'payment:payment_list' %}" class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+                    <input type="text" name="search" placeholder="Search OR#, payer, notes..."
+                           value="{{ search_query }}"
+                           class="input input-bordered input-sm md:input-md w-full max-w-xs focus:outline-none focus:border-primary">
+                    
+                    <select name="status" class="select select-bordered select-sm md:select-md w-full max-w-xs focus:outline-none focus:border-primary">
+                        <option value="ALL" {% if current_status_filter == 'ALL' %}selected{% endif %}>All Statuses</option>
+                        {% for status_code, status_display in payment_statuses %}
+                            <option value="{{ status_code }}" {% if current_status_filter == status_code %}selected{% endif %}>{{ status_display }}</option>
+                        {% endfor %}
+                    </select>
 
-    <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div class="card bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 shadow-sm p-4 rounded-lg">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-blue-800 uppercase">TOTAL PAYMENTS</p>
-                    <p class="text-2xl font-bold text-blue-900">{{ payment.count }}</p>
-                </div>
-                <div class="p-2 rounded-full bg-blue-100/50">
-                    <i data-feather="credit-card" class="w-5 h-5 text-blue-600"></i>
-                </div>
-            </div>
-        </div>
-
-        <div class="card bg-gradient-to-br from-green-50 to-green-100 border border-green-200 shadow-sm p-4 rounded-lg">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-green-800 uppercase">TOTAL AMOUNT</p>
-                    <p class="text-2xl font-bold text-green-900">₱{{ total_amount|floatformat:2 }}</p>
-                </div>
-                <div class="p-2 rounded-full bg-green-100/50">
-                    <i data-feather="dollar-sign" class="w-5 h-5 text-green-600"></i>
-                </div>
-            </div>
-        </div>
-
-        <div class="card bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 shadow-sm p-4 rounded-lg">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-purple-800 uppercase">LATEST PAYMENT</p>
-                    <p class="text-lg font-bold text-purple-900 uppercase">
-                        {{ latest_payment.date_paid|date:"M d, Y"|default:"N/A"|upper }}
-                    </p>
-                    {% if latest_payment %}
-                    <p class="text-xs text-purple-700 mt-1 uppercase">
-                        {{ latest_payment.individual.given_name|upper }} {{ latest_payment.individual.surname|upper }} • ₱{{ latest_payment.amount|floatformat:2 }}
-                    </p>
-                    {% endif %}
-                </div>
-                <div class="p-2 rounded-full bg-purple-100/50">
-                    <i data-feather="clock" class="w-5 h-5 text-purple-600"></i>
-                </div>
+                    <select name="method" class="select select-bordered select-sm md:select-md w-full max-w-xs focus:outline-none focus:border-primary">
+                        <option value="ALL" {% if current_method_filter == 'ALL' %}selected{% endif %}>All Methods</option>
+                        {% for method_code, method_display in payment_methods %}
+                            <option value="{{ method_code }}" {% if current_method_filter == method_code %}selected{% endif %}>{{ method_display }}</option>
+                        {% endfor %}
+                    </select>
+                    
+                    <button type="submit" class="btn btn-primary btn-sm md:btn-md flex-shrink-0">
+                        <i data-feather="filter" class="w-4 h-4"></i> Apply Filters
+                    </button>
+                    <a href="{% url 'payment:payment_list' %}" class="btn btn-ghost btn-sm md:btn-md flex-shrink-0">
+                        <i data-feather="x-circle" class="w-4 h-4"></i> Clear
+                    </a>
+                </form>
             </div>
         </div>
     </div>
 
-    <!-- Payments Table -->
-    {% if payment %}
-    <div class="border border-base-300 rounded-lg overflow-hidden shadow-sm">
-        <div class="overflow-x-auto">
-            <table class="table table-zebra table-auto md:table-fixed w-full">
-                <thead class="bg-base-200/50">
-                    <tr class="text-sm">
-                        <th class="w-1/4 uppercase">MEMBER</th>
-                        <th class="w-1/5 uppercase">TYPE</th>
-                        <th class="w-1/6 uppercase">AMOUNT</th>
-                        <th class="w-1/5 uppercase">DATE</th>
-                        <th class="w-1/6 text-right uppercase">ACTIONS</th>
+    {% if payments %}
+        <div class="overflow-x-auto bg-base-100 shadow-lg rounded-lg p-4">
+            <table class="table table-zebra w-full">
+                {# head #}
+                <thead>
+                    <tr>
+                        <th class="text-base-content/80 text-sm font-semibold uppercase">OR No.</th>
+                        <th class="text-base-content/80 text-sm font-semibold uppercase">Date Paid</th>
+                        <th class="text-base-content/80 text-sm font-semibold uppercase">Payer</th>
+                        <th class="text-base-content/80 text-sm font-semibold uppercase text-right">Amount</th>
+                        <th class="text-base-content/80 text-sm font-semibold uppercase">Method</th>
+                        <th class="text-base-content/80 text-sm font-semibold uppercase text-center">Status</th>
+                        <th class="text-base-content/80 text-sm font-semibold uppercase text-center">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-base-200">
-                    {% for payment in payment %}
-                    <tr class="hover:bg-base-200/30 transition-colors">
-                        <td>
-                            <div class="flex items-center space-x-3">
-                                <div class="avatar placeholder">
-                                    <div class="bg-neutral text-neutral-content rounded-full w-8 h-8">
-                                        <span class="text-xs uppercase">
-                                            {{ payment.individual.given_name|first|upper }}{{ payment.individual.surname|first|upper }}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div>
-                                    <a href="{% url 'individual:individual_detail' payment.individual.id %}" 
-                                       class="font-medium link link-hover link-primary uppercase">
-                                        {{ payment.individual.surname|upper }}
+                <tbody>
+                    {% for payment in payments %}
+                        <tr class="hover:bg-base-200">
+                            <td>
+                                <div class="font-bold text-primary">{{ payment.receipt_number|default:"N/A" }}</div>
+                                {% if payment.is_legacy_record %}
+                                    <div class="badge badge-outline badge-info badge-sm mt-1">Legacy</div>
+                                {% endif %}
+                            </td>
+                            <td>{{ payment.date_paid|date:"M d, Y" }}</td>
+                            <td>
+                                {% if payment.individual %}
+                                    <a href="{% url 'individual:individual_detail' pk=payment.individual.pk %}" class="link link-hover link-primary">
+                                        {{ payment.individual.full_name }}
                                     </a>
-                                    <div class="text-xs text-base-content/70 uppercase">
-                                        {{ payment.individual.given_name|upper }}
-                                    </div>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge badge-outline badge-sm uppercase">
-                                {{ payment.contribution_type.name|upper }}
-                            </span>
-                        </td>
-                        <td class="font-semibold text-success uppercase">
-                            ₱{{ payment.amount|floatformat:2 }}
-                        </td>
-                        <td>
-                            <div class="text-sm uppercase">{{ payment.date_paid|date:"M d, Y"|upper }}</div>
-                            <div class="text-xs text-base-content/50 uppercase">
-                                {{ payment.date_paid|timesince|upper }} AGO
-                            </div>
-                        </td>
-                        <td>
-                            <div class="flex justify-end space-x-1">
-                                <a href="{% url 'payment:payment_detail' payment.id %}" 
-                                   class="btn btn-ghost btn-xs text-info tooltip uppercase" 
-                                   data-tip="VIEW">
-                                    <i data-feather="eye" class="w-4 h-4"></i>
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                            <td class="text-right font-semibold text-lg text-success">₱{{ payment.amount|floatformat:2 }}</td>
+                            <td>
+                                <span class="badge badge-outline {% if payment.payment_method == 'CASH' %}badge-success{% else %}badge-info{% endif %} badge-sm">
+                                    {{ payment.get_payment_method_display }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                {% if payment.payment_status == 'PENDING_VALIDATION' %}
+                                    <span class="badge badge-warning badge-outline">Pending</span>
+                                {% elif payment.payment_status == 'VALIDATED' %}
+                                    <span class="badge badge-success badge-outline">Validated</span>
+                                {% elif payment.payment_status == 'CANCELLED' %}
+                                    <span class="badge badge-error badge-outline">Cancelled</span>
+                                {% else %}
+                                    <span class="badge badge-neutral badge-outline">Unknown</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <a href="{% url 'payment:payment_detail' pk=payment.pk %}" class="btn btn-ghost btn-sm">
+                                    <i data-feather="eye" class="w-4 h-4"></i> View
                                 </a>
-                                <a href="{% url 'payment:payment_update' payment.id %}" 
-                                   class="btn btn-ghost btn-xs text-warning tooltip uppercase" 
-                                   data-tip="EDIT">
-                                    <i data-feather="edit" class="w-4 h-4"></i>
-                                </a>
-                                <a href="{% url 'payment:payment_delete' payment.id %}" 
-                                   class="btn btn-ghost btn-xs text-error tooltip uppercase" 
-                                   data-tip="DELETE">
-                                    <i data-feather="trash-2" class="w-4 h-4"></i>
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
+                                {# Add edit/delete buttons later with appropriate permissions #}
+                            </td>
+                        </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-    </div>
 
-    <!-- Pagination -->
-    {% if is_paginated %}
-    <div class="flex justify-center mt-6">
-        <div class="join">
-            {% if page_obj.has_previous %}
-                <a href="?page=1{% if request.GET.contribution_type %}&contribution_type={{ request.GET.contribution_type }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}" 
-                   class="join-item btn btn-sm uppercase">
-                    « FIRST
-                </a>
-                <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.contribution_type %}&contribution_type={{ request.GET.contribution_type }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}" 
-                   class="join-item btn btn-sm uppercase">
-                    ‹ PREV
-                </a>
-            {% endif %}
+        {# Pagination #}
+        {% if is_paginated %}
+        <div class="flex justify-center mt-6">
+            <div class="join">
+                {% if page_obj.has_previous %}
+                    <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status_filter %}&status={{ current_status_filter }}{% endif %}{% if current_method_filter %}&method={{ current_method_filter }}{% endif %}" class="join-item btn">«</a>
+                    <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status_filter %}&status={{ current_status_filter }}{% endif %}{% if current_method_filter %}&method={{ current_method_filter }}{% endif %}" class="join-item btn">‹</a>
+                {% endif %}
 
-            <button class="join-item btn btn-sm btn-active uppercase">
-                PAGE {{ page_obj.number }} OF {{ page_obj.paginator.num_pages }}
-            </button>
+                <button class="join-item btn btn-active">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</button>
 
-            {% if page_obj.has_next %}
-                <a href="?page={{ page_obj.next_page_number }}{% if request.GET.contribution_type %}&contribution_type={{ request.GET.contribution_type }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}" 
-                   class="join-item btn btn-sm uppercase">
-                    NEXT ›
-                </a>
-                <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.contribution_type %}&contribution_type={{ request.GET.contribution_type }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}" 
-                   class="join-item btn btn-sm uppercase">
-                    LAST »
-                </a>
-            {% endif %}
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status_filter %}&status={{ current_status_filter }}{% endif %}{% if current_method_filter %}&method={{ current_method_filter }}{% endif %}" class="join-item btn">›</a>
+                    <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status_filter %}&status={{ current_status_filter }}{% endif %}{% if current_method_filter %}&method={{ current_method_filter }}{% endif %}" class="join-item btn">»</a>
+                {% endif %}
+            </div>
         </div>
-    </div>
-    {% endif %}
+        {% endif %}
 
     {% else %}
-    <!-- Empty State -->
-    <div class="text-center py-12">
-        <div class="mx-auto max-w-md">
-            <i data-feather="credit-card" class="w-12 h-12 mx-auto text-base-content/30 mb-4"></i>
-            <h3 class="text-lg font-medium text-base-content mb-2 uppercase">NO PAYMENTS FOUND</h3>
-            <p class="text-base-content/70 mb-6 uppercase">
-                {% if request.GET.contribution_type or request.GET.start_date or request.GET.end_date %}
-                TRY ADJUSTING YOUR FILTERS OR
-                {% endif %}
-                CREATE A NEW PAYMENT TO GET STARTED.
-            </p>
-            {# FIXED: Changed URL from 'individual:individual_dashboard' to 'payment:payment_create' #}
-            <a href="{% url 'payment:payment_create' %}" 
-               class="btn btn-primary btn-sm md:btn-md flex items-center gap-2 mx-auto uppercase">
-                <i data-feather="plus" class="w-4 h-4"></i> 
-                CREATE PAYMENT
-            </a>
+        <div class="text-center p-8 bg-base-100 rounded-lg shadow-lg">
+            <p class="text-lg text-base-content/70">No payment records found.</p>
+            <p class="text-base text-base-content/50 mt-2">Start by adding a <a href="{% url 'payment:add_payment' %}" class="link link-primary">new payment</a>.</p>
         </div>
-    </div>
     {% endif %}
+
 </div>
 {% endblock %}
 
 {% block extra_js %}
-{{ block.super }}
-<script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+<script src="https://unpkg.com/feather-icons"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        feather.replace();
-        // Initialize tooltips
-        const tooltipElements = document.querySelectorAll('[data-tip]');
-        tooltipElements.forEach(el => {
-            // Check if bootstrap.Tooltip is defined before using it
-            if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
-                new bootstrap.Tooltip(el);
-            } else {
-                console.warn('Bootstrap Tooltip not found. Tooltips may not function.');
-            }
-        });
-    });
+    feather.replace();
 </script>
-{% endblock %}
+{% endblock extra_js %}

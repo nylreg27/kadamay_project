@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+{% load tailwind_filters %}
+
+{% block title %}Create Payment - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-4">
+    <h1 class="text-3xl font-bold mb-6 text-center">{{ title }}</h1>
+
+    <div class="card bg-base-100 shadow-xl p-6 md:p-8 max-w-4xl mx-auto">
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {# Display next_or_number for user, but actual field is handled by form #}
+                {% if next_or_number %}
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Suggested O.R. Number:</span>
+                    </label>
+                    <input type="text" value="{{ next_or_number }}" class="input input-bordered w-full" disabled />
+                    <p class="text-sm text-gray-500 mt-1">This will be the next O.R. number.</p>
+                </div>
+                {% endif %}
+
+                {# Main Payment Form Fields #}
+                {{ form|crispy }} 
+            </div>
+
+            <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Payees</h2>
+            {# Payee Formset #}
+            <div id="payee-formset-container" class="space-y-4">
+                {{ formset.management_form }}
+                {% for form in formset %}
+                    <div class="payee-form bg-base-200 p-4 rounded-lg shadow-sm">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="font-bold text-lg">Payee #{{ forloop.counter }}</h3>
+                            {% if forloop.counter > 1 %} {# Don't allow deleting the first form #}
+                                <button type="button" class="btn btn-ghost btn-circle btn-sm text-error remove-payee-form">
+                                    <i data-feather="x" class="w-5 h-5"></i>
+                                </button>
+                            {% endif %}
+                        </div>
+                        {{ form|crispy }}
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <button type="button" id="add-payee-form" class="btn btn-outline btn-primary mt-4">
+                <i data-feather="plus" class="w-5 h-5 mr-2"></i> Add Another Payee
+            </button>
+
+            <div class="mt-8 flex justify-end gap-4">
+                <a href="{% url 'payment:payment_list' %}" class="btn btn-ghost">Cancel</a>
+                <button type="submit" class="btn btn-primary">Create Payment</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> {# Required for formset #}
+<script src="https://cdn.jsdelivr.net/npm/django-formset@0.5.1/dist/django-formset.min.js"></script> {# Assuming you use django-formset if needed #}
+<script>
+    // Initialize Feather Icons for dynamically added elements (like new payee forms)
+    function replaceFeatherIcons() {
+        if (typeof feather !== 'undefined') {
+            feather.replace();
+        }
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        replaceFeatherIcons(); // Initial replacement on page load
+
+        // --- Payee Formset Management ---
+        const addPayeeButton = document.getElementById('add-payee-form');
+        const payeeContainer = document.getElementById('payee-formset-container');
+        const totalFormsInput = document.querySelector('input[name="payees-TOTAL_FORMS"]');
+        const emptyFormTemplate = `
+            <div class="payee-form bg-base-200 p-4 rounded-lg shadow-sm mt-4">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-bold text-lg">Payee #__prefix__</h3> {# Placeholder for index #}
+                    <button type="button" class="btn btn-ghost btn-circle btn-sm text-error remove-payee-form">
+                        <i data-feather="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                {{ formset.empty_form|crispy }}
+            </div>
+        `;
+
+        let formIdx = parseInt(totalFormsInput.value);
+
+        addPayeeButton.addEventListener('click', function() {
+            const newFormHtml = emptyFormTemplate.replace(/__prefix__/g, formIdx);
+            const newFormDiv = document.createElement('div');
+            newFormDiv.innerHTML = newFormHtml;
+            payeeContainer.appendChild(newFormDiv.firstElementChild); // Append the actual form div
+
+            // Update indices of new form fields
+            newFormDiv.querySelectorAll('[id^="id_payees-"], [name^="payees-"]').forEach(element => {
+                element.id = element.id.replace(/__prefix__/, formIdx);
+                element.name = element.name.replace(/__prefix__/, formIdx);
+            });
+
+            totalFormsInput.value = formIdx + 1;
+            formIdx++;
+            replaceFeatherIcons(); // Re-initialize icons for the new form
+            updatePayeeFormTitles();
+        });
+
+        // Event delegation for removing payee forms
+        payeeContainer.addEventListener('click', function(event) {
+            if (event.target.closest('.remove-payee-form')) {
+                const formToRemove = event.target.closest('.payee-form');
+                if (formToRemove) {
+                    formToRemove.remove();
+                    totalFormsInput.value = parseInt(totalFormsInput.value) - 1;
+                    formIdx--; // Decrement formIdx
+                    updatePayeeFormIndices(); // Re-index remaining forms
+                    updatePayeeFormTitles();
+                }
+            }
+        });
+
+        // Function to re-index form field names and IDs after removal
+        function updatePayeeFormIndices() {
+            const forms = payeeContainer.querySelectorAll('.payee-form');
+            forms.forEach((formElement, index) => {
+                formElement.querySelectorAll('[id^="id_payees-"], [name^="payees-"]').forEach(element => {
+                    const oldId = element.id;
+                    const oldName = element.name;
+                    element.id = oldId.replace(/payees-(\d+)-/, `payees-${index}-`);
+                    element.name = oldName.replace(/payees-(\d+)-/, `payees-${index}-`);
+                });
+            });
+        }
+
+        // Function to update the titles (Payee #1, Payee #2 etc.)
+        function updatePayeeFormTitles() {
+            const forms = payeeContainer.querySelectorAll('.payee-form');
+            forms.forEach((formElement, index) => {
+                const titleElement = formElement.querySelector('h3.font-bold');
+                if (titleElement) {
+                    titleElement.textContent = `Payee #${index + 1}`;
+                }
+                // Also handle the remove button visibility for the first form
+                const removeButton = formElement.querySelector('.remove-payee-form');
+                if (removeButton) {
+                    if (forms.length > 1 && index > 0) { // Only show remove button if more than one form and not the first one
+                        removeButton.style.display = '';
+                    } else {
+                        removeButton.style.display = 'none'; // Hide for the first form or if only one form left
+                    }
+                }
+            });
+        }
+        updatePayeeFormTitles(); // Call on load to set initial state correctly
+    });
+</script>
+{% endblock %}
