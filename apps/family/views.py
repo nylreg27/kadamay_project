@@ -25,10 +25,9 @@ class FamilyListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         queryset = super().get_queryset()
 
-        # FIXED: Add prefetch_related for head_of_family (kaniadto 'in_charge')
-        # Ug prefetch 'members' para sa count
+        # Prefetch 'head_of_family' and 'members' for efficient access
+        # 'members' is the related_name from Individual to Family
         queryset = queryset.prefetch_related('head_of_family', 'members').annotate(
-            # 'members' ang related_name gikan sa Individual ngadto sa Family
             individual_count=Count('members')
         )
 
@@ -38,10 +37,8 @@ class FamilyListView(LoginRequiredMixin, ListView):
                 Q(family_name__icontains=search_query) |
                 Q(address__icontains=search_query) |
                 Q(church__name__icontains=search_query) |
-                # NEW: Gitugotan ang pagpangita gamit ang ngalan sa ulo sa pamilya
-                # <-- GI-CHANGE SA head_of_family
+                # Allow searching by head of family's first or last name
                 Q(head_of_family__given_name__icontains=search_query) |
-                # <-- GI-CHANGE SA head_of_family
                 Q(head_of_family__surname__icontains=search_query)
             )
         church_id = self.request.GET.get('church')
@@ -49,7 +46,7 @@ class FamilyListView(LoginRequiredMixin, ListView):
             try:
                 queryset = queryset.filter(church_id=int(church_id))
             except ValueError:
-                pass
+                pass  # Ignore invalid church_id in query
         return queryset.order_by('family_name')
 
     def get_context_data(self, **kwargs):
@@ -66,15 +63,14 @@ class FamilyDetailView(LoginRequiredMixin, DetailView):
     context_object_name = 'family'
 
     def get_queryset(self):
-        # Pre-fetch ang head_of_family (kaniadto 'in_charge')
-        # <-- GI-CHANGE SA head_of_family
+        # Pre-fetch 'head_of_family' and 'members' for efficient access
         return super().get_queryset().prefetch_related('head_of_family', 'members')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         family = self.get_object()
 
-        # Tanan nga individuals nga konektado niining pamilya
+        # All individuals connected to this family
         all_individuals = family.members.all()
 
         context['total_members_count'] = all_individuals.count()
@@ -83,16 +79,15 @@ class FamilyDetailView(LoginRequiredMixin, DetailView):
         context['deceased_members_count'] = all_individuals.filter(
             is_alive=False).count()
 
-        # GI-FIX: Kuhaon direkta ang Ulo sa Pamilya gikan sa 'head_of_family' field sa Family
-        # <-- GI-CHANGE SA head_of_family
+        # Get the Head of Family directly from the 'head_of_family' field on the Family instance
         context['family_head'] = family.head_of_family
 
-        # Kuhaon ang bag-ong bayad para sa mga miyembro niining pamilya
+        # Retrieve recent payments made by members of this family
         context['family_payments'] = Payment.objects.filter(
             individual__family=family
-        ).order_by('-date_paid')[:10]
+        ).order_by('-date_paid')[:10]  # Limit to 10 most recent payments
 
-        # Kwentahon ang kinatibuk-ang bayad nga gihimo sa mga miyembro niining pamilya
+        # Calculate total contributions made by members of this family
         context['total_family_contributions'] = Payment.objects.filter(
             individual__family=family
         ).aggregate(
@@ -100,7 +95,7 @@ class FamilyDetailView(LoginRequiredMixin, DetailView):
                 '0.00'), output_field=DecimalField())
         )['total_sum']
 
-        # Kwentahon ang kinatibuk-ang kantidad nga gi-allocate sa mga miyembro niining pamilya
+        # Calculate the total amount allocated to members of this family (where they are the payer)
         total_allocated_payer_contributions = PaymentIndividualAllocation.objects.filter(
             individual__in=all_individuals,
             is_payer=True
@@ -110,7 +105,7 @@ class FamilyDetailView(LoginRequiredMixin, DetailView):
         )['total_sum']
         context['total_allocated_payer_contributions'] = total_allocated_payer_contributions
 
-        # Ipasa usab ang all_individuals sa context para magamit sa template
+        # Pass all individuals to the context for use in the template
         context['all_individuals'] = all_individuals
 
         return context
@@ -127,17 +122,26 @@ class FamilyCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = 'Paghimo Bag-ong Pamilya'
+        context['title'] = 'Create New Family'  # English title for the page
         return context
 
     def form_valid(self, form):
+        # Set the head_of_family field from the hidden input before saving
+        # This is crucial because 'head_of_family_display' is not a model field
+        head_of_family_id = self.request.POST.get('head_of_family')
+        if head_of_family_id:
+            form.instance.head_of_family = get_object_or_404(
+                Individual, pk=head_of_family_id)
+        else:
+            form.instance.head_of_family = None  # Ensure it's set to None if not provided
+
         messages.success(
-            self.request, f"Pamilya '{form.instance.family_name}' malampusong nahimo!")
+            self.request, f"Family '{form.instance.family_name}' successfully created!")
         return super().form_valid(form)
 
     def form_invalid(self, form):
         messages.error(
-            self.request, "May sayop sa paghimo sa pamilya. Palihog susiha ang imong input.")
+            self.request, "There was an error creating the family. Please check your input.")
         return super().form_invalid(form)
 
 
@@ -161,18 +165,29 @@ class FamilyCreateInChurchView(LoginRequiredMixin, UserPassesTestMixin, CreateVi
         context = super().get_context_data(**kwargs)
         church_id = self.kwargs.get('church_id')
         church = get_object_or_404(Church, pk=church_id)
-        context['title'] = f'Dugang Pamilya sa {church.name}'
+        context['title'] = f'Add Family to {church.name}'  # English title
         context['church'] = church
         return context
 
     def get_success_url(self):
         messages.success(
-            self.request, f"Pamilya '{self.object.family_name}' nadugang sa {self.object.church.name} malampusong!")
+            self.request, f"Family '{self.object.family_name}' successfully added to {self.object.church.name}!")
         return reverse_lazy('church:church_detail', kwargs={'pk': self.kwargs['church_id']})
+
+    def form_valid(self, form):
+        # Set the head_of_family field from the hidden input before saving
+        head_of_family_id = self.request.POST.get('head_of_family')
+        if head_of_family_id:
+            form.instance.head_of_family = get_object_or_404(
+                Individual, pk=head_of_family_id)
+        else:
+            form.instance.head_of_family = None  # Ensure it's set to None if not provided
+
+        return super().form_valid(form)
 
     def form_invalid(self, form):
         messages.error(
-            self.request, "May sayop sa pagdugang sa pamilya. Palihog susiha ang imong input.")
+            self.request, "There was an error adding the family. Please check your input.")
         return super().form_invalid(form)
 
 
@@ -187,17 +202,29 @@ class FamilyUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
 
     def get_success_url(self):
         messages.success(
-            self.request, f"Pamilya '{self.object.family_name}' malampusong na-update!")
+            self.request, f"Family '{self.object.family_name}' successfully updated!")
         return reverse_lazy('family:family_detail', kwargs={'pk': self.object.pk})
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = f'I-edit ang Pamilya: {self.object.family_name}'
+        # English title
+        context['title'] = f'Edit Family: {self.object.family_name}'
         return context
+
+    def form_valid(self, form):
+        # Set the head_of_family field from the hidden input before saving
+        head_of_family_id = self.request.POST.get('head_of_family')
+        if head_of_family_id:
+            form.instance.head_of_family = get_object_or_404(
+                Individual, pk=head_of_family_id)
+        else:
+            form.instance.head_of_family = None  # Ensure it's set to None if not provided
+
+        return super().form_valid(form)
 
     def form_invalid(self, form):
         messages.error(
-            self.request, "May sayop sa pag-update sa pamilya. Palihog susiha ang imong input.")
+            self.request, "There was an error updating the family. Please check your input.")
         return super().form_invalid(form)
 
 
@@ -212,7 +239,7 @@ class FamilyDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 
     def form_valid(self, form):
         messages.success(
-            self.request, f"Pamilya '{self.object.family_name}' malampusong natangtang!")
+            self.request, f"Family '{self.object.family_name}' successfully deleted!")
         return super().form_valid(form)
 
 
@@ -226,7 +253,7 @@ class FamilyListInChurchView(LoginRequiredMixin, ListView):
         church_id = self.kwargs.get('church_id')
         church = get_object_or_404(Church, pk=church_id)
 
-        # FIXED: Add prefetch_related for head_of_family (kaniadto 'in_charge')
+        # Prefetch 'head_of_family' and 'members' for efficient access
         queryset = Family.objects.filter(church=church).prefetch_related('head_of_family', 'members').annotate(
             individual_count=Count('members'))
 
@@ -235,10 +262,8 @@ class FamilyListInChurchView(LoginRequiredMixin, ListView):
             queryset = queryset.filter(
                 Q(family_name__icontains=search_query) |
                 Q(address__icontains=search_query) |
-                # NEW: Gitugotan ang pagpangita gamit ang ngalan sa ulo sa pamilya
-                # <-- GI-CHANGE SA head_of_family
+                # Allow searching by head of family's first or last name
                 Q(head_of_family__given_name__icontains=search_query) |
-                # <-- GI-CHANGE SA head_of_family
                 Q(head_of_family__surname__icontains=search_query)
             )
         return queryset.order_by('family_name')
@@ -248,7 +273,7 @@ class FamilyListInChurchView(LoginRequiredMixin, ListView):
         church_id = self.kwargs.get('church_id')
         church = get_object_or_404(Church, pk=church_id)
         context['church'] = church
-        context['title'] = f'Mga Pamilya sa {church.name}'
+        context['title'] = f'Families in {church.name}'  # English title
         context['search_query'] = self.request.GET.get(
             'search', '')
         context['churches'] = Church.objects.all().order_by('name')

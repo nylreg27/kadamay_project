@@ -125,25 +125,17 @@
                     {{ form.email_address|add_class:"input input-bordered w-full" }}
                     {% if form.email_address.errors %}<div class="text-error text-sm mt-1">{{ form.email_address.errors }}</div>{% endif %}
                 </div> {# OPTIONAL: models.EmailField(blank=True, null=True) #}
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">{{ form.address.label }}</span>
-                        {% if form.address.field.required %}<span class="text-error ml-1">*</span>{% endif %}
-                    </label>
-                    {{ form.address|add_class:"input input-bordered w-full" }}
-                    {% if form.address.errors %}<div class="text-error text-sm mt-1">{{ form.address.errors }}</div>{% endif %}
-                </div> {# OPTIONAL: models.CharField(blank=True, null=True) #}
 
-                {# Membership Details (EXCLUDING membership_id as it's auto-generated) #}
-                {# Removed the div for membership_id field #}
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">{{ form.relationship.label }}</span>
-                        {% if form.relationship.field.required %}<span class="text-error ml-1">*</span>{% endif %}
-                    </label>
-                    {{ form.relationship|add_class:"select select-bordered w-full" }}
-                    {% if form.relationship.errors %}<div class="text-error text-sm mt-1">{{ form.relationship.errors }}</div>{% endif %}
-                </div> {# REQUIRED: models.CharField (no blank=True) #}
+                        {# Membership Details (EXCLUDING membership_id as it's auto-generated) #}
+                        {# Removed the div for membership_id field #}
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text">{{ form.relationship.label }}</span>
+                                {% if form.relationship.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                            </label>
+                            {{ form.relationship|add_class:"select select-bordered w-full" }}
+                            {% if form.relationship.errors %}<div class="text-error text-sm mt-1">{{ form.relationship.errors }}</div>{% endif %}
+                        </div> {# REQUIRED: models.CharField (no blank=True) #}
                 <div class="form-control">
                     <label class="label">
                         <span class="label-text">{{ form.membership_status.label }}</span>
@@ -174,6 +166,16 @@
                     </label>
                     {% if form.is_alive.errors %}<div class="text-error text-sm mt-1">{{ form.is_alive.errors }}</div>{% endif %}
                 </div> {# REQUIRED: models.BooleanField (defaults to True, but no blank=True means required in form) #}
+
+                <div class="form-control col-span-full">
+                    <label class="label">
+                        <span class="label-text">{{ form.address.label }}</span>
+                        {% if form.address.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                    </label>
+                    {{ form.address|add_class:"input input-bordered w-full" }}
+                    {% if form.address.errors %}<div class="text-error text-sm mt-1">{{ form.address.errors }}</div>{% endif %}
+                </div> {# OPTIONAL: models.CharField(blank=True, null=True) #}
+
 
                 {# Family Field #}
                 <div class="form-control col-span-full"> {# Occupy full width for better alignment #}

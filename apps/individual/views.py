@@ -1,18 +1,20 @@
 # apps/individual/views.py
 
 from django.views.generic import (
-    CreateView, DetailView, ListView, UpdateView, DeleteView
+    # NEW: Import View for API
+    CreateView, DetailView, ListView, UpdateView, DeleteView, View
 )
-from django.urls import reverse_lazy  # For redirecting after form submission
-from django.db.models import Q  # NEW: Import Q object for complex lookups
+from django.urls import reverse_lazy
+from django.db.models import Q
+from django.http import JsonResponse  # NEW: Import JsonResponse for API output
+import json  # Not directly used but often helpful for JSON manipulation
 
 from apps.individual.models import Individual
 from apps.church.models import Church
 from apps.family.models import Family
 from apps.individual.forms import IndividualForm
-# NEW: Added UserPassesTestMixin for permission checks
+# FIX: Ensure UserPassesTestMixin is imported here
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-# NEW: For fetching Church/Family object
 from django.shortcuts import get_object_or_404
 
 
@@ -46,13 +48,11 @@ class IndividualListView(ListView):
                 Q(address__icontains=search_query) |
                 Q(family__family_name__icontains=search_query) |
                 Q(church__name__icontains=search_query) |
-                # NEW: Allow searching by membership_id
                 Q(membership_id__icontains=search_query)
             )
         return queryset.order_by('surname', 'given_name')
 
 
-# Added UserPassesTestMixin
 class IndividualCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     """
     View for creating a new Individual record.
@@ -64,7 +64,7 @@ class IndividualCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     success_url = reverse_lazy('individual:individual_list')
 
     def test_func(self):
-        return self.request.user.is_superuser  # Only superusers can create individuals
+        return self.request.user.is_superuser
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -72,12 +72,9 @@ class IndividualCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         return context
 
     def form_valid(self, form):
-        # The membership_id is now automatically generated in the model's save method,
-        # so no need to set it here.
         return super().form_valid(form)
 
 
-# Added UserPassesTestMixin
 class IndividualUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     """
     View for updating an existing Individual record.
@@ -89,7 +86,7 @@ class IndividualUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     success_url = reverse_lazy('individual:individual_list')
 
     def test_func(self):
-        return self.request.user.is_superuser  # Only superusers can update individuals
+        return self.request.user.is_superuser
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -97,7 +94,6 @@ class IndividualUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         return context
 
 
-# Added UserPassesTestMixin
 class IndividualDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     """
     View for deleting an Individual record.
@@ -108,7 +104,7 @@ class IndividualDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     success_url = reverse_lazy('individual:individual_list')
 
     def test_func(self):
-        return self.request.user.is_superuser  # Only superusers can delete individuals
+        return self.request.user.is_superuser
 
 
 class IndividualDetailView(DetailView):
@@ -192,7 +188,6 @@ class IndividualListByChurchView(ListView):
                 Q(contact_number__icontains=search_query) |
                 Q(address__icontains=search_query) |
                 Q(family__family_name__icontains=search_query) |
-                # NEW: Allow searching by membership_id
                 Q(membership_id__icontains=search_query)
             )
         return queryset.order_by('surname', 'given_name')
@@ -223,7 +218,6 @@ class IndividualCreateForFamilyView(LoginRequiredMixin, CreateView):
         family_id = self.kwargs.get('family_id')
         if family_id:
             family = get_object_or_404(Family, pk=family_id)
-            # Corrected to family.family_name
             context['page_title'] = f'Add Member to Family: {family.family_name}'
         else:
             context['page_title'] = 'Add New Individual'
@@ -234,3 +228,35 @@ class IndividualCreateForFamilyView(LoginRequiredMixin, CreateView):
         if family_id:
             return reverse_lazy('family:family_detail', kwargs={'pk': family_id})
         return reverse_lazy('individual:individual_list')
+
+
+# NEW CLASS: API View for searching individuals by name or membership ID
+class IndividualSearchAPIView(View):
+    """
+    API endpoint to search for Individual records by full name or membership ID.
+    Returns results as a JSON array suitable for autocomplete/search suggestions.
+    """
+
+    def get(self, request, *args, **kwargs):
+        query = request.GET.get('query', '')
+        individuals = []
+
+        if query:
+            # Search by given name, middle name, surname, or membership_id
+            # Using Q objects for OR conditions
+            results = Individual.objects.filter(
+                Q(given_name__icontains=query) |
+                Q(middle_name__icontains=query) |
+                Q(surname__icontains=query) |
+                Q(membership_id__icontains=query)
+            ).distinct()[:20]  # Limit results to top 20 for performance
+
+            for individual in results:
+                individuals.append({
+                    'id': individual.pk,
+                    # Format for display
+                    'text': f"{individual.full_name} ({individual.membership_id})"
+                })
+
+        # safe=False allows non-dict objects (like lists)
+        return JsonResponse(individuals, safe=False)

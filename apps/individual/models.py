@@ -1,5 +1,4 @@
 # apps/individual/models.py
-
 from django.db import models
 from apps.family.models import Family
 from django.utils import timezone
@@ -7,7 +6,6 @@ from decimal import Decimal
 
 # Import Church model (assuming Individual has a ForeignKey to Church)
 from apps.church.models import Church
-
 
 GENDER_CHOICES = [
     ('MALE', 'Male'),

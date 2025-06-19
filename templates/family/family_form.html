@@ -1,18 +1,21 @@
 {# templates/family/family_form.html #}
 {% extends 'base.html' %}
-{% load static %}
+{% load static %} {# If you use static files like images/icons #}
 {% load widget_tweaks %} {# Re-added for styling #}
 
 {% block title %}{{ title }} - Kadamay Mortuary System{% endblock %}
 
 {% block content %}
-{# FIXED: Adjusted the main container div to control width #}
-<div class="container mx-auto p-4 lg:p-8 max-w-3xl"> {# Added max-w-3xl to control the maximum width and keep it centered #}
+{# Adjusted the main container div to control width, making it wider and centered #}
+<div class="container mx-auto p-4 lg:p-8 max-w-6xl"> 
     <div class="bg-base-100 shadow-xl rounded-lg p-6 lg:p-8">
         <h1 class="text-3xl font-bold text-base-content mb-6">{{ title }}</h1>
 
+        {# Django messages integration (e.g., success/error) #}
+        {# Note: base.html also handles messages via JavaScript for toast notifications. #}
+        {# You can keep this block if you want messages to also appear directly here, or remove if the toast is enough. #}
         {% if messages %}
-            <div id="django_messages_container_form" class="mb-4">
+            <div id="django_messages_container_form" class="mb-4"> {# Renamed ID to avoid conflict with base.html #}
                 {% for message in messages %}
                     <div class="alert 
                         {% if message.tags == 'success' %}alert-success
@@ -29,6 +32,7 @@
         <form method="post" class="space-y-6" enctype="multipart/form-data">
             {% csrf_token %}
 
+            {# Form Errors - Display non-field errors if any #}
             {% if form.non_field_errors %}
                 <div class="alert alert-error shadow-lg rounded-lg">
                     <ul class="list-disc list-inside">
@@ -39,7 +43,7 @@
                 </div>
             {% endif %}
 
-            {# Family Name #}
+            {# Family Name Field #}
             <div class="form-control w-full">
                 <label class="label">
                     <span class="label-text">Family Name</span>
@@ -55,7 +59,7 @@
                 {% endif %}
             </div>
 
-            {# Address #}
+            {# Address Field #}
             <div class="form-control w-full">
                 <label class="label">
                     <span class="label-text">Address</span>
@@ -71,7 +75,7 @@
                 {% endif %}
             </div>
 
-            {# Church Field - Handled based on context #}
+            {# Church Field - Handled based on context (whether it's pre-filled or selectable) #}
             {% if form.church.is_hidden %}
                 {{ form.church }} {# Render the hidden input #}
                 <div class="form-control w-full">
@@ -103,28 +107,45 @@
                 </div>
             {% endif %}
 
-            {# Head of Family #}
+            {# Head of Family Section - Includes a searchable input and a hidden field for the ID #}
             <div class="form-control w-full mb-4">
                 <label class="label">
-                    <span class="label-text">Head of Family</span>
-                    {% if form.head_of_family.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                    <span class="label-text">{{ form.head_of_family_display.label }}</span>
+                    {# The asterisk for required fields here applies to the display input field #}
+                    {# The model's validation will ensure the actual ForeignKey is populated if required #}
+                    {% if form.head_of_family_display.field.required %}<span class="text-error ml-1">*</span>{% endif %}
                 </label>
-                {{ form.head_of_family|add_class:"select select-bordered w-full uppercase" }}
-                {% if form.head_of_family.errors %}
+                
+                {# The visible input field used by the user for searching and displaying the selected name #}
+                {{ form.head_of_family_display }}
+                
+                {# A hidden input field that will store the primary key (ID) of the selected Individual #}
+                {# This field's 'name' attribute MUST match your Family model's ForeignKey field name (e.g., 'head_of_family') #}
+                {# Its 'value' is dynamically set by the JavaScript based on the user's selection from search results #}
+                <input type="hidden" name="head_of_family" id="id_head_of_family" value="{{ form.instance.head_of_family.pk|default:'' }}">
+
+                {# This div acts as a container for the dynamically generated search results dropdown #}
+                {# It is initially hidden and shown/populated by JavaScript when the user types #}
+                <div id="head-of-family-results" class="relative z-10 w-full bg-base-200 border border-base-300 rounded-b-lg shadow-lg max-h-60 overflow-y-auto hidden">
+                    {# Search results will be dynamically injected here by JavaScript #}
+                </div>
+
+                {# Display any validation errors or help text associated with the 'head_of_family_display' field #}
+                {% if form.head_of_family_display.errors %}
                     <label class="label">
-                        {% for error in form.head_of_family.errors %}
+                        {% for error in form.head_of_family_display.errors %}
                         <span class="label-text-alt text-error">{{ error }}</span>
                         {% endfor %}
                     </label>
                 {% endif %}
-                {% if form.head_of_family.help_text %}
+                {% if form.head_of_family_display.help_text %}
                     <label class="label">
-                        <span class="label-text-alt text-gray-500">{{ form.head_of_family.help_text }}</span>
+                        <span class="label-text-alt text-gray-500">{{ form.head_of_family_display.help_text }}</span>
                     </label>
                 {% endif %}
             </div>
 
-            {# Contact Number (if present in your model) #}
+            {# Contact Number Field (rendered only if the form field exists) #}
             {% if form.contact_number %}
             <div class="form-control w-full">
                 <label class="label">
@@ -142,7 +163,7 @@
             </div>
             {% endif %}
 
-            {# Is Active #}
+            {# Is Active Checkbox Field #}
             <div class="form-control w-full">
                 <label class="label cursor-pointer justify-start gap-2">
                     {{ form.is_active|add_class:"checkbox checkbox-primary" }}
@@ -160,6 +181,7 @@
                 {% endif %}
             </div>
 
+            {# Form submission and cancellation buttons #}
             <div class="flex justify-end gap-4 mt-8">
                 <a href="{% url 'family:family_list' %}" class="btn btn-ghost">Cancel</a>
                 <button type="submit" class="btn btn-success">Save Family</button>
@@ -171,5 +193,125 @@
 
 {% block extra_js %}
 {{ block.super }}
-{# Add any specific JS for this form, e.g., date pickers #}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('id_head_of_family_display');
+        const hiddenInput = document.getElementById('id_head_of_family');
+        const resultsContainer = document.getElementById('head-of-family-results');
+        // Ensure csrfToken is correctly fetched (it should always be present in Django templates)
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '';
+        const searchUrl = "{% url 'individual:individual_search_api' %}"; // URL to our search API
+
+        let debounceTimeout; // For optimizing search performance
+
+        // Function to perform the actual search by calling the Django API
+        async function performSearch(query) {
+            if (query.length < 2) { // Require at least 2 characters to start searching
+                resultsContainer.innerHTML = ''; // Clear previous results
+                resultsContainer.classList.add('hidden'); // Hide the results container
+                return;
+            }
+
+            try {
+                // Make a fetch request to the Django API endpoint
+                const response = await fetch(`${searchUrl}?query=${encodeURIComponent(query)}`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest', // Standard header for AJAX requests
+                        'X-CSRFToken': csrfToken // Include CSRF token for security (important for POST, good practice for GET too)
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json(); // Parse the JSON response
+                displayResults(data); // Call function to display the results
+            } catch (error) {
+                console.error('Error fetching search results:', error);
+                resultsContainer.innerHTML = '<div class="p-2 text-error">Error loading results.</div>'; // Display error message
+                resultsContainer.classList.remove('hidden'); // Ensure results container is visible to show error
+            }
+        }
+
+        // Function to display the search results in the dropdown
+        function displayResults(results) {
+            resultsContainer.innerHTML = ''; // Clear any existing results
+            if (results.length === 0) {
+                resultsContainer.innerHTML = '<div class="p-2 text-base-content/70">No members found.</div>'; // Message for no results
+                resultsContainer.classList.remove('hidden'); // Show container for "No members found"
+                return;
+            }
+
+            // Iterate over each result item and create a div for it
+            results.forEach(item => {
+                const resultItem = document.createElement('div');
+                resultItem.classList.add('p-2', 'cursor-pointer', 'hover:bg-primary', 'hover:text-primary-content', 'rounded-md', 'transition-colors', 'duration-150');
+                resultItem.textContent = item.text; // Display the formatted text (name and ID)
+                resultItem.dataset.id = item.id; // Store the actual individual's ID in a data attribute
+
+                // Add a click event listener to each result item
+                resultItem.addEventListener('click', function() {
+                    searchInput.value = item.text; // Set the visible input to the selected item's text
+                    hiddenInput.value = item.id;    // Set the hidden input's value to the selected item's ID
+                    resultsContainer.innerHTML = ''; // Clear the results dropdown
+                    resultsContainer.classList.add('hidden'); // Hide the results container
+                });
+                resultsContainer.appendChild(resultItem); // Add the item to the results container
+            });
+            resultsContainer.classList.remove('hidden'); // Show the results container
+        }
+
+        // Event listener for changes in the search input field (with debounce for performance)
+        searchInput.addEventListener('input', function() {
+            clearTimeout(debounceTimeout); // Clear any previous debounce timer
+            debounceTimeout = setTimeout(() => {
+                performSearch(searchInput.value.trim()); // Call search function after a delay
+            }, 300); // 300ms delay before searching
+        });
+
+        // Event listener to hide results when the search input loses focus
+        searchInput.addEventListener('blur', function() {
+            // A small delay is added to allow the click event on a result item to fire
+            // BEFORE the results container is hidden. This prevents accidental hiding.
+            setTimeout(() => {
+                // Check if the focus is still within the results container or search input
+                if (!resultsContainer.contains(document.activeElement) && document.activeElement !== searchInput) {
+                    resultsContainer.classList.add('hidden');
+                }
+            }, 100); 
+        });
+
+        // Prevent blur event from firing immediately when clicking on a result item
+        resultsContainer.addEventListener('mousedown', function(event) {
+            event.preventDefault(); // This stops the searchInput's blur event from firing
+        });
+
+
+        // Initialize the display field when the page loads, if a Head of Family is already selected (e.g., when editing)
+        if (hiddenInput.value) {
+            async function initializeDisplay() {
+                try {
+                    // Fetch the individual's full name based on the ID stored in the hidden input
+                    // We can reuse the search API by passing the ID as a query; it searches by ID too.
+                    const response = await fetch(`${searchUrl}?query=${hiddenInput.value}`, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': csrfToken
+                        }
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        // Find the exact match by ID from the returned array
+                        const exactMatch = data.find(item => item.id == hiddenInput.value);
+                        if (exactMatch) {
+                            searchInput.value = exactMatch.text; // Set the visible display field to the full name
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error initializing Head of Family display:", error);
+                }
+            }
+            initializeDisplay();
+        }
+    });
+</script>
 {% endblock %}

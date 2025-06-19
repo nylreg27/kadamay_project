@@ -128,7 +128,7 @@
     {% endif %}
 
     {# FIXED: Pass individual_id to the add_payment URL #}
-    <form method="post" action="{% url 'payment:add_payment' individual_id=individual.pk %}" class="space-y-8" id="paymentForm"> {# Increased vertical spacing between sections #}
+    <form method="post" action="" class="space-y-8" id="paymentForm">
         {% csrf_token %}
 
         {# Hidden input to store selected family member IDs for submission #}
