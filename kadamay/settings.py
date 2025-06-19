@@ -38,11 +38,13 @@ INSTALLED_APPS = [
     'django_browser_reload',
     'widget_tweaks',
     'rest_framework',
-    'crispy_forms'
+    'crispy_forms',
+    'crispy_tailwind',
 ]
 
 TAILWIND_APP_NAME = 'theme'
-
+# CRISPY_ALLOWED_TEMPLATE_PACKS = "tailwind"
+# CRISPY_TEMPLATE_PACK = "tailwind"
 NPM_BIN_PATH = r"C:\Program Files\nodejs\npm.cmd"
 
 MIDDLEWARE = [

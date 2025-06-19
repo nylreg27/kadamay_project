@@ -2,14 +2,17 @@
 
 from django.db import models
 from django.utils import timezone
-from django.conf import settings # Import settings to reference AUTH_USER_MODEL
-from apps.individual.models import Individual # Import Individual model
-from apps.church.models import Church # Import Church model - assuming this exists in your project
-from django.db.models import Max # Para makita ang Max nga receipt number
-import datetime # Para sa date formatting sa receipt number
-
+from django.conf import settings  # Import settings to reference AUTH_USER_MODEL
+from apps.individual.models import Individual  # Import Individual model
+# Import Church model - assuming this exists in your project
+from apps.church.models import Church
+from django.db.models import Max  # Para makita ang Max nga receipt number
+import datetime  # Para sa date formatting sa receipt number
+import re  # Para sa regular expression sa OR number parsing
 
 # Your existing ContributionType model
+
+
 class ContributionType(models.Model):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True, null=True)
@@ -59,38 +62,41 @@ class PaymentIndividualAllocation(models.Model):
         return f"{self.individual.full_name} - ₱{self.allocated_amount} from Payment #{self.payment.id}"
 
 
-# Helper function para mag-generate og sunod nga sequential number para sa gihatag nga prefix
-def get_next_sequential_number(prefix_to_search, model_class, receipt_number_field='receipt_number'):
+# Helper function para mag-generate og sunod nga sequential number para sa YY-NNNN format
+def get_next_yy_sequential_number(model_class, receipt_number_field='receipt_number'):
     """
-    Generates the next sequential number for a given prefix.
-    Looks for the highest number within the given prefix.
+    Generates the next sequential number for the 'YY-NNNN' format,
+    where YY is the last two digits of the current year, and NNNN is a 4-digit sequential number
+    that resets every year.
     """
-    # Find the highest existing sequential number for the given prefix
-    # Assuming the format is "PREFIX-NNNN"
+    current_year_two_digits = datetime.date.today().strftime("%y")
+    prefix = f"{current_year_two_digits}-"
+
+    # Find the highest existing sequential number for the current year's prefix
+    # We use __startswith to match the year prefix, and a regex to ensure it's exactly YY-NNNN
     last_record = model_class.objects.filter(
-        **{f"{receipt_number_field}__startswith": prefix_to_search},
-        is_legacy_record=False # Exclude legacy records from numbering sequence
+        **{f"{receipt_number_field}__startswith": prefix},
+        is_legacy_record=False,  # Exclude legacy records from numbering sequence
+        # Use regex to ensure the format is exactly YY-NNNN, not just starts with YY-
+        # This prevents issues if a different format accidentally starts with YY-
+        **{f"{receipt_number_field}__regex": r'^' + re.escape(prefix) + r'\d{4}$'}
     ).order_by(f'-{receipt_number_field}').first()
 
     next_seq_num = 1
     if last_record and getattr(last_record, receipt_number_field):
         try:
-            # Extract the numerical part after the last hyphen or the end
-            parts = getattr(last_record, receipt_number_field).split('-')
-            # Look for the last part that can be converted to an integer
-            for i in reversed(range(len(parts))):
-                try:
-                    last_seq_str = parts[i]
-                    last_seq_num = int(last_seq_str)
-                    next_seq_num = last_seq_num + 1
-                    break # Found the number, exit loop
-                except ValueError:
-                    continue # Not a number, try next part
-            else: # If loop completes without finding a number part
-                next_seq_num = 1
-        except Exception: # Catch any other parsing errors
+            # Extract the numerical part (NNNN) from the receipt number
+            # Example: '25-0001' -> '0001'
+            numerical_part_str = getattr(
+                last_record, receipt_number_field).split('-')[-1]
+            last_seq_num = int(numerical_part_str)
+            next_seq_num = last_seq_num + 1
+        except (ValueError, IndexError):
+            # If parsing fails, reset to 1
             next_seq_num = 1
-    return f"{next_seq_num:04d}" # Always 4 digits for the sequential part
+
+    # Always 4 digits for the sequential part (e.g., '25-0001')
+    return f"{prefix}{next_seq_num:04d}"
 
 
 # Your Payment model
@@ -103,12 +109,17 @@ class Payment(models.Model):
 
     # Payment Status Choices - IMPORTANTE NI PARA SA AUDITOR UG VALIDATION FLOW!
     PAYMENT_STATUS_CHOICES = [
-        ('PENDING_VALIDATION', 'Pending Validation'), # Payments from Church In-charge
-        ('VALIDATED', 'Validated'),                   # Confirmed by Admin/Cashier
+        # Payments from Church In-charge
+        ('PENDING_VALIDATION', 'Pending Validation'),
+        # Confirmed by Admin/Cashier
+        ('VALIDATED', 'Validated'),
         ('CANCELLED', 'Cancelled'),                   # Cancelled transaction
-        ('DRAFT', 'Draft'),                           # Optional: For incomplete records
-        ('COMPLETED', 'Completed'),                   # Fully processed (can combine with VALIDATED)
-        ('LEGACY', 'Legacy Record'),                  # Para sa old records nga walay OR
+        # Optional: For incomplete records
+        ('DRAFT', 'Draft'),
+        # Fully processed (can combine with VALIDATED)
+        ('COMPLETED', 'Completed'),
+        # Para sa old records nga walay OR
+        ('LEGACY', 'Legacy Record'),
     ]
 
     individual = models.ForeignKey(
@@ -134,23 +145,23 @@ class Payment(models.Model):
     )
     date_paid = models.DateField(default=timezone.now)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    
+
     receipt_number = models.CharField(
         max_length=100,
         blank=True,
         null=True,
-        unique=False, 
-        help_text="Official Receipt (OR) number or internal reference."
+        unique=False,  # Keep unique=False here, uniqueness will be managed by save method
+        help_text="Official Receipt (OR) number or internal reference. Auto-generated for new payments (YY-NNNN format)."
     )
-    
+
     notes = models.TextField(blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     # Who created/updated the record
     created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, 
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -174,16 +185,18 @@ class Payment(models.Model):
     payment_status = models.CharField(
         max_length=20,
         choices=PAYMENT_STATUS_CHOICES,
-        default='PENDING_VALIDATION', 
+        default='PENDING_VALIDATION',
         help_text="Current status of the payment (e.g., Pending Validation, Validated, Cancelled, Legacy)."
     )
 
-    # === NEW FIELD: Custom Series Prefix for Receipts ===
-    series_prefix = models.CharField(
-        max_length=50, 
-        blank=True, 
-        null=True, 
-        help_text="Custom series prefix for the receipt number (e.g., 'KDM-'). If left blank, a date-based prefix 'OR-YYYY-MM-' will be used."
+    # REMOVED: series_prefix - not needed with YY-NNNN auto-generation
+
+    # NEW FIELD: For GCash payments
+    gcash_reference_number = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="Reference number for GCash transactions (e.g., transaction ID)."
     )
 
     # Fields for validation workflow
@@ -260,7 +273,7 @@ class Payment(models.Model):
     class Meta:
         verbose_name = "Payment"
         verbose_name_plural = "Payments"
-        ordering = ['-date_paid', '-created_at'] # Default ordering
+        ordering = ['-date_paid', '-created_at']  # Default ordering
 
     def __str__(self):
         or_display = self.receipt_number if self.receipt_number else "N/A"
@@ -268,48 +281,36 @@ class Payment(models.Model):
 
     def save(self, *args, **kwargs):
         # Auto-set created_by and updated_by based on request_user (if available)
-        if not self.pk: # Only on creation (new record)
+        if not self.pk:  # Only on creation (new record)
             if hasattr(self, '_request_user') and self._request_user.is_authenticated:
                 self.created_by = self._request_user
-            
-            # === RECEIPT NUMBER GENERATION LOGIC WITH CUSTOM SERIES ===
-            if self.is_legacy_record:
-                if not self.receipt_number: 
-                    self.receipt_number = None # Ensure it's explicitly null/blank
-                # Only set to LEGACY if not already CANCELLED by a specific action
-                if self.payment_status not in ['CANCELLED', 'LEGACY']: 
-                    self.payment_status = 'LEGACY'
-            elif not self.receipt_number: # If not legacy and receipt_number is empty (needs auto-gen)
-                current_date_prefix = timezone.localdate().strftime("%Y-%m-")
-                
-                # Determine the base prefix to use for auto-generation
-                # If series_prefix is provided by admin, use it directly as the base prefix.
-                # Otherwise, use the default date-based prefix.
-                base_prefix_for_generation = f"OR-{current_date_prefix}"
-                if self.series_prefix:
-                    base_prefix_for_generation = self.series_prefix
-                    # Ensure it ends with a hyphen for consistent sequential numbering pattern
-                    if not base_prefix_for_generation.endswith('-'):
-                        base_prefix_for_generation += '-'
 
-                # Get the next sequential number based on the determined prefix
-                next_seq_part = get_next_sequential_number(
-                    base_prefix_for_generation, 
-                    model_class=Payment, 
+            # === RECEIPT NUMBER GENERATION LOGIC (YY-NNNN FORMAT) ===
+            if self.is_legacy_record:
+                if not self.receipt_number:
+                    self.receipt_number = None  # Ensure it's explicitly null/blank for legacy
+                # Only set to LEGACY if not already CANCELLED by a specific action or explicitly set
+                if self.payment_status not in ['CANCELLED', 'LEGACY']:
+                    self.payment_status = 'LEGACY'
+            # If not legacy and receipt_number is empty (needs auto-gen)
+            elif not self.receipt_number:
+                self.receipt_number = get_next_yy_sequential_number(
+                    model_class=Payment,
                     receipt_number_field='receipt_number'
                 )
-                self.receipt_number = f"{base_prefix_for_generation}{next_seq_part}"
-
             # If receipt_number was manually provided for a non-legacy record,
-            # ensure its uniqueness. This handles cases where admin might input it manually.
-            elif self.receipt_number and not self.is_legacy_record and Payment.objects.filter(
-                receipt_number=self.receipt_number,
-                is_legacy_record=False,
-                payment_status__in=['PENDING_VALIDATION', 'VALIDATED', 'COMPLETED', 'DRAFT'] 
-            ).exclude(pk=self.pk).exists():
-                raise Exception(f"Receipt number '{self.receipt_number}' already exists for an active, non-legacy payment. Please provide a unique number.")
+            # ensure its uniqueness for active payments.
+            if self.receipt_number and not self.is_legacy_record:
+                if Payment.objects.filter(
+                    receipt_number=self.receipt_number,
+                    is_legacy_record=False,
+                    payment_status__in=['PENDING_VALIDATION',
+                                        'VALIDATED', 'COMPLETED', 'DRAFT']
+                ).exclude(pk=self.pk).exists():
+                    raise ValueError(
+                        f"Receipt number '{self.receipt_number}' already exists for an active, non-legacy payment. Please provide a unique number or leave blank to auto-generate.")
             # === END RECEIPT NUMBER GENERATION LOGIC ===
-        
+
         # Always update updated_by on save (for existing records or after creation logic)
         if hasattr(self, '_request_user') and self._request_user.is_authenticated:
             self.updated_by = self._request_user
@@ -328,7 +329,7 @@ class Payment(models.Model):
             self.cancellation_date = timezone.now()
             if hasattr(self, '_request_user') and self._request_user.is_authenticated:
                 self.cancelled_by = self._request_user
-            self.payment_status = 'CANCELLED' 
+            self.payment_status = 'CANCELLED'
         elif not self.is_cancelled and self.cancellation_date:
             self.cancellation_date = None
             self.cancelled_by = None
@@ -336,10 +337,9 @@ class Payment(models.Model):
             # This complex logic might be better handled in your view or a dedicated method.
             # For simplicity, if uncancelled, we don't automatically change payment_status from CANCELLED
             # unless there's an explicit flow to re-activate it.
-        
+
         super().save(*args, **kwargs)
 
     def get_absolute_url(self):
         from django.urls import reverse
         return reverse('payment:payment_detail', kwargs={'pk': self.pk})
-

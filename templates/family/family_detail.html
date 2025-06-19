@@ -1,186 +1,227 @@
-{# apps/family/templates/family/family_detail.html #}
+{# templates/family/family_detail.html #}
 {% extends 'base.html' %}
-{% load static %}
+{% load static %} {# If you use static files like images/icons #}
+
+{% block title %}FAMILY: {{ family.family_name|upper }} - KADAMAY MORTUARY SYSTEM{% endblock %} {# TITLE IS NOW UPPERCASE #}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold text-base-content">{{ family.family_name }} Details</h1>
-        <div class="space-x-2">
-            <a href="{% url 'family:family_update' family.pk %}" class="btn btn-warning btn-outline btn-sm">
-                <i data-feather="edit" class="w-4 h-4"></i> Edit Family
-            </a>
-            <a href="{% url 'family:family_list' %}" class="btn btn-ghost btn-sm">
-                <i data-feather="arrow-left" class="w-4 h-4"></i> Back to List
-            </a>
-        </div>
-    </div>
-
-    {% if messages %}
-        <div class="mb-4">
-            {% for message in messages %}
-                <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %} shadow-lg">
-                    <div>
-                        <i data-feather="{% if message.tags == 'success' %}check-circle{% else %}alert-circle{% endif %}" class="w-6 h-6"></i>
-                        <span>{{ message }}</span>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-    {% endif %}
-
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div class="card bg-base-100 shadow-xl">
-            <div class="card-body">
-                <h2 class="card-title text-primary">Family Information</h2>
-                <div class="text-base-content/80">
-                    <p class="mb-2"><strong class="text-base-content">Name:</strong> {{ family.family_name }}</p>
-                    <p class="mb-2"><strong class="text-base-content">Address:</strong> {{ family.address }}</p>
-                    <p class="mb-2"><strong class="text-base-content">Church:</strong> <a href="{% url 'church:church_detail' family.church.pk %}" class="link link-hover link-info">{{ family.church.name }}</a></p>
-                    <p class="mb-2"><strong class="text-base-content">Status:</strong>
-                        <span class="badge {% if family.is_active %}badge-success{% else %}badge-error{% endif %} badge-md">
-                            {% if family.is_active %}Active{% else %}Inactive{% endif %}
-                        </span>
-                    </p>
-                    {% if family.in_charge %}
-                        <p class="mb-2"><strong class="text-base-content">In Charge:</strong> {{ family.in_charge.full_name }}</p>
-                    {% else %}
-                        <p class="mb-2"><strong class="text-base-content">In Charge:</strong> Not assigned</p>
-                    {% endif %}
-                </div>
+<div class="container mx-auto p-4 lg:p-8 max-w-6xl">
+    <div class="bg-base-100 shadow-xl rounded-lg p-6 lg:p-8">
+        {# Header section: Family Name, Description, and Action Buttons #}
+        <div class="flex justify-between items-center mb-8 flex-wrap gap-4"> {# Added flex-wrap and gap for responsiveness #}
+            <div>
+                <h1 class="text-3xl font-extrabold text-base-content uppercase">{{ family.family_name|upper }}</h1> {# ADDED uppercase CLASS AND FILTER #}
+                <p class="text-base-content/80 text-md mt-2 uppercase">DETAILS AND ASSOCIATED RECORDS FOR THIS FAMILY.</p> {# ADDED uppercase CLASS #}
+            </div>
+            <div class="flex space-x-3">
+                <a href="{% url 'family:family_list' %}" class="btn btn-md btn-outline btn-neutral flex items-center gap-2 rounded-lg font-semibold uppercase"> {# ADDED uppercase CLASS #}
+                    <i data-feather="arrow-left" class="w-5 h-5"></i>
+                    BACK TO LIST
+                </a>
+                <a href="{% url 'family:family_update' pk=family.pk %}" class="btn btn-md btn-primary flex items-center gap-2 rounded-lg font-semibold uppercase"> {# ADDED uppercase CLASS #}
+                    <i data-feather="edit" class="w-5 h-5"></i>
+                    EDIT FAMILY
+                </a>
+                {# Conditionally display button to edit Head of Family, only if a Head of Family is assigned #}
+                {% if family.head_of_family %}
+                <a href="{% url 'individual:individual_update' pk=family.head_of_family.pk %}" class="btn btn-md btn-info flex items-center gap-2 rounded-lg font-semibold uppercase"> {# ADDED uppercase CLASS #}
+                    <i data-feather="user" class="w-5 h-5"></i>
+                    EDIT HEAD OF FAMILY
+                </a>
+                {% endif %}
+                {# Button to delete family #}
+                <a href="{% url 'family:family_delete' pk=family.pk %}" class="btn btn-md btn-error flex items-center gap-2 rounded-lg font-semibold uppercase"> {# ADDED uppercase CLASS #}
+                    <i data-feather="trash-2" class="w-5 h-5"></i>
+                    DELETE FAMILY
+                </a>
             </div>
         </div>
 
-        <div class="card bg-base-100 shadow-xl">
-            <div class="card-body">
-                <h2 class="card-title text-primary">Key Metrics</h2>
-                <div class="stats stats-vertical lg:stats-horizontal shadow mb-6">
-                    <div class="stat">
-                        <div class="stat-title">Total Members</div>
-                        <div class="stat-value">{{ total_members_count }}</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-title">Active Members</div>
-                        <div class="stat-value text-success">{{ active_members_count }}</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-title">Deceased Members</div>
-                        <div class="stat-value text-error">{{ deceased_members_count }}</div>
-                    </div>
-                </div>
+        {# Basic Family Information Card #}
+        <div class="card bg-base-200 shadow-lg rounded-lg p-6 mb-8"> {# Changed bg to base-200 for distinction #}
+            <h2 class="text-2xl font-bold text-base-content mb-4 flex items-center gap-3 cursor-pointer uppercase" id="familyInfoToggle"> {# ADDED uppercase CLASS #}
+                <i data-feather="info" class="w-5 h-5 text-primary"></i> {# Changed icon color #}
+                FAMILY INFORMATION
+            </h2>
+            <div id="familyInfoContent" class="uppercase"> {# ADDED uppercase CLASS TO CONTENT #}
+                <p class="text-lg text-base-content mb-2"><strong class="text-base-content/80">FAMILY NAME:</strong> {{ family.family_name|default:"N/A"|upper }}</p> {# ADDED FILTER #}
+                <p class="text-lg text-base-content mb-2"><strong class="text-base-content/80">ADDRESS:</strong> {{ family.address|default:"N/A"|upper }}</p> {# ADDED FILTER #}
+                <p class="text-lg text-base-content mb-2">
+                    <strong class="text-base-content/80">ASSOCIATED CHURCH:</strong> 
+                    {% if family.church %}
+                        <a href="{% url 'church:church_detail' pk=family.church.pk %}" class="link link-hover text-primary">{{ family.church.name|upper }}</a> {# ADDED FILTER #}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </p>
+                <p class="text-lg text-base-content mb-2">
+                    <strong class="text-base-content/80">HEAD OF FAMILY:</strong> 
+                    {% if family.head_of_family %}
+                        <a href="{% url 'individual:individual_detail' pk=family.head_of_family.pk %}" class="link link-hover text-primary">{{ family.head_of_family.full_name|upper }}</a> {# ADDED FILTER #}
+                    {% else %}
+                        NOT ASSIGNED
+                    {% endif %}
+                </p>
+                <p class="text-lg text-base-content mb-2"><strong class="text-base-content/80">CONTACT NUMBER:</strong> {{ family.contact_number|default:"N/A"|upper }}</p> {# ADDED FILTER #}
+                <p class="text-lg text-base-content mb-2"><strong class="text-base-content/80">ACTIVE:</strong> 
+                    {% if family.is_active %}
+                        <span class="badge badge-success text-success-content">YES</span> {# ALREADY CAPS, ENSURE #}
+                    {% else %}
+                        <span class="badge badge-error text-error-content">NO</span> {# ALREADY CAPS, ENSURE #}
+                    {% endif %}
+                </p>
+                <p class="text-lg text-base-content mb-2"><strong class="text-base-content/80">DATE CREATED:</strong> {{ family.date_created|date:"M d, Y P"|upper }}</p> {# ADDED FILTER #}
+                <p class="text-lg text-base-content mb-2"><strong class="text-base-content/80">LAST UPDATED:</strong> {{ family.date_updated|date:"M d, Y P"|upper }}</p> {# ADDED FILTER #}
+            </div>
+        </div>
 
-                {% if family_head %}
-                    <p class="text-lg font-semibold mb-4">Family Head: <span class="text-primary">{{ family_head.given_name }} {{ family_head.surname }}</span></p>
+        {# Family Members Section #}
+        <div class="card bg-base-200 shadow-lg rounded-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-base-content mb-4 flex items-center gap-3 cursor-pointer uppercase" id="membersToggle"> {# ADDED uppercase CLASS #}
+                <i data-feather="users" class="w-5 h-5 text-secondary"></i>
+                FAMILY MEMBERS ({{ total_members_count }} TOTAL - {{ active_members_count }} ACTIVE, {{ deceased_members_count }} DECEASED) {# ADDED uppercase CLASS #}
+            </h2>
+            <div id="membersContent">
+                {# FIXED: Changed 'individual_create_in_family' to 'family_individual_create' #}
+                <a href="{% url 'individual:family_individual_create' family_id=family.pk %}" class="btn btn-sm btn-accent mb-4 uppercase">ADD NEW MEMBER</a> {# ADDED uppercase CLASS #}
+                
+                {% if all_individuals %}
+                    <div class="overflow-x-auto">
+                        <table class="table w-full">
+                            <thead>
+                                <tr>
+                                    <th class="uppercase">FULL NAME</th> {# ADDED uppercase CLASS #}
+                                    <th class="uppercase">STATUS</th> {# ADDED uppercase CLASS #}
+                                    <th class="uppercase">MEMBER SINCE</th> {# ADDED uppercase CLASS #}
+                                    <th class="uppercase">ACTIONS</th> {# ADDED uppercase CLASS #}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for member in all_individuals %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'individual:individual_detail' pk=member.pk %}" class="link link-hover text-primary font-semibold uppercase"> {# ADDED uppercase CLASS #}
+                                            {{ member.full_name|upper }} {# ADDED FILTER #}
+                                        </a>
+                                        {% if member == family_head %}
+                                            <span class="badge badge-info ml-2">HEAD</span> {# ALREADY CAPS, ENSURE #}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if member.is_alive and member.is_active_member %}
+                                            <span class="badge badge-success uppercase">ACTIVE LIVING</span> {# ADDED uppercase CLASS #}
+                                        {% elif not member.is_alive %}
+                                            <span class="badge badge-error uppercase">DECEASED</span> {# ADDED uppercase CLASS #}
+                                        {% else %}
+                                            <span class="badge badge-warning uppercase">INACTIVE LIVING</span> {# ADDED uppercase CLASS #}
+                                        {% endif %}
+                                    </td>
+                                    <td class="uppercase">{{ member.date_joined|date:"M d, Y"|upper }}</td> {# ADDED uppercase CLASS AND FILTER #}
+                                    <td>
+                                        <a href="{% url 'individual:individual_detail' pk=member.pk %}" class="btn btn-xs btn-outline btn-info uppercase">VIEW</a> {# ADDED uppercase CLASS #}
+                                        <a href="{% url 'individual:individual_update' pk=member.pk %}" class="btn btn-xs btn-outline btn-primary uppercase">EDIT</a> {# ADDED uppercase CLASS #}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 {% else %}
-                    <p class="text-base-content/70 mb-4">No Family Head designated yet.</p>
+                    <div class="alert alert-info shadow-lg uppercase"> {# ADDED uppercase CLASS #}
+                        <div>
+                            <i data-feather="info" class="w-6 h-6"></i>
+                            <span>NO INDIVIDUALS CURRENTLY REGISTERED UNDER THIS FAMILY.</span>
+                        </div>
+                    </div>
                 {% endif %}
             </div>
         </div>
-    </div>
 
-    <div class="card bg-base-100 shadow-xl mb-8">
-        <div class="card-body">
-            <h2 class="card-title text-primary">Family Members</h2>
-            {% if total_members_count > 0 %}
-                <div class="overflow-x-auto">
-                    <table class="table w-full">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Relationship</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for individual in all_individuals %}
+        {# Financial Contributions Section #}
+        <div class="card bg-base-200 shadow-lg rounded-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-base-content mb-4 flex items-center gap-3 cursor-pointer uppercase" id="financeToggle"> {# ADDED uppercase CLASS #}
+                <i data-feather="dollar-sign" class="w-5 h-5 text-success"></i>
+                FINANCIAL CONTRIBUTIONS
+            </h2>
+            <div id="financeContent" class="uppercase"> {# ADDED uppercase CLASS TO CONTENT #}
+                <p class="text-lg text-base-content mb-2">
+                    <strong class="text-base-content/80">TOTAL FAMILY CONTRIBUTIONS (PAYMENTS MADE):</strong> 
+                    <span class="font-bold text-success">₱{{ total_family_contributions|floatformat:2 }}</span>
+                </p>
+                <p class="text-lg text-base-content mb-2">
+                    <strong class="text-base-content/80">TOTAL ALLOCATED FOR PAYER CONTRIBUTIONS:</strong> 
+                    <span class="font-bold text-info">₱{{ total_allocated_payer_contributions|floatformat:2 }}</span>
+                </p>
+                
+                <h3 class="text-xl font-semibold text-base-content mt-6 mb-3 uppercase">RECENT PAYMENTS BY FAMILY MEMBERS</h3> {# ADDED uppercase CLASS #}
+                {% if family_payments %}
+                    <div class="overflow-x-auto">
+                        <table class="table w-full">
+                            <thead>
                                 <tr>
-                                    <td><a href="{% url 'individual:individual_detail' individual.pk %}" class="link link-hover link-primary">{{ individual.full_name }}</a></td>
-                                    <td>{{ individual.get_relationship_display_value }}</td> {# Use the display value #}
+                                    <th class="uppercase">DATE PAID</th> {# ADDED uppercase CLASS #}
+                                    <th class="uppercase">MEMBER (PAYER)</th> {# ADDED uppercase CLASS #}
+                                    <th class="uppercase">AMOUNT</th> {# ADDED uppercase CLASS #}
+                                    <th class="uppercase">REFERENCE/REMARKS</th> {# ADDED uppercase CLASS #}
+                                    <th class="uppercase">ACTIONS</th> {# ADDED uppercase CLASS #}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payment in family_payments %}
+                                <tr>
+                                    <td class="uppercase">{{ payment.date_paid|date:"M d, Y P"|upper }}</td> {# ADDED uppercase CLASS AND FILTER #}
                                     <td>
-                                        <span class="badge {% if individual.is_active_member %}badge-success{% else %}badge-error{% endif %} badge-md">
-                                            {% if individual.is_active_member %}ACTIVE{% else %}INACTIVE{% endif %}
-                                        </span>
+                                        <a href="{% url 'individual:individual_detail' pk=payment.individual.pk %}" class="link link-hover text-primary uppercase"> {# ADDED uppercase CLASS #}
+                                            {{ payment.individual.full_name|upper }} {# ADDED FILTER #}
+                                        </a>
                                     </td>
+                                    <td>₱{{ payment.amount|floatformat:2 }}</td>
+                                    <td class="uppercase">{{ payment.remarks|default:"N/A"|upper }}</td> {# ADDED uppercase CLASS AND FILTER #}
                                     <td>
-                                        <div class="flex gap-1">
-                                            <a href="{% url 'individual:individual_detail' individual.pk %}" class="btn btn-xs btn-info btn-square tooltip" data-tip="View Member">
-                                                <i data-feather="eye" class="w-4 h-4"></i>
-                                            </a>
-                                            <a href="{% url 'individual:individual_update' individual.pk %}" class="btn btn-xs btn-warning btn-square tooltip" data-tip="Edit Member">
-                                                <i data-feather="edit-3" class="w-4 h-4"></i>
-                                            </a>
-                                            {# Add delete button if needed #}
-                                        </div>
+                                        <a href="{% url 'payment:payment_detail' pk=payment.pk %}" class="btn btn-xs btn-outline btn-info uppercase">VIEW</a> {# ADDED uppercase CLASS #}
                                     </td>
                                 </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                <div class="mt-4 text-right">
-                    <a href="{% url 'individual:family_individual_create' family.pk %}" class="btn btn-primary btn-md">
-                        <i data-feather="plus-circle" class="w-5 h-5"></i> Add New Member
-                    </a>
-                </div>
-            {% else %}
-                <div class="alert alert-info shadow-lg mt-6">
-                    <div>
-                        <i data-feather="info" class="w-6 h-6"></i>
-                        <span>This family currently has no registered members.</span>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
-                </div>
-                <div class="mt-4 text-center">
-                    <a href="{% url 'individual:family_individual_create' family.pk %}" class="btn btn-primary btn-md">
-                        <i data-feather="plus-circle" class="w-5 h-5"></i> Add First Member
-                    </a>
-                </div>
-            {% endif %}
+                {% else %}
+                    <div class="alert alert-info shadow-lg uppercase"> {# ADDED uppercase CLASS #}
+                        <div>
+                            <i data-feather="info" class="w-6 h-6"></i>
+                            <span>NO PAYMENTS RECORDED FOR THIS FAMILY YET.</span>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
         </div>
-    </div>
 
-    <div class="card bg-base-100 shadow-xl">
-        <div class="card-body">
-            <h2 class="card-title text-primary">Recent Payments by Family Members</h2>
-            {% if family_payments %}
-                <div class="overflow-x-auto">
-                    <table class="table w-full">
-                        <thead>
-                            <tr>
-                                <th>Individual</th>
-                                <th>Amount</th>
-                                <th>Date Paid</th>
-                                <th>Payment Type</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for payment in family_payments %}
-                                <tr>
-                                    <td><a href="{% url 'individual:individual_detail' payment.individual.pk %}" class="link link-hover link-primary">{{ payment.individual.full_name }}</a></td>
-                                    <td>{{ payment.amount|floatformat:2 }}</td>
-                                    <td>{{ payment.date_paid|date:"M j, Y" }}</td>
-                                    <td>{{ payment.get_payment_type_display }}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <div class="alert alert-warning shadow-lg mt-6">
-                    <div>
-                        <i data-feather="alert-triangle" class="w-6 h-6"></i>
-                        <span>No recent payments found for this family.</span>
-                    </div>
-                </div>
-            {% endif %}
-        </div>
     </div>
 </div>
-
 {% endblock %}
 
 {% block extra_js %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
 <script>
-    feather.replace();
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace(); // Initialize feather icons
+
+        // Toggle functionality for info cards
+        const toggleCard = (toggleId, contentId) => {
+            const toggleBtn = document.getElementById(toggleId);
+            const content = document.getElementById(contentId);
+            if (toggleBtn && content) {
+                toggleBtn.style.cursor = 'pointer'; // Ensure cursor indicates interactivity
+                toggleBtn.addEventListener('click', function() {
+                    content.classList.toggle('hidden');
+                });
+            }
+        };
+
+        toggleCard('familyInfoToggle', 'familyInfoContent');
+        toggleCard('membersToggle', 'membersContent');
+        toggleCard('financeToggle', 'financeContent');
+    });
 </script>
 {% endblock %}

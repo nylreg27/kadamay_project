@@ -1,8 +1,11 @@
 # apps/individual/models.py
-
 from django.db import models
-# Assuming Family model exists in apps.family.models
-from apps.family.models import Family 
+from apps.family.models import Family
+from django.utils import timezone
+from decimal import Decimal
+
+# Import Church model (assuming Individual has a ForeignKey to Church)
+from apps.church.models import Church
 
 GENDER_CHOICES = [
     ('MALE', 'Male'),
@@ -17,8 +20,6 @@ CIVIL_STATUS_CHOICES = [
     ('SEPARATED', 'Separated'),
 ]
 
-# Assuming your Church model is defined somewhere, e.g., apps.church.models
-# from apps.church.models import Church
 
 class Individual(models.Model):
     given_name = models.CharField(max_length=100)
@@ -35,9 +36,13 @@ class Individual(models.Model):
     contact_number = models.CharField(max_length=20, blank=True, null=True)
     email_address = models.EmailField(blank=True, null=True)
 
-    membership_id = models.CharField(max_length=50, blank=True, null=True)
+    # FIXED: Membership ID is now unique and required (blank=False, null=False)
+    membership_id = models.CharField(
+        max_length=50, unique=True, blank=False, null=False)
+    # Since you have run the backfill command, all existing records should now have an ID.
+    # So, it's safe to set blank=False, null=False.
 
-    address = models.CharField(max_length=255, blank=True, null=True) # If this is a CharField
+    address = models.CharField(max_length=255, blank=True, null=True)
 
     RELATIONSHIP_CHOICES = [
         ('HEAD', 'Head'),
@@ -65,11 +70,51 @@ class Individual(models.Model):
 
     family = models.ForeignKey(
         Family, on_delete=models.SET_NULL, null=True, blank=True, related_name='members')
-    
-    # You might have a religion or occupation field that was not in the provided snippet
-    # religion = models.CharField(max_length=100, blank=True, null=True)
-    # occupation = models.CharField(max_length=100, blank=True, null=True)
-    # tin = models.CharField(max_length=20, blank=True, null=True)
+
+    church = models.ForeignKey(
+        Church, on_delete=models.SET_NULL, null=True, blank=True, related_name='individuals'
+    )
+
+    # Custom save method to auto-generate membership_id
+
+    def save(self, *args, **kwargs):
+        # Only generate a new membership_id if it's not already set
+        if not self.membership_id:
+            today = timezone.localdate()  # Get current date in local timezone
+
+            # Format the date part (YYMMDD)
+            # e.g., '250619' for June 19, 2025
+            date_part = today.strftime('%y%m%d')
+
+            # Find the last membership_id for today's date
+            # We need to filter by IDs that start with the current date part
+            # and then order by the ID in descending order to get the latest one.
+            # Using __startswith for efficient lookup if you have many records.
+            last_individual_for_today = Individual.objects.filter(
+                # Filter IDs like '250619-'
+                membership_id__startswith=f"{date_part}-"
+                # Get the highest sequence number
+            ).order_by('-membership_id').first()
+
+            new_sequence = 1
+            if last_individual_for_today:
+                # Extract the numeric sequence part from the last ID
+                # e.g., if last ID is '250619-0012', we get '0012'
+                last_id_sequence_str = last_individual_for_today.membership_id.split(
+                    '-')[-1]
+                try:
+                    last_sequence = int(last_id_sequence_str)
+                    new_sequence = last_sequence + 1
+                except ValueError:
+                    # Fallback if the sequence part is not a valid number (shouldn't happen with proper IDs)
+                    new_sequence = 1  # Reset to 1 if parsing fails unexpectedly
+
+            # Format the new membership ID: YYMMDD-XXXX (e.g., 250619-0001)
+            # Use zfill(4) to ensure it's always 4 digits, padding with leading zeros
+            self.membership_id = f"{date_part}-{str(new_sequence).zfill(4)}"
+
+        # Call the original save method to save the instance to the database
+        super().save(*args, **kwargs)
 
     @property
     def full_name(self):
@@ -98,4 +143,3 @@ class Individual(models.Model):
 
     class Meta:
         verbose_name_plural = "Individuals"
-

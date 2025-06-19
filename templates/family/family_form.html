@@ -1,118 +1,193 @@
-{# family_form.html #}
+{# templates/family/family_form.html #}
 {% extends 'base.html' %}
+{% load static %} {# If you use static files like images/icons #}
+{% load widget_tweaks %} {# Re-added for styling #}
 
-{% block title %}{% if form.instance.pk %}Edit{% else %}Create{% endif %} Family - Kadamay Mortuary System{% endblock %}
+{% block title %}{{ title }} - Kadamay Mortuary System{% endblock %}
 
 {% block content %}
-<div class="card bg-base-100 shadow-xl p-6 md:p-8 text-base-content rounded-xl my-6 mx-auto max-w-4xl">
-    <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-        <h1 class="text-3xl font-extrabold text-primary">{% if form.instance.pk %}Edit Family{% else %}Create New Family{% endif %}</h1>
-        
-        <a href="{% if form.instance.pk %}{% url 'family:family_detail' form.instance.pk %}{% else %}{% url 'family:family_list' %}{% endif %}" 
-           class="btn btn-ghost flex items-center gap-2 transition-all duration-300 hover:scale-105 w-full md:w-auto">
-            <i data-feather="arrow-left" class="w-5 h-5"></i> Back
-        </a>
-    </header>
-    
-    <form method="post" class="space-y-6">
-        {% csrf_token %}
-        
-        {% if form.non_field_errors %}
-        <div role="alert" class="alert alert-error mb-4"> {# DaisyUI alert #}
-            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            <span>
-                {% for error in form.non_field_errors %}
-                    {{ error }}
+{# Adjusted the main container div to control width, making it wider and centered #}
+<div class="container mx-auto p-4 lg:p-8 max-w-6xl"> 
+    <div class="bg-base-100 shadow-xl rounded-lg p-6 lg:p-8">
+        <h1 class="text-3xl font-bold text-base-content mb-6">{{ title }}</h1>
+
+        {# Django messages integration (e.g., success/error) #}
+        {# Note: base.html also handles messages via JavaScript for toast notifications. #}
+        {# You can keep this block if you want messages to also appear directly here, or remove if the toast is enough. #}
+        {% if messages %}
+            <div id="django_messages_container_form" class="mb-4"> {# Renamed ID to avoid conflict with base.html #}
+                {% for message in messages %}
+                    <div class="alert 
+                        {% if message.tags == 'success' %}alert-success
+                        {% elif message.tags == 'error' %}alert-error
+                        {% elif message.tags == 'warning' %}alert-warning
+                        {% else %}alert-info{% endif %}
+                        shadow-lg mb-2 rounded-lg">
+                        <span class="text-sm">{{ message }}</span>
+                    </div>
                 {% endfor %}
-            </span>
-        </div>
+            </div>
         {% endif %}
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="form-control w-full"> {# DaisyUI form control #}
-                <label class="label" for="{{ form.family_name.id_for_label }}">
-                    <span class="label-text text-base-content/70">Family Name</span>
+
+        <form method="post" class="space-y-6" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            {# Form Errors - Display non-field errors if any #}
+            {% if form.non_field_errors %}
+                <div class="alert alert-error shadow-lg rounded-lg">
+                    <ul class="list-disc list-inside">
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            {# Family Name Field #}
+            <div class="form-control w-full">
+                <label class="label">
+                    <span class="label-text">Family Name</span>
+                    {% if form.family_name.field.required %}<span class="text-error ml-1">*</span>{% endif %}
                 </label>
-                <input type="text" 
-                       name="{{ form.family_name.name }}" 
-                       id="{{ form.family_name.id_for_label }}" 
-                       value="{{ form.family_name.value|default:'' }}" 
-                       placeholder="e.g., Dela Cruz Family"
-                       class="input input-bordered w-full {% if form.family_name.errors %}input-error{% endif %}"
-                >
+                {{ form.family_name|add_class:"input input-bordered w-full uppercase" }}
                 {% if form.family_name.errors %}
-                <label class="label">
-                    <span class="label-text-alt text-error">{{ form.family_name.errors }}</span>
-                </label>
+                    <label class="label">
+                        {% for error in form.family_name.errors %}
+                        <span class="label-text-alt text-error">{{ error }}</span>
+                        {% endfor %}
+                    </label>
                 {% endif %}
             </div>
 
-            <div class="form-control w-full"> {# DaisyUI form control #}
-                <label class="label" for="{{ form.church.id_for_label }}">
-                    <span class="label-text text-base-content/70">Church</span>
-                </label>
-                <select name="{{ form.church.name }}" 
-                        id="{{ form.church.id_for_label }}" 
-                        class="select select-bordered w-full {% if form.church.errors %}select-error{% endif %}">
-                  <option value="" disabled selected>Select Church</option> {# Disabled and selected for placeholder #}
-                    {% for church_id, church_name in form.fields.church.choices %}
-                        {% if church_id %} {# Ensure value is not empty string for valid options #}
-                        <option value="{{ church_id }}" {% if form.church.value|stringformat:"s" == church_id|stringformat:"s" %}selected{% endif %}>{{ church_name }}</option>
-                        {% endif %}
-                    {% endfor %}
-                </select>
-                {% if form.church.errors %}
+            {# Address Field #}
+            <div class="form-control w-full">
                 <label class="label">
-                    <span class="label-text-alt text-error">{{ form.church.errors }}</span>
+                    <span class="label-text">Address</span>
+                    {% if form.address.field.required %}<span class="text-error ml-1">*</span>{% endif %}
                 </label>
+                {{ form.address|add_class:"textarea textarea-bordered w-full h-20 uppercase" }}
+                {% if form.address.errors %}
+                    <label class="label">
+                        {% for error in form.address.errors %}
+                        <span class="label-text-alt text-error">{{ error }}</span>
+                        {% endfor %}
+                    </label>
                 {% endif %}
             </div>
-        </div>
 
-        <div class="form-control w-full"> {# DaisyUI form control #}
-            <label class="label" for="{{ form.address.id_for_label }}">
-                <span class="label-text text-base-content/70">Address</span>
-            </label>
-            <textarea name="{{ form.address.name }}" 
-                      id="{{ form.address.id_for_label }}" 
-                      rows="3" 
-                      placeholder="e.g., 123 Main St, Anytown"
-                      class="textarea textarea-bordered h-24 w-full {% if form.address.errors %}textarea-error{% endif %}">{{ form.address.value|default:'' }}</textarea>
-            {% if form.address.errors %}
-            <label class="label">
-                <span class="label-text-alt text-error">{{ form.address.errors }}</span>
-            </label>
+            {# Church Field - Handled based on context (whether it's pre-filled or selectable) #}
+            {% if form.church.is_hidden %}
+                {{ form.church }} {# Render the hidden input #}
+                <div class="form-control w-full">
+                    <label class="label">
+                        <span class="label-text">Associated Church</span>
+                    </label>
+                    <input type="text" value="{{ church.name }}" class="input input-bordered w-full cursor-not-allowed bg-gray-100" disabled>
+                    <p class="label-text-alt text-gray-500 mt-1">This family is associated with {{ church.name }}</p>
+                </div>
+            {% else %}
+                <div class="form-control w-full">
+                    <label class="label">
+                        <span class="label-text">Associated Church</span>
+                        {% if form.church.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                    </label>
+                    {{ form.church|add_class:"select select-bordered w-full uppercase" }}
+                    {% if form.church.errors %}
+                        <label class="label">
+                            {% for error in form.church.errors %}
+                            <span class="label-text-alt text-error">{{ error }}</span>
+                            {% endfor %}
+                        </label>
+                    {% endif %}
+                    {% if form.church.help_text %}
+                        <label class="label">
+                            <span class="label-text-alt text-gray-500">{{ form.church.help_text }}</span>
+                        </label>
+                    {% endif %}
+                </div>
             {% endif %}
-        </div>
 
-        <div class="form-control"> {# DaisyUI form control for checkbox #}
-            <label class="label cursor-pointer justify-start gap-3"> {# Align checkbox and label #}
-                <input type="checkbox" 
-                       name="{{ form.is_active.name }}" 
-                       id="{{ form.is_active.id_for_label }}" 
-                       {% if form.is_active.value %}checked{% endif %} 
-                       class="checkbox checkbox-primary"
-                >
-                <span class="label-text text-base-content">Is Active</span>
-            </label>
-            {% if form.is_active.errors %}
-            <label class="label">
-                <span class="label-text-alt text-error">{{ form.is_active.errors }}</span>
-            </label>
+            {# Head of Family Section - Includes a searchable input and a hidden field for the ID #}
+            <div class="form-control w-full mb-4">
+                <label class="label">
+                    <span class="label-text">{{ form.head_of_family_display.label }}</span>
+                    {# The asterisk for required fields here applies to the display input field #}
+                    {# The model's validation will ensure the actual ForeignKey is populated if required #}
+                    {% if form.head_of_family_display.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                </label>
+                
+                {# The visible input field used by the user for searching and displaying the selected name #}
+                {{ form.head_of_family_display }}
+                
+                {# A hidden input field that will store the primary key (ID) of the selected Individual #}
+                {# This field's 'name' attribute MUST match your Family model's ForeignKey field name (e.g., 'head_of_family') #}
+                {# Its 'value' is dynamically set by the JavaScript based on the user's selection from search results #}
+                <input type="hidden" name="head_of_family" id="id_head_of_family" value="{{ form.instance.head_of_family.pk|default:'' }}">
+
+                {# This div acts as a container for the dynamically generated search results dropdown #}
+                {# It is initially hidden and shown/populated by JavaScript when the user types #}
+                <div id="head-of-family-results" class="relative z-10 w-full bg-base-200 border border-base-300 rounded-b-lg shadow-lg max-h-60 overflow-y-auto hidden">
+                    {# Search results will be dynamically injected here by JavaScript #}
+                </div>
+
+                {# Display any validation errors or help text associated with the 'head_of_family_display' field #}
+                {% if form.head_of_family_display.errors %}
+                    <label class="label">
+                        {% for error in form.head_of_family_display.errors %}
+                        <span class="label-text-alt text-error">{{ error }}</span>
+                        {% endfor %}
+                    </label>
+                {% endif %}
+                {% if form.head_of_family_display.help_text %}
+                    <label class="label">
+                        <span class="label-text-alt text-gray-500">{{ form.head_of_family_display.help_text }}</span>
+                    </label>
+                {% endif %}
+            </div>
+
+            {# Contact Number Field (rendered only if the form field exists) #}
+            {% if form.contact_number %}
+            <div class="form-control w-full">
+                <label class="label">
+                    <span class="label-text">Contact Number</span>
+                    {% if form.contact_number.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                </label>
+                {{ form.contact_number|add_class:"input input-bordered w-full uppercase" }}
+                {% if form.contact_number.errors %}
+                    <label class="label">
+                        {% for error in form.contact_number.errors %}
+                        <span class="label-text-alt text-error">{{ error }}</span>
+                        {% endfor %}
+                    </label>
+                {% endif %}
+            </div>
             {% endif %}
-        </div>
 
-        <div class="flex justify-end space-x-3 mt-8"> {# Increased top margin #}
-            <a href="{% if form.instance.pk %}{% url 'family:family_detail' form.instance.pk %}{% else %}{% url 'family:family_list' %}{% endif %}" 
-               class="btn btn-ghost transition-all duration-300 hover:scale-105">
-                Cancel
-            </a>
-            <button type="submit" 
-                    class="btn btn-primary transition-all duration-300 hover:scale-105">
-                {% if form.instance.pk %}Update Family{% else %}Create Family{% endif %}
-            </button>
-        </div>
-    </form>
+            {# Is Active Checkbox Field #}
+            <div class="form-control w-full">
+                <label class="label cursor-pointer justify-start gap-2">
+                    {{ form.is_active|add_class:"checkbox checkbox-primary" }}
+                    <span class="label-text">
+                        {{ form.is_active.label }}
+                        {% if form.is_active.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                    </span>
+                </label>
+                {% if form.is_active.errors %}
+                    <label class="label">
+                        {% for error in form.is_active.errors %}
+                        <span class="label-text-alt text-error">{{ error }}</span>
+                        {% endfor %}
+                    </label>
+                {% endif %}
+            </div>
+
+            {# Form submission and cancellation buttons #}
+            <div class="flex justify-end gap-4 mt-8">
+                <a href="{% url 'family:family_list' %}" class="btn btn-ghost">Cancel</a>
+                <button type="submit" class="btn btn-success">Save Family</button>
+            </div>
+        </form>
+    </div>
 </div>
 {% endblock %}
 
@@ -120,7 +195,123 @@
 {{ block.super }}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        feather.replace();
+        const searchInput = document.getElementById('id_head_of_family_display');
+        const hiddenInput = document.getElementById('id_head_of_family');
+        const resultsContainer = document.getElementById('head-of-family-results');
+        // Ensure csrfToken is correctly fetched (it should always be present in Django templates)
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '';
+        const searchUrl = "{% url 'individual:individual_search_api' %}"; // URL to our search API
+
+        let debounceTimeout; // For optimizing search performance
+
+        // Function to perform the actual search by calling the Django API
+        async function performSearch(query) {
+            if (query.length < 2) { // Require at least 2 characters to start searching
+                resultsContainer.innerHTML = ''; // Clear previous results
+                resultsContainer.classList.add('hidden'); // Hide the results container
+                return;
+            }
+
+            try {
+                // Make a fetch request to the Django API endpoint
+                const response = await fetch(`${searchUrl}?query=${encodeURIComponent(query)}`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest', // Standard header for AJAX requests
+                        'X-CSRFToken': csrfToken // Include CSRF token for security (important for POST, good practice for GET too)
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json(); // Parse the JSON response
+                displayResults(data); // Call function to display the results
+            } catch (error) {
+                console.error('Error fetching search results:', error);
+                resultsContainer.innerHTML = '<div class="p-2 text-error">Error loading results.</div>'; // Display error message
+                resultsContainer.classList.remove('hidden'); // Ensure results container is visible to show error
+            }
+        }
+
+        // Function to display the search results in the dropdown
+        function displayResults(results) {
+            resultsContainer.innerHTML = ''; // Clear any existing results
+            if (results.length === 0) {
+                resultsContainer.innerHTML = '<div class="p-2 text-base-content/70">No members found.</div>'; // Message for no results
+                resultsContainer.classList.remove('hidden'); // Show container for "No members found"
+                return;
+            }
+
+            // Iterate over each result item and create a div for it
+            results.forEach(item => {
+                const resultItem = document.createElement('div');
+                resultItem.classList.add('p-2', 'cursor-pointer', 'hover:bg-primary', 'hover:text-primary-content', 'rounded-md', 'transition-colors', 'duration-150');
+                resultItem.textContent = item.text; // Display the formatted text (name and ID)
+                resultItem.dataset.id = item.id; // Store the actual individual's ID in a data attribute
+
+                // Add a click event listener to each result item
+                resultItem.addEventListener('click', function() {
+                    searchInput.value = item.text; // Set the visible input to the selected item's text
+                    hiddenInput.value = item.id;    // Set the hidden input's value to the selected item's ID
+                    resultsContainer.innerHTML = ''; // Clear the results dropdown
+                    resultsContainer.classList.add('hidden'); // Hide the results container
+                });
+                resultsContainer.appendChild(resultItem); // Add the item to the results container
+            });
+            resultsContainer.classList.remove('hidden'); // Show the results container
+        }
+
+        // Event listener for changes in the search input field (with debounce for performance)
+        searchInput.addEventListener('input', function() {
+            clearTimeout(debounceTimeout); // Clear any previous debounce timer
+            debounceTimeout = setTimeout(() => {
+                performSearch(searchInput.value.trim()); // Call search function after a delay
+            }, 300); // 300ms delay before searching
+        });
+
+        // Event listener to hide results when the search input loses focus
+        searchInput.addEventListener('blur', function() {
+            // A small delay is added to allow the click event on a result item to fire
+            // BEFORE the results container is hidden. This prevents accidental hiding.
+            setTimeout(() => {
+                // Check if the focus is still within the results container or search input
+                if (!resultsContainer.contains(document.activeElement) && document.activeElement !== searchInput) {
+                    resultsContainer.classList.add('hidden');
+                }
+            }, 100); 
+        });
+
+        // Prevent blur event from firing immediately when clicking on a result item
+        resultsContainer.addEventListener('mousedown', function(event) {
+            event.preventDefault(); // This stops the searchInput's blur event from firing
+        });
+
+
+        // Initialize the display field when the page loads, if a Head of Family is already selected (e.g., when editing)
+        if (hiddenInput.value) {
+            async function initializeDisplay() {
+                try {
+                    // Fetch the individual's full name based on the ID stored in the hidden input
+                    // We can reuse the search API by passing the ID as a query; it searches by ID too.
+                    const response = await fetch(`${searchUrl}?query=${hiddenInput.value}`, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': csrfToken
+                        }
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        // Find the exact match by ID from the returned array
+                        const exactMatch = data.find(item => item.id == hiddenInput.value);
+                        if (exactMatch) {
+                            searchInput.value = exactMatch.text; // Set the visible display field to the full name
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error initializing Head of Family display:", error);
+                }
+            }
+            initializeDisplay();
+        }
     });
 </script>
 {% endblock %}

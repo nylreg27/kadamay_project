@@ -13,7 +13,8 @@ urlpatterns = [
     path('account/', include(('apps.account.urls', 'account'), namespace='account')),
     path('church/', include(('apps.church.urls', 'church'), namespace='church')),
     path('family/', include(('apps.family.urls', 'family'), namespace='family')),
-    path('individual/', include(('apps.individual.urls', 'individual'), namespace='individual')),
+    path('individual/', include(('apps.individual.urls',
+         'individual'), namespace='individual')),
     path('payment/', include(('apps.payment.urls', 'payment'), namespace='payment')),
     path('report/', include(('apps.report.urls', 'report'), namespace='report')),
     path('chat/', include(('apps.chat.urls', 'chat'), namespace='chat')),
@@ -21,7 +22,8 @@ urlpatterns = [
 
     # Django's built-in Authentication URLs (for login/logout/password change)
     # Dapat ay kasama ito
-    path('accounts/', include('django.contrib.auth.urls')), # Pinalitan ko 'account/' ng 'accounts/' para hindi mag-conflict sa 'apps.account'
+    # Pinalitan ko 'account/' ng 'accounts/' para hindi mag-conflict sa 'apps.account'
+    path('accounts/', include('django.contrib.auth.urls')),
 
     # Redirect root URL to dashboard
     path('', RedirectView.as_view(pattern_name='report:dashboard'), name='home'),
@@ -30,12 +32,13 @@ urlpatterns = [
 
     # Other app urls
     path("__reload__/", include("django_browser_reload.urls")),
-
+    path('payment/', include('payment.urls')),
 
 ]
 
 # Serve media files (user uploads) and static files during development
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-
+    urlpatterns += static(settings.MEDIA_URL,
+                          document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL,
+                          document_root=settings.STATIC_ROOT)

@@ -1,4 +1,6 @@
+{# templates/family/family_list.html #}
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Family List - Kadamay Mortuary System{% endblock %}
 
@@ -29,11 +31,11 @@
             
             {% if request.GET.search %}
             <a href="{% url 'family:family_list' %}"
-               class="btn btn-outline btn-primary btn-sm flex items-center gap-2 tooltip tooltip-bottom" {# Updated classes here #}
+               class="btn btn-outline btn-primary btn-sm flex items-center gap-2 tooltip tooltip-bottom" 
                data-tip="Clear Search"
                aria-label="Clear search and refresh list"
             >
-                <i data-feather="refresh-cw" class="w-4 h-4"></i> Refresh {# Added text #}
+                <i data-feather="refresh-cw" class="w-4 h-4"></i> Refresh
             </a>
             {% endif %}
 
@@ -87,7 +89,7 @@
                     <tr>
                         <th class="w-8"></th>
                         <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Family Name</th>
-                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Head of Family</th>
+                        <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Head of Family</th> 
                         <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Church</th>
                         <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Address</th>
                         <th class="text-left text-xs font-semibold uppercase tracking-wider text-base-content/70">Contact Number</th>
@@ -106,8 +108,9 @@
                                 {{ family.family_name|upper }}
                             </a>
                         </td>
+                        {# FIXED: Changed to family.head_of_family to display the individual's full name #}
                         <td class="whitespace-nowrap text-xs">
-                            {% if family.head_of_family %}
+                            {% if family.head_of_family %} 
                                 <a href="{% url 'individual:individual_detail' family.head_of_family.id %}" class="link link-hover link-secondary">
                                     {{ family.head_of_family.surname|upper }}, {{ family.head_of_family.given_name|upper }}
                                 </a>
@@ -160,12 +163,12 @@
                     </h2>
                     <div class="text-xs text-base-content/80 space-y-0.5">
                         <p><strong>Head:</strong> 
-                            {% if family.head_of_family %}
-                            <a href="{% url 'individual:individual_detail' family.head_of_family.id %}" class="link link-hover link-secondary">
-                                {{ family.head_of_family.surname|upper }}, {{ family.head_of_family.given_name|upper }}
-                            </a>
+                            {% if family.head_of_family %} {# FIXED: Changed to family.head_of_family #}
+                                <a href="{% url 'individual:individual_detail' family.head_of_family.id %}" class="link link-hover link-secondary">
+                                    {{ family.head_of_family.surname|upper }}, {{ family.head_of_family.given_name|upper }}
+                                </a>
                             {% else %}
-                            <span class="italic text-base-content/60">- None -</span>
+                                <span class="italic text-base-content/60">- None -</span>
                             {% endif %}
                         </p>
                         <p><strong>Church:</strong>

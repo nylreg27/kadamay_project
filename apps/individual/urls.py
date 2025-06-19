@@ -1,46 +1,49 @@
 # apps/individual/urls.py
-from django.urls import path
-from . import views
 
+from django.urls import path
+# Import all views needed, including the new IndividualSearchAPIView
+from .views import (
+    IndividualCreateView,
+    IndividualDetailView,
+    IndividualUpdateView,
+    IndividualListView,
+    IndividualDeleteView,
+    IndividualListByChurchView,
+    IndividualCreateForFamilyView,
+    IndividualSearchAPIView  # NEW: Import the new API view
+)
+
+# Crucial for reverse lookups like {% url 'individual:individual_list' %}
 app_name = 'individual'
 
 urlpatterns = [
-    # Dashboard URL
-    path('dashboard/', views.IndividualDashboardView.as_view(),
-         name='individual_dashboard'),
+    # List view for all individuals
+    path('', IndividualListView.as_view(), name='individual_list'),
 
-    # API URL for fetching individual details (MODIFIED to include payments)
-    path('<int:pk>/details/', views.individual_details_api,
-         name='individual_details_api'),
+    # Create new individual (general create)
+    path('create/', IndividualCreateView.as_view(), name='individual_create'),
 
-    # General Individual List
-    path('', views.IndividualListView.as_view(), name='individual_list'),
+    # Detail view for a specific individual
+    path('<int:pk>/', IndividualDetailView.as_view(), name='individual_detail'),
 
-    # Individual Detail 
-    path('<int:pk>/', views.IndividualDetailView.as_view(),
-         name='individual_detail'),
-
-    # Individual Create (General)
-    path('create/', views.IndividualCreateView.as_view(), name='individual_create'),
-
-    # Individual Update
-    path('<int:pk>/edit/', views.IndividualUpdateView.as_view(),
+    # Update an existing individual
+    path('<int:pk>/update/', IndividualUpdateView.as_view(),
          name='individual_update'),
 
-    # Individual Delete
-    path('<int:pk>/delete/', views.IndividualDeleteView.as_view(),
+    # Delete an individual
+    path('<int:pk>/delete/', IndividualDeleteView.as_view(),
          name='individual_delete'),
 
-    # URL for listing individuals within a specific church
-    path('in-church/<int:church_id>/individuals/',
-         views.IndividualListInChurchView.as_view(), name='church_individuals'),
+    # List individuals by Church ID
+    path('church/<int:church_id>/', IndividualListByChurchView.as_view(),
+         name='church_individuals'),
 
-    # NEW URL: For creating an individual within a specific family context
-    path('create/in-family/<int:family_id>/',
-         views.IndividualCreateInFamilyView.as_view(), name='family_individual_create'),
-    
-    # NOTE: The PaymentCreateView URL from your snippet was pointing here.
-    # It should be in payment/urls.py. The payment:add_payment URL is already handled there.
-    # So, no change needed here regarding payment creation URL.
+    # Create an individual tied to a specific family
+    path('family/<int:family_id>/create/',
+         IndividualCreateForFamilyView.as_view(), name='family_individual_create'),
+
+    # NEW: API endpoint for searching individuals
+    # This will be called by JavaScript for the "Head of Family" search
+    path('api/search/', IndividualSearchAPIView.as_view(),
+         name='individual_search_api'),
 ]
-

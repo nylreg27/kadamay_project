@@ -80,6 +80,12 @@
                     <p class="font-bold">Gender:</p>
                     <p>{{ individual.get_sex_display|default:"N/A" }}</p> {# Calling from 'sex' field, 'get_sex_display' method #}
                 </div>
+
+                {# NEW: Display Membership ID #}
+                <div>
+                    <p class="font-bold">Membership ID:</p>
+                    <p>{{ individual.membership_id|default:"N/A" }}</p>
+                </div>
                 <div>
                     <p class="font-bold">Relationship to Head of Family:</p>
                     <p>{{ individual.get_relationship_display_value|default:"N/A" }}</p> {# Using the property 'get_relationship_display_value' #}
