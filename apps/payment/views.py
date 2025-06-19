@@ -1,31 +1,20 @@
 # apps/payment/views.py
 
 from django.shortcuts import render, redirect, get_object_or_404
-# Added ListView and DetailView
-from django.views.generic import View, CreateView, ListView, DetailView
+from django.views.generic import View, ListView, DetailView
 from django.urls import reverse_lazy
 from django.contrib import messages
-# For permission checks
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-# For atomic transactions (saving multiple related objects)
 from django.db import transaction
 from django.http import JsonResponse
-from django.db.models import Q  # For search queries
+from django.db.models import Q, Max # For search queries and Max for OR number
 
-from .models import Payment, PaymentIndividualAllocation, ContributionType
-# Import Individual and Family models
-from apps.individual.models import Individual, Family
-from apps.church.models import Church  # Import Church model
-from .forms import PaymentForm, PaymentIndividualAllocationFormSet
-
-
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.db.models import Max
-from .models import Payment, Payee, Family, Individual
-from .forms import PaymentForm, PaymentPayeeFormset
-
+from apps.payment.models import Payment, ContributionType, CoveredMember # ADD CoveredMember here!
+from apps.individual.models import Individual
+from apps.church.models import Church
+# Import the correct formset name, which is PayeeFormSet from forms.py
+# based on our previous discussions, this should now be for CoveredMember
+from .forms import PaymentForm, PayeeFormSet # This PayeeFormSet should be for CoveredMember
 
 # Helper function to check user roles
 def is_admin_or_cashier_or_incharge(user):
@@ -42,15 +31,13 @@ class PaymentAccessMixin(LoginRequiredMixin, UserPassesTestMixin):
     """
     Mixin to ensure only 'Admin', 'Cashier', or 'In-charge' users can access these views.
     """
-
     def test_func(self):
         return is_admin_or_cashier_or_incharge(self.request.user)
 
     def handle_no_permission(self):
         messages.error(
             self.request, "You do not have permission to access payment functions.")
-        # Redirect to a home/dashboard page
-        return redirect(reverse_lazy('home'))
+        return redirect(reverse_lazy('home')) # Assuming 'home' is your dashboard URL name
 
 
 class PaymentListView(PaymentAccessMixin, ListView):
@@ -59,7 +46,7 @@ class PaymentListView(PaymentAccessMixin, ListView):
     Accessible only by Admin, Cashier, In-charge.
     """
     model = Payment
-    template_name = 'payment/payment_list.html'  # You'll create this next
+    template_name = 'payment/payment_list.html'
     context_object_name = 'payments'
     paginate_by = 10
 
@@ -75,10 +62,8 @@ class PaymentListView(PaymentAccessMixin, ListView):
             'validated_by',
             'cancelled_by',
             'deceased_member'
-            # Prefetch individuals in allocations
-        ).prefetch_related('individual_allocations__individual')
+        ).prefetch_related('covered_members__individual') # Corrected: Use 'covered_members'
 
-        # Basic search functionality (e.g., by OR number, payer name)
         search_query = self.request.GET.get('search')
         if search_query:
             queryset = queryset.filter(
@@ -89,12 +74,10 @@ class PaymentListView(PaymentAccessMixin, ListView):
                 Q(notes__icontains=search_query)
             )
 
-        # Filter by status if requested
         status_filter = self.request.GET.get('status')
         if status_filter and status_filter != 'ALL':
             queryset = queryset.filter(payment_status=status_filter)
 
-        # Filter by payment method
         method_filter = self.request.GET.get('method')
         if method_filter and method_filter != 'ALL':
             queryset = queryset.filter(payment_method=method_filter)
@@ -105,10 +88,8 @@ class PaymentListView(PaymentAccessMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['page_title'] = 'Payment Records'
         context['search_query'] = self.request.GET.get('search', '')
-        context['current_status_filter'] = self.request.GET.get(
-            'status', 'ALL')
-        context['current_method_filter'] = self.request.GET.get(
-            'method', 'ALL')
+        context['current_status_filter'] = self.request.GET.get('status', 'ALL')
+        context['current_method_filter'] = self.request.GET.get('method', 'ALL')
         context['payment_statuses'] = Payment.PAYMENT_STATUS_CHOICES
         context['payment_methods'] = Payment.PAYMENT_METHOD_CHOICES
         return context
@@ -120,7 +101,7 @@ class PaymentDetailView(PaymentAccessMixin, DetailView):
     Accessible only by Admin, Cashier, In-charge.
     """
     model = Payment
-    template_name = 'payment/payment_detail.html'  # You'll create this later
+    template_name = 'payment/payment_detail.html'
     context_object_name = 'payment'
 
     def get_queryset(self):
@@ -135,7 +116,7 @@ class PaymentDetailView(PaymentAccessMixin, DetailView):
             'validated_by',
             'cancelled_by',
             'deceased_member'
-        ).prefetch_related('individual_allocations__individual')
+        ).prefetch_related('covered_members__individual') # Corrected: Use 'covered_members'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -148,123 +129,110 @@ class AddPaymentView(PaymentAccessMixin, View):
     Handles both displaying the payment form (GET) and processing its submission (POST).
     This view supports adding multiple allocations per payment.
     """
-    template_name = 'payment/payment_form.html'  # The template we just created
+    template_name = 'payment/payment_form.html'
 
     def get(self, request, individual_id=None):
         initial_data = {}
         if individual_id:
             individual = get_object_or_404(Individual, pk=individual_id)
-            initial_data['individual'] = individual
-            initial_data[
-                'primary_individual_search'] = f"{individual.full_name} ({individual.membership_id})"
+            initial_data['individual'] = individual.pk # Pass PK for the form field
+            initial_data['primary_individual_search'] = f"{individual.full_name} ({individual.membership_id})"
+        
+        # Automatic OR number generation (same logic as the removed create_payment function)
+        last_receipt = Payment.objects.all().aggregate(Max('receipt_number'))['receipt_number__max']
+        if last_receipt:
+            try:
+                # Ensure it's treated as a numeric string for incrementing
+                next_receipt_number = str(int(last_receipt) + 1)
+            except (ValueError, TypeError):
+                messages.warning(request, "Automatic Receipt Number generation failed. Please enter manually.")
+                next_receipt_number = None # Or '2000001' or similar starting point
+        else:
+            next_receipt_number = '2000001' # Starting OR number if no payments exist
+        
+        initial_data['receipt_number'] = next_receipt_number # Set as initial value for the form
 
         form = PaymentForm(initial=initial_data)
-        # Pass an empty queryset for individual in formset to be populated by Select2
-        formset = PaymentIndividualAllocationFormSet(
-            queryset=PaymentIndividualAllocation.objects.none()
+        # Pass an empty queryset for formset, it will be populated by JS/Select2 for CoveredMembers
+        formset = PayeeFormSet(
+            queryset=CoveredMember.objects.none() # Corrected: Use CoveredMember
         )
 
         context = {
             'form': form,
             'formset': formset,
             'page_title': 'Record New Payment',
-            # Pass individual if present
-            'individual': initial_data.get('individual')
+            'next_receipt_number': next_receipt_number, # Also pass to context for display if needed
+            'individual': initial_data.get('individual') # Pass individual PK if present
         }
         return render(request, self.template_name, context)
 
     def post(self, request, individual_id=None):
         form = PaymentForm(request.POST)
-        formset = PaymentIndividualAllocationFormSet(request.POST)
+        formset = PayeeFormSet(request.POST) # Still named PayeeFormSet but manages CoveredMember
 
         if form.is_valid():
-            # Check if an individual was actually selected from search
             primary_individual_id = request.POST.get('individual')
             if not primary_individual_id:
                 messages.error(
                     request, "Please select a primary payer from the search results.")
-                # Re-render form with errors
                 context = {
                     'form': form,
                     'formset': formset,
                     'page_title': 'Record New Payment',
-                    'individual': None  # No individual selected
+                    'individual': None
                 }
                 return render(request, self.template_name, context)
 
-            primary_individual = get_object_or_404(
-                Individual, pk=primary_individual_id)
-            # Assign the actual Individual object
+            primary_individual = get_object_or_404(Individual, pk=primary_individual_id)
             form.instance.individual = primary_individual
 
-            # Set collected_by based on the current user
             if request.user.is_authenticated:
                 form.instance.collected_by = request.user
-                # For cash payments, if user is Admin/Cashier, it's validated immediately
-                if form.instance.payment_method == 'CASH' and is_admin_or_cashier_or_incharge(request.user):
-                    form.instance.payment_status = 'VALIDATED'
-                    form.instance.validated_by = request.user
-                    form.instance.validation_date = transaction.now()
-                # For GCash payments, status is PENDING_VALIDATION if user is In-charge
-                elif form.instance.payment_method == 'GCASH' and 'In-charge' in [g.name for g in request.user.groups.all()]:
+                
+                # Payment Status logic based on user roles and payment method
+                # This needs to be 'PENDING_VALIDATION' only for In-charge + GCash
+                # Admin/Cashier + GCash, and all CASH payments are 'PAID'
+                if form.instance.payment_method == 'GCASH' and 'In-charge' in [g.name for g in request.user.groups.all()]:
                     form.instance.payment_status = 'PENDING_VALIDATION'
-                # If Admin/Cashier making a GCash payment, it can be validated immediately too
-                elif form.instance.payment_method == 'GCASH' and ('Admin' in [g.name for g in request.user.groups.all()] or 'Cashier' in [g.name for g in request.user.groups.all()]):
-                    form.instance.payment_status = 'VALIDATED'
-                    form.instance.validated_by = request.user
+                else: # CASH payments by anyone, or GCash by Admin/Cashier
+                    form.instance.payment_status = 'PAID'
+                    form.instance.validated_by = request.user # Validated by collector if not pending
                     form.instance.validation_date = transaction.now()
 
-            # Pass the request user to the form's instance for the save method's created_by/updated_by logic
-            # This is a common pattern when you need to access request data in model's save method
+            # The _request_user attribute is a pattern for model's save method to access current user
             form.instance._request_user = request.user
 
-            # Use a transaction to ensure all saves succeed or none do
             with transaction.atomic():
-                payment = form.save()  # Save the main payment object first
+                payment = form.save()
 
-                # Now handle the formset for individual allocations
-                # Associate the formset with the saved payment instance
-                formset = PaymentIndividualAllocationFormSet(
-                    request.POST, instance=payment)
-
-                # Check formset validity after attaching to instance
-                if formset.is_valid():
-                    # Process formset data from hidden input
-                    # This is crucial because crispy forms' formset doesn't directly handle the dynamic additions
-                    formset_data_json = request.POST.get('formset_data')
-                    if formset_data_json:
-                        import json
-                        formset_data = json.loads(formset_data_json)
-
-                        # Delete existing allocations not in the submitted data
-                        existing_allocation_ids = [
-                            alloc.id for alloc in payment.individual_allocations.all()]
-                        submitted_individual_ids = [
-                            item['individual_id'] for item in formset_data]
-
-                        for alloc_id in existing_allocation_ids:
-                            # If an allocation from the database is not in the submitted data, delete it.
-                            # Or if it was explicitly marked for delete in the formset (though our JS hides it)
-                            if str(alloc_id) not in [str(item['id']) for item in formset_data if 'id' in item]:
-                                # This requires the formset_data to include the PK if it's an existing record.
-                                # Let's simplify: Django formset will handle updates/deletes if 'id' field is sent.
-                                # Our formset template doesn't explicitly send 'id' for existing, only for new.
-                                # Instead, the DELETE checkbox handles it.
-                                pass
-
-                    # Save the formset
-                    formset.save()  # This will create, update, or delete allocations based on the formset data
+                # Now, correctly handle the formset for CoveredMember allocations
+                formset_for_save = PayeeFormSet(request.POST, instance=payment)
+                
+                if formset_for_save.is_valid():
+                    # Save the formset (creates, updates, deletes CoveredMember instances)
+                    saved_covered_members = formset_for_save.save(commit=False)
+                    for cm in saved_covered_members:
+                        # You may need to explicitly set 'payment' for new objects if not handled by formset's save
+                        # For new objects, base_form should link to payment, but explicit set is safer.
+                        cm.payment = payment 
+                        cm.save()
+                    
+                    # Handle deleted members (formset.save() with commit=False doesn't delete, needs extra step)
+                    for obj in formset_for_save.deleted_objects:
+                        obj.delete()
 
                     # After saving, check if any allocations were saved.
-                    # If no allocations were made, but a primary individual was selected,
-                    # make sure that primary individual is also allocated the full amount.
-                    if not payment.individual_allocations.exists():
-                        # Create an allocation for the primary individual with the full payment amount
-                        PaymentIndividualAllocation.objects.create(
+                    # If no specific allocations, allocate full amount to primary individual.
+                    if not payment.covered_members.exists(): # Corrected: Use covered_members
+                        # Check if primary_individual is already a CoveredMember for this payment (unlikely if .exists() is false)
+                        # To avoid duplicates if somehow the primary individual was added manually without the formset.
+                        CoveredMember.objects.create( # Corrected: Use CoveredMember
                             payment=payment,
                             individual=primary_individual,
-                            allocated_amount=payment.amount,
-                            is_payer=True
+                            amount_allocated=payment.amount,
+                            # is_payer is not a field on CoveredMember, it's a property on Payment.
+                            # So no need to set is_payer here for CoveredMember.
                         )
                         messages.warning(
                             request, "No specific allocations were made, so the full payment amount was allocated to the primary payer.")
@@ -284,13 +252,12 @@ class AddPaymentView(PaymentAccessMixin, View):
             'form': form,
             'formset': formset,
             'page_title': 'Record New Payment',
-            # Pass individual if present for re-render
-            'individual': form.instance.individual
+            'individual': form.instance.individual if form.instance.individual else None,
+            'next_receipt_number': request.POST.get('receipt_number', 'N/A') # Re-populate if it was an auto-gen
         }
         return render(request, self.template_name, context)
 
-
-# --- API Views for JavaScript Interaction ---
+# --- API Views for JavaScript Interaction (no changes needed for these if they work as intended) ---
 
 def search_individuals_api(request):
     """
@@ -298,7 +265,7 @@ def search_individuals_api(request):
     Returns a JSON response suitable for Select2.
     """
     query = request.GET.get('q', '')
-    individual_id = request.GET.get('id', '')  # For pre-populating Select2
+    individual_id = request.GET.get('id', '') 
 
     individuals = Individual.objects.none()
 
@@ -308,22 +275,21 @@ def search_individuals_api(request):
             Q(middle_name__icontains=query) |
             Q(surname__icontains=query) |
             Q(membership_id__icontains=query)
-            # Limit results for performance
         ).order_by('surname', 'given_name')[:10]
     elif individual_id:
         try:
             individuals = Individual.objects.filter(pk=individual_id)
         except ValueError:
-            pass  # Invalid ID, no results
+            pass 
 
     results = []
     for ind in individuals:
         results.append({
             'id': ind.pk,
-            'text': ind.full_name,  # Select2 expects 'text' for display
+            'text': ind.full_name,
             'membership_id': ind.membership_id,
             'family_name': ind.family.family_name if ind.family else 'N/A',
-            'status': ind.membership_status  # Pass status for badges if needed
+            'status': ind.membership_status
         })
 
     return JsonResponse({'items': results, 'total_count': individuals.count()})
@@ -348,7 +314,7 @@ def get_individual_family_details_api(request, pk):
                 'full_name': member.full_name,
                 'relationship': member.get_relationship_display_value(),
                 'status': member.get_membership_status_display(),
-                'is_payer_candidate': True  # All family members can potentially be payers
+                'is_payer_candidate': True
             })
 
     return JsonResponse(family_data)
@@ -363,109 +329,7 @@ def get_contribution_type_details_api(request, pk):
     data = {
         'id': contribution_type.pk,
         'name': contribution_type.name,
-        # Convert Decimal to float for JSON serialization
-        'amount': float(contribution_type.amount)
+        'amount': float(contribution_type.amount) # Convert Decimal to float for JSON
     }
     return JsonResponse(data)
 
-
-@login_required
-def payment_list(request):
-    # This view will now handle both all payments and pending payments
-    status_filter = request.GET.get('status')
-
-    if status_filter == 'PENDING_VALIDATION':
-        payments = Payment.objects.filter(
-            payment_status='PENDING_VALIDATION').order_by('-or_number')
-        title = "Pending Payments for Validation"
-    else:
-        payments = Payment.objects.all().order_by('-or_number')
-        title = "All Payments"
-
-    context = {
-        'payments': payments,
-        'title': title
-    }
-    return render(request, 'payment/payment_list.html', context)
-
-
-@login_required
-def create_payment(request):
-    if not (request.user.is_superuser or request.user.is_cashier or request.user.is_incharge):
-        messages.error(
-            request, "You do not have permission to create payments.")
-        # or any other appropriate redirect
-        return redirect('payment:payment_list')
-
-    # Automatic OR number generation
-    # Get the maximum OR number and increment it
-    last_or_number = Payment.objects.all().aggregate(
-        Max('or_number'))['or_number__max']
-    if last_or_number:
-        try:
-            # Assuming OR numbers are numeric and incrementable, e.g., '2000134'
-            next_or_number = str(int(last_or_number) + 1)
-        except ValueError:
-            # Handle cases where OR number might not be purely numeric (e.g., 'OR-XYZ')
-            # For simplicity, if non-numeric, we'll start from a default or require manual input
-            messages.warning(
-                request, "Automatic OR number generation failed for non-numeric OR. Please enter manually.")
-            next_or_number = None  # Or '1000001' or similar starting point
-    else:
-        next_or_number = '2000001'  # Starting OR number if no payments exist
-
-    if request.method == 'POST':
-        form = PaymentForm(request.POST, user=request.user)
-        formset = PaymentPayeeFormset(request.POST, prefix='payees')
-
-        if form.is_valid() and formset.is_valid():
-            payment = form.save(commit=False)
-            payment.recorded_by = request.user
-
-            # If OR number is not provided in the form (e.g., if hidden and auto-generated)
-            # or if the form allows override but we want to stick to auto-gen on creation
-            if not payment.or_number:
-                payment.or_number = next_or_number
-
-            # Payment Status logic
-            if payment.payment_method == 'GCASH' and request.user.is_incharge:
-                payment.payment_status = 'PENDING_VALIDATION'
-            else:
-                # Cash payments or Gcash by admin/cashier are immediately paid
-                payment.payment_status = 'PAID'
-
-            payment.save()
-
-            payees = formset.save(commit=False)
-            for payee in payees:
-                payee.payment = payment
-                payee.save()
-
-                # Update individual's account
-                individual = payee.individual
-                # Assuming this field exists or logic is handled
-                individual.current_balance += payment.amount_paid_by_payee_for_this_payment
-                individual.save()
-
-            messages.success(
-                request, f"Payment {payment.or_number} created successfully!")
-            return redirect('payment:payment_list')
-        else:
-            messages.error(
-                request, "There was an error creating the payment. Please check your inputs.")
-    else:
-        form = PaymentForm(
-            initial={'or_number': next_or_number}, user=request.user)
-        # Empty formset for new entry
-        formset = PaymentPayeeFormset(
-            prefix='payees', queryset=Payee.objects.none())
-
-    context = {
-        'form': form,
-        'formset': formset,
-        'title': 'Create New Payment',
-        'next_or_number': next_or_number,  # Pass this to display if needed
-    }
-    return render(request, 'payment/create_payment.html', context)
-
-# Add other payment views here (e.g., payment_detail, validate_payment)

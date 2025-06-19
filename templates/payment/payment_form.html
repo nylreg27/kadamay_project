@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %} {# Needed for crispy forms #}
+
+{% block title %}
+    {{ title }}
+{% endblock title %}
+
+{% block content %}
+<div class="container mx-auto p-4 mt-8 lg:mt-4">
+    <h1 class="text-3xl font-bold mb-6 text-base-content">{{ title }}</h1>
+
+    <div class="bg-base-200 shadow-lg rounded-lg p-6 mb-8">
+        <form method="post" id="paymentForm">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                {# Main Payment Details #}
+                <div>
+                    <label class="form-control w-full">
+                        <div class="label">
+                            <span class="label-text">Official Receipt Number</span>
+                        </div>
+                        {# receipt_number is a hidden input in the form, but we want to display its value #}
+                        <input type="text" value="{{ form.receipt_number.initial }}" class="input input-bordered w-full font-bold text-lg" readonly />
+                        {{ form.receipt_number }} {# The actual hidden input field #}
+                    </label>
+                </div>
+                <div>
+                    {{ form.date_paid|as_crispy_field }}
+                </div>
+                <div>
+                    {{ form.amount|as_crispy_field }}
+                </div>
+                <div>
+                    {{ form.payment_method|as_crispy_field }}
+                    <div id="gcash_ref_div" class="mt-2" style="display: {% if form.payment_method.value == 'GCASH' %}block{% else %}none{% endif %};">
+                        {{ form.gcash_reference_number|as_crispy_field }}
+                    </div>
+                </div>
+                <div>
+                    {{ form.church|as_crispy_field }}
+                </div>
+                <div>
+                    {{ form.contribution_type|as_crispy_field }}
+                </div>
+                <div class="col-span-1 md:col-span-2">
+                    {{ form.notes|as_crispy_field }}
+                </div>
+            </div>
+
+            <h2 class="text-xl font-semibold mb-4 text-base-content border-t pt-6 mt-6">Payees / Covered Members</h2>
+            <div id="payees-formset-container">
+                {{ formset.management_form }}
+                {% for form in formset %}
+                    <div class="payee-form bg-base-100 p-4 rounded-lg shadow-md mb-4 border border-base-300">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {# Hidden field for ID (important for existing forms in update scenarios) #}
+                            {% if form.instance.pk %}{{ form.id }}{% endif %}
+                            
+                            <div>
+                                {{ form.individual|as_crispy_field }}
+                            </div>
+                            <div>
+                                {{ form.amount_allocated|as_crispy_field }}
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="flex-grow">
+                                    {{ form.notes|as_crispy_field }}
+                                </div>
+                                {% if formset.can_delete %}
+                                    <button type="button" class="btn btn-error btn-circle remove-payee-form" title="Remove this payee">
+                                        <svg data-feather="x" class="w-5 h-5"></svg>
+                                    </button>
+                                {% endif %}
+                            </div>
+                            {% if form.errors %}
+                                <div class="col-span-full text-error text-sm">
+                                    {% for field in form %}
+                                        {% if field.errors %}{{ field.label }}: {{ field.errors }}{% endif %}
+                                    {% endfor %}
+                                    {{ form.non_field_errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <button type="button" id="add-more-payees" class="btn btn-secondary mt-4">
+                <svg data-feather="plus" class="w-5 h-5 mr-2"></svg> Add Another Payee
+            </button>
+
+            <div class="mt-8 flex justify-end gap-4">
+                <a href="{% url 'payment:payment_list' %}" class="btn btn-ghost">Cancel</a>
+                <button type="submit" class="btn btn-primary">Create Payment</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    feather.replace(); // Initialize feather icons if not already done by base.html
+
+    // ----- GCash Reference Number Visibility -----
+    const paymentMethodSelect = document.getElementById('id_payment_method');
+    const gcashRefDiv = document.getElementById('gcash_ref_div');
+
+    if (paymentMethodSelect) {
+        paymentMethodSelect.addEventListener('change', function() {
+            if (this.value === 'GCASH') {
+                gcashRefDiv.style.display = 'block';
+            } else {
+                gcashRefDiv.style.display = 'none';
+            }
+        });
+        // Initial check on load
+        if (paymentMethodSelect.value === 'GCASH') {
+            gcashRefDiv.style.display = 'block';
+        } else {
+            gcashRefDiv.style.display = 'none';
+        }
+    }
+
+    // ----- Formset Management (Add/Remove Payees) -----
+    const addMoreBtn = document.getElementById('add-more-payees');
+    const formsetContainer = document.getElementById('payees-formset-container');
+    const totalForms = document.getElementById('id_{{ formset.prefix }}-TOTAL_FORMS');
+    const emptyForm = document.querySelector('.payee-form').cloneNode(true); // Clone the first empty form
+
+    // Clear values in the cloned form for new entries
+    const inputsToClear = emptyForm.querySelectorAll('input[type="text"], input[type="number"], textarea');
+    inputsToClear.forEach(input => input.value = '');
+    const selectsToReset = emptyForm.querySelectorAll('select');
+    selectsToReset.forEach(select => select.selectedIndex = 0); // Reset dropdowns
+    // Remove the instance ID from the cloned form if it exists
+    const idInput = emptyForm.querySelector('input[name$="-id"]');
+    if (idInput) {
+        idInput.remove(); // Remove the hidden ID field for new forms
+    }
+    // Remove checked state from DELETE checkbox if it exists
+    const deleteCheckbox = emptyForm.querySelector('input[type="checkbox"][name$="-DELETE"]');
+    if (deleteCheckbox) {
+        deleteCheckbox.checked = false;
+    }
+    emptyForm.classList.remove('hidden'); // Ensure it's visible if hidden by default
+
+    addMoreBtn.addEventListener('click', function() {
+        const currentForms = parseInt(totalForms.value);
+        const newForm = emptyForm.cloneNode(true);
+
+        // Update IDs and names for the new form
+        newForm.innerHTML = newForm.innerHTML.replace(/__prefix__/g, currentForms);
+        
+        // Update the data-individual-id attribute for the select element
+        const newSelect = newForm.querySelector('select[name$="-individual"]');
+        if (newSelect) {
+            newSelect.setAttribute('data-individual-id', ''); // Clear previous data
+            newSelect.selectedIndex = 0; // Reset selection
+        }
+
+        formsetContainer.appendChild(newForm);
+        totalForms.value = currentForms + 1;
+        
+        feather.replace(); // Re-initialize feather icons for newly added buttons
+        attachRemoveEvent(newForm); // Attach event listener to the new remove button
+    });
+
+    function attachRemoveEvent(formElement) {
+        const removeButton = formElement.querySelector('.remove-payee-form');
+        if (removeButton) {
+            removeButton.addEventListener('click', function() {
+                const formToRemove = this.closest('.payee-form');
+                if (formToRemove) {
+                    // Check if this is an existing form that needs to be marked for deletion
+                    const deleteInput = formToRemove.querySelector('input[name$="-DELETE"]');
+                    if (deleteInput) {
+                        deleteInput.checked = true; // Mark for deletion
+                        formToRemove.style.display = 'none'; // Hide it visually
+                    } else {
+                        // For newly added forms (no existing DB record), just remove it
+                        formToRemove.remove();
+                        const currentForms = parseInt(totalForms.value);
+                        totalForms.value = currentForms - 1;
+                        // Important: Re-index forms if you remove from middle.
+                        // For simplicity, this example just hides/removes.
+                        // For complex re-indexing, a more robust JS library might be needed.
+                    }
+                }
+            });
+        }
+    }
+
+    // Attach remove event listeners to existing forms on load
+    document.querySelectorAll('.payee-form').forEach(formElement => {
+        attachRemoveEvent(formElement);
+    });
+
+    // Handle form submission to ensure at least one payee is selected
+    const paymentForm = document.getElementById('paymentForm');
+    paymentForm.addEventListener('submit', function(event) {
+        const visiblePayeeForms = document.querySelectorAll('.payee-form:not([style*="display: none"])');
+        if (visiblePayeeForms.length === 0) {
+            alert('Please add at least one payee.');
+            event.preventDefault(); // Prevent form submission
+        }
+    });
+
+});
+</script>
+{% endblock content %}

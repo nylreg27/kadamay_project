@@ -1,99 +1,79 @@
 # apps/payment/admin.py
-
 from django.contrib import admin
-# IMPORTANT: Import PaymentIndividualAllocation
-from .models import Payment, ContributionType, PaymentIndividualAllocation
+from .models import Payment, CoveredMember, ContributionType
 
-# Inline for PaymentIndividualAllocation
-# This allows you to add/edit individual allocations directly when editing a Payment
-
-
-# Use TabularInline for a compact table layout
-class PaymentIndividualAllocationInline(admin.TabularInline):
-    model = PaymentIndividualAllocation
-    extra = 1  # Number of empty forms to display
-    # Assuming IndividualAdmin has search_fields
-    autocomplete_fields = ['individual']
-
-
-@admin.register(ContributionType)
-class ContributionTypeAdmin(admin.ModelAdmin):
-    list_display = ('name', 'is_active', 'amount')
-    list_filter = ('is_active',)
-    search_fields = ('name',)
-
+# Inline for Covered Members
+class CoveredMemberInline(admin.TabularInline): # Use TabularInline for a compact display
+    model = CoveredMember
+    extra = 1 # Number of empty forms to display
+    fields = ('individual', 'amount_allocated', 'notes')
+    raw_id_fields = ('individual',) # Use raw_id_fields for Individual to handle many individuals better
 
 @admin.register(Payment)
 class PaymentAdmin(admin.ModelAdmin):
     list_display = (
-        'receipt_number',  # <--- FIXED: Changed from 'receipt_no'
-        'individual_display_name',
-        'church',
-        'contribution_type',
-        'amount',
-        'date_paid',
-        'payment_status',
-        'get_covered_members_display',
-        'deceased_member_display_name',  # NEW: For the re-added deceased_member
+        'receipt_number', 'date_paid', 'amount', 'payment_method',
+        'get_payees_display', # Use the property from Payment model
+        'payment_status', 'is_cancelled', 'collected_by', 'validated_by', 'created_at'
     )
-    list_filter = (
-        'payment_status', 'payment_method', 'contribution_type', 'date_paid', 'church'
-    )
-    search_fields = (
-        'receipt_number',  # <--- FIXED: Changed from 'receipt_no'
-        'individual__surname', 'individual__given_name',
-        # Updated for through model
-        'covered_members__individual__surname', 'covered_members__individual__given_name',
-        'deceased_member__surname', 'deceased_member__given_name',  # NEW: For deceased_member
-    )
-    autocomplete_fields = ('individual', 'church', 'contribution_type', 'collected_by', 'validated_by',
-                           # Make sure all ForeignKeys that should use autocomplete are here
-                           'cancelled_by', 'deceased_member',)
+    list_filter = ('payment_method', 'payment_status', 'is_cancelled', 'church', 'contribution_type')
+    search_fields = ('receipt_number', 'notes', 'covered_members__individual__first_name', 'covered_members__individual__last_name')
+    date_hierarchy = 'date_paid'
+    ordering = ('-date_paid', '-receipt_number')
 
-    # Add the inline here!
-    # <--- NEW: This replaces covered_members in fieldsets
-    inlines = [PaymentIndividualAllocationInline]
+    inlines = [CoveredMemberInline] # Add the inline here
 
-    # Fieldsets for better organization in the admin
     fieldsets = (
-        ('Payment Details', {
+        (None, {
             'fields': (
-                'individual', 'church', 'contribution_type', 'amount', 'date_paid',
-                # <-- deceased_member re-added here
-                'payment_method', 'receipt_number', 'notes', 'deceased_member',
-            )
-        }),
-        ('Payment Workflow & Audit', {
-            'fields': (
-                'payment_status', 'collected_by', 'validated_by', 'validation_date',
-                'is_cancelled', 'cancellation_reason', 'cancelled_by', 'cancellation_date',
-                'is_legacy_record',
-                # 'covered_members', # <--- REMOVED: Managed by inline now
+                'receipt_number', ('date_paid', 'amount'),
+                ('payment_method', 'gcash_reference_number'),
+                ('church', 'contribution_type'),
+                'notes',
             ),
+        }),
+        ('People Involved', {
+            'fields': ('collected_by', 'individual', 'deceased_member'), # individual and deceased_member can still be here if needed for direct assignment in admin
+            'description': 'Select the primary individual or deceased member if applicable for this payment. Use "Payees / Covered Members" below for multiple individuals.',
+            'classes': ('collapse',), # Collapse this section by default
+        }),
+        ('Validation & Cancellation', {
+            'fields': (
+                'payment_status', ('validated_by', 'validation_date'),
+                'is_cancelled', ('cancellation_reason', 'cancellation_date', 'cancelled_by'),
+            ),
+            'classes': ('collapse',),
+        }),
+        ('Audit Information', {
+            'fields': ('created_by', 'created_at', 'updated_by', 'updated_at', 'is_legacy_record'),
             'classes': ('collapse',),
         }),
     )
 
     readonly_fields = (
         'created_at', 'updated_at', 'created_by', 'updated_by',
-        'validation_date', 'validated_by',
-        'cancellation_date', 'cancelled_by',
+        'receipt_number', # This should be set by the system, not manually edited after creation
+        'validated_by', 'validation_date', 'cancellation_date', 'cancelled_by'
     )
 
-    # Methods for list_display
-    def individual_display_name(self, obj):
-        return obj.individual.full_name if obj.individual else "N/A"
-    individual_display_name.short_description = 'Payee'
-    individual_display_name.admin_order_field = 'individual__surname'
+    # Automatically set created_by and updated_by when saving from admin
+    def save_model(self, request, obj, form, change):
+        if not obj.pk: # Only on creation
+            obj.created_by = request.user
+        obj.updated_by = request.user
+        super().save_model(request, obj, form, change)
 
-    def get_covered_members_display(self, obj):
-        # We now get covered members through the allocation model
-        # You might want to display the allocated amount here too, e.g., "Juan (₱50), Pedro (₱50)"
-        return ", ".join([f"{alloc.individual.full_name} (₱{alloc.allocated_amount})" for alloc in obj.individual_allocations.all()])
-    get_covered_members_display.short_description = 'Covered Members'
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        # Make collected_by default to the current user in admin if not set
+        if not obj or not obj.collected_by:
+            form.base_fields['collected_by'].initial = request.user
+        return form
 
-    # NEW: Method for deceased_member display
-    def deceased_member_display_name(self, obj):
-        return obj.deceased_member.full_name if obj.deceased_member else "N/A"
-    deceased_member_display_name.short_description = 'Deceased Member'
-    deceased_member_display_name.admin_order_field = 'deceased_member__surname'
+# Register the ContributionType model
+@admin.register(ContributionType)
+class ContributionTypeAdmin(admin.ModelAdmin):
+    list_display = ('name', 'description')
+    search_fields = ('name',)
+    ordering = ('name',)
+

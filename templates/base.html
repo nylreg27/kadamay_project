@@ -1,338 +1,406 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="{{ request.user.profile.theme|default:'corporate' }}">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{% block title %}Kadamay Mortuary System{% endblock %}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@4.10.1/dist/full.min.css" />
-    <script src="https://unpkg.com/feather-icons"></script> 
-    
-    {% block extra_css %}{% endblock %}
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Kadamay Mortuary System{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@4.10.1/dist/full.min.css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" rel="stylesheet" />
+    <script src="https://unpkg.com/feather-icons"></script> 
+    
+    {% block extra_css %}{% endblock %}
 </head>
 
 <body class="bg-base-200 text-base-content min-h-screen flex flex-col">
+    {# Mobile Header #}
+    <header class="lg:hidden navbar bg-base-100 shadow-md z-50 fixed top-0 w-full">
+        <div class="flex-1">
+            <a class="btn btn-ghost normal-case text-xl">Kadamay Mortuary</a>
+        </div>
+        <div class="flex-none">
+            <button class="btn btn-square btn-ghost" onclick="document.getElementById('drawer-toggle').checked = true;">
+                <i data-feather="menu"></i>
+            </button>
+        </div>
+    </header>
 
-    {# Mobile Header (visible only on small screens) - NOW FIXED #}
-    <header class="lg:hidden navbar bg-base-100 shadow-md z-50 fixed top-0 w-full"> {# Added fixed, top-0, w-full #}
-        <div class="flex-1">
-            <a class="btn btn-ghost normal-case text-xl">Kadamay Mortuary System</a>
-        </div>
-        <div class="flex-none">
-            <button class="btn btn-square btn-ghost" onclick="document.getElementById('drawer-toggle').checked = true;">
-                <i data-feather="menu"></i>
-            </button>
-        </div>
-    </header>
+    {# Main Drawer Container #}
+    <div class="drawer z-40 flex-grow pt-16">
+        <input id="drawer-toggle" type="checkbox" class="drawer-toggle" />
 
-    {# Main Drawer Container #}
-    {# Added pt-16 (or higher, depending on header height) to drawer-content to push content below fixed header #}
-    <div class="drawer z-40 flex-grow pt-16"> {# flex-grow to ensure drawer content takes up space, pt-16 for header clearance #}
-        <input id="drawer-toggle" type="checkbox" class="drawer-toggle" />
+        {# Main content area #}
+        <div class="drawer-content flex flex-col">
+            {# Desktop Header #}
+            <header class="hidden lg:flex navbar bg-base-100 shadow-md z-50 fixed top-0 w-full">
+                <div class="flex-1">
+                    <button class="btn btn-square btn-ghost mr-2" onclick="document.getElementById('drawer-toggle').checked = !document.getElementById('drawer-toggle').checked;">
+                        <i data-feather="menu"></i>
+                    </button>
+                    <a class="btn btn-ghost text-xl">Kadamay Mortuary System</a>
+                </div>
+                <div class="flex-none gap-2">
+                    <div class="dropdown dropdown-end">
+                        <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
+                            <div class="w-10 rounded-full"> 
+                                {% if user.profile.profile_picture %}
+                                    <img alt="User avatar" src="{{ user.profile.profile_picture.url }}" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/initials/svg?seed={{ user.username }}';"/>
+                                {% else %}
+                                    <img alt="User avatar" src="https://api.dicebear.com/7.x/initials/svg?seed={{ user.username }}" />
+                                {% endif %}
+                            </div>
+                        </div>
+                        <ul tabindex="0" class="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 rounded-box w-52">
+                            <li><a href="{% url 'account:profile_settings' %}">Profile Settings</a></li>
+                            {% if user.is_staff %}
+                            <li><a href="{% url 'admin:index' %}">Admin Dashboard</a></li>
+                            {% endif %}
+                            <li><a href="{% url 'password_change' %}">Change Password</a></li>
+                            <li><a href="{% url 'account:logout' %}?next={% url 'account:login' %}">Logout</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </header>
 
-        {# Main content area #}
-        <div class="drawer-content flex flex-col">
-            
-            {# Desktop Header (visible only on large screens) - NOW FIXED #}
-            <header class="hidden lg:flex navbar bg-base-100 shadow-md z-50 fixed top-0 w-full"> {# Added fixed, top-0, w-full #}
-                <div class="flex-1">
-                    <button class="btn btn-square btn-ghost mr-2" onclick="document.getElementById('drawer-toggle').checked = !document.getElementById('drawer-toggle').checked;">
-                        <i data-feather="menu"></i>
-                    </button>
-                    <a class="btn btn-ghost text-xl">Kadamay Mortuary System</a>
-                </div>
-                <div class="flex-none gap-2">
-                    <div class="dropdown dropdown-end">
-                        <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
-                            <div class="w-10 rounded-full"> 
-                                {% if user.profile.profile_picture %}
-                                    <img alt="User avatar" src="{{ user.profile.profile_picture.url }}" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/initials/svg?seed={{ user.username }}';"/>
-                                {% else %}
-                                    <img alt="User avatar" src="https://api.dicebear.com/7.x/initials/svg?seed={{ user.username }}" />
-                                {% endif %}
-                            </div>
-                        </div>
-                        <ul tabindex="0" class="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 rounded-box w-52">
-                            <li><a href="{% url 'account:profile_settings' %}">Profile Settings</a></li>
-                            {% if user.is_staff %}
-                            <li><a href="{% url 'admin:index' %}">Admin Dashboard</a></li>
-                            {% endif %}
-                            <li><a href="{% url 'password_change' %}">Change Password</a></li>
-                            <li><a href="{% url 'account:logout' %}?next={% url 'account:login' %}">Logout</a></li>
-                        </ul>
-                    </div>
-                </div>
-            </header>
+            <main class="flex-grow p-4 md:p-8">
+                {# Flash messages #}
+                <div id="django_messages_container" style="display: none;">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="django-message" data-tag="{{ message.tags }}">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                
+                {% block content %}
+                <div class="max-w-6xl mx-auto">
+                    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                        <h1 class="text-3xl font-bold text-gray-800 mb-6">Form Title</h1>
+                        
+                        <form method="post" class="space-y-6" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            
+                            {# Form Errors #}
+                            {% if form.non_field_errors %}
+                            <div class="alert alert-error">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                <span>{{ form.non_field_errors }}</span>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {# Form Fields #}
+                                {% for field in form %}
+                                <div class="form-control">
+                                    <label class="label" for="{{ field.id_for_label }}">
+                                        <span class="label-text font-medium">{{ field.label }}</span>
+                                        {% if field.field.required %}
+                                        <span class="label-text-alt text-error">*</span>
+                                        {% endif %}
+                                    </label>
+                                    
+                                    {% if field.field.widget.input_type == 'select' %}
+                                        <select class="select select-bordered w-full" name="{{ field.name }}" id="{{ field.id_for_label }}" {% if field.field.required %}required{% endif %}>
+                                            {% for choice in field.field.choices %}
+                                                <option value="{{ choice.0 }}" {% if field.value == choice.0 %}selected{% endif %}>{{ choice.1 }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    {% elif field.field.widget.input_type == 'checkbox' %}
+                                        <label class="cursor-pointer label justify-start gap-4">
+                                            {{ field }}
+                                            <span class="label-text">{{ field.label }}</span>
+                                        </label>
+                                    {% elif field.field.widget.input_type == 'file' %}
+                                        <input type="file" class="file-input file-input-bordered w-full" name="{{ field.name }}" id="{{ field.id_for_label }}" {% if field.field.required %}required{% endif %}>
+                                    {% else %}
+                                        <input type="{{ field.field.widget.input_type }}" 
+                                               class="input input-bordered w-full {% if field.errors %}input-error{% endif %}" 
+                                               name="{{ field.name }}" 
+                                               id="{{ field.id_for_label }}" 
+                                               value="{{ field.value|default_if_none:'' }}" 
+                                               placeholder="{{ field.field.widget.attrs.placeholder|default:'' }}"
+                                               {% if field.field.required %}required{% endif %}>
+                                    {% endif %}
+                                    
+                                    {% if field.help_text %}
+                                    <label class="label">
+                                        <span class="label-text-alt text-gray-500">{{ field.help_text }}</span>
+                                    </label>
+                                    {% endif %}
+                                    
+                                    {% if field.errors %}
+                                    <label class="label">
+                                        <span class="label-text-alt text-error">
+                                            {% for error in field.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </span>
+                                    </label>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            
+                            {# Form Actions #}
+                            <div class="flex flex-col sm:flex-row justify-end gap-3 mt-8 pt-6 border-t border-gray-200">
+                                <a href="{% url 'individual:individual_list' %}" class="btn btn-outline btn-error">Cancel</a>
+                                <button type="submit" class="btn btn-primary">Submit</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                {% endblock %}
+            </main>
+            
+            {# Footer #}
+            <footer class="footer footer-center p-4 bg-base-300 text-base-content text-sm">
+                <aside>
+                    <p>&copy; 2025 Kadamay Mortuary System. All rights reserved.</p>
+                </aside>
+            </footer>
+        </div>
 
-            <main class="flex-grow p-4"> {# main content area #}
-                {# Flash messages from Django's messages framework (integrated with toast) #}
-                <div id="django_messages_container" style="display: none;">
-                    {% if messages %}
-                        {% for message in messages %}
-                            <div class="django-message" data-tag="{{ message.tags }}">{{ message }}</div>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-                {% block content %}
-                <h1 class="text-3xl font-bold mb-4">Welcome to Kadamay System!</h1>
-                <p>This is the main content area. Extend `base.html` and override the `content` block.</p>
-                {% endblock %}
-            </main>
-            
-            {#sidebar footer#}
-            <footer class="footer footer-center p-4 bg-base-300 text-base-content text-sm">
-                <aside>
-                    <p>&copy; 2025 Kadamay Mortuary System. All rights reserved.</p>
-                </aside>
-            </footer>
-        </div>
+        {# Sidebar #}
+        <div class="drawer-side" id="drawer-menu">
+            <label for="drawer-toggle" class="drawer-overlay"></label>
+            <ul class="menu p-4 w-80 min-h-full bg-base-100 text-base-content">
+                {# Close button #}
+                <li class="mb-4">
+                    <button class="btn btn-ghost btn-circle" onclick="document.getElementById('drawer-toggle').checked = false;">
+                        <i data-feather="x"></i>
+                    </button>
+                    <a class="btn btn-ghost normal-case text-xl">Kadamay Mortuary</a>
+                </li>
+                
+                {% if user.is_authenticated %}
+                <li class="lg:hidden mb-4">
+                    <div class="flex items-center p-2">
+                        <div class="w-10 rounded-full mr-3">
+                            {% if user.profile.profile_picture %}
+                                <img alt="User avatar" src="{{ user.profile.profile_picture.url }}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/initials/svg?seed={{ user.username }}';"/>
+                            {% else %}
+                                <img alt="User avatar" src="https://api.dicebear.com/7.x/initials/svg?seed={{ user.username }}" class="w-full h-full object-cover"/>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <p class="font-semibold">{{ user.get_full_name|default:user.username }}</p>
+                            <p class="text-sm text-base-content/80">{{ user.get_role_display }}</p>
+                        </div>
+                    </div>
+                </li>
+                {% endif %}
+                
+                {# Navigation links #}
+                <li><a href="{% url 'report:dashboard' %}" class="{% if 'report' in request.resolver_match.app_names and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><i data-feather="home"></i> Dashboard</a></li>
+                
+                <li><a href="{% url 'individual:individual_list' %}" class="{% if 'individual' in request.resolver_match.app_names and request.resolver_match.url_name == 'individual_list' %}active{% endif %}"><i data-feather="users"></i> Individual Members</a></li>
 
-        {# This is the actual sidebar content (drawer-side) #}
-        <div class="drawer-side" id="drawer-menu">
-            {# The overlay to close the drawer when clicked outside on mobile #}
-            <label for="drawer-toggle" class="drawer-overlay"></label>
-            <ul class="menu p-4 w-80 min-h-full bg-base-100 text-base-content">
-                {# Close button for mobile drawer - now also visible on desktop when drawer is open #}
-                <li class="mb-4">
-                    <button class="btn btn-ghost btn-circle" onclick="document.getElementById('drawer-toggle').checked = false;">
-                        <i data-feather="x"></i>
-                    </button>
-                    <a class="btn btn-ghost normal-case text-xl">Kadamay Mortuary System</a>
-                </li>
-                
-                {% if user.is_authenticated %}
-                <li class="lg:hidden mb-4"> {# Keep this only for mobile header if you want #}
-                    <div class="flex items-center p-2">
-                        <div class="w-10 rounded-full mr-3">
-                            {% if user.profile.profile_picture %}
-                                <img alt="User avatar" src="{{ user.profile.profile_picture.url }}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='https://api.dicebear.com/7.x/initials/svg?seed={{ user.username }}';"/>
-                            {% else %}
-                                <img alt="User avatar" src="https://api.dicebear.com/7.x/initials/svg?seed={{ user.username }}" class="w-full h-full object-cover"/>
-                            {% endif %}
-                        </div>
-                        <div>
-                            <p class="font-semibold">{{ user.get_full_name|default:user.username }}</p>
-                            <p class="text-sm text-base-content/80">{{ user.get_role_display }}</p>
-                        </div>
-                    </div>
-                </li>
-                {% endif %}
-                
-                {# Navigation links #}
-                <li><a href="{% url 'report:dashboard' %}" class="{% if 'report' in request.resolver_match.app_names and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><i data-feather="home"></i> Dashboard</a></li>
-                
-                {# Individual List/Dashboard link - Corrected to point to individual_list #}
-                <li><a href="{% url 'individual:individual_list' %}" class="{% if 'individual' in request.resolver_match.app_names and request.resolver_match.url_name == 'individual_list' %}active{% endif %}"><i data-feather="users"></i> Individual Members</a></li>
+                <li><a href="{% url 'family:family_list' %}" class="{% if 'family' in request.resolver_match.app_names %}active{% endif %}"><i data-feather="user-check"></i> Families</a></li>
+                <li><a href="{% url 'church:church_list' %}" class="{% if 'church' in request.resolver_match.app_names %}active{% endif %}"><i data-feather="layout"></i> Churches</a></li>
+                
+                {# Payments section #}
+                <li>
+                    <details {% if 'payment' in request.resolver_match.app_names and 'payment_list' in request.resolver_match.url_name or 'add_payment' in request.resolver_match.url_name %}open{% endif %}>
+                        <summary><i data-feather="credit-card"></i> Payments</summary>
+                        <ul>
+                            <li><a href="{% url 'payment:payment_list' %}" class="{% if request.resolver_match.url_name == 'payment_list' and not request.GET.status %}active{% endif %}">All Payments</a></li>
+                            {% if request.user.is_superuser or user.is_cashier or user.is_incharge %}
+                                <li>
+                                    <a href="{% url 'payment:payment_list' %}?status=PENDING_VALIDATION" class="{% if request.resolver_match.url_name == 'payment_list' and request.GET.status == 'PENDING_VALIDATION' %}active{% endif %}">
+                                        <i data-feather="clock" class="w-4 h-4 mr-1"></i> Pending Validation
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="{% url 'payment:add_payment' %}" class="{% if request.resolver_match.url_name == 'add_payment' %}active{% endif %}">
+                                        <i data-feather="plus" class="w-4 h-4 mr-1"></i> Create Payment
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </details>
+                </li>
 
-                <li><a href="{% url 'family:family_list' %}" class="{% if 'family' in request.resolver_match.app_names %}active{% endif %}"><i data-feather="user-check"></i> Families</a></li>
-                <li><a href="{% url 'church:church_list' %}" class="{% if 'church' in request.resolver_match.app_names %}active{% endif %}"><i data-feather="layout"></i> Churches</a></li>
-                
-                {# Payments section in sidebar - NOW INCLUDES PENDING PAYMENTS LINK #}
-                <li>
-                    <details {% if 'payment' in request.resolver_match.app_names and 'payment_list' in request.resolver_match.url_name or 'create_payment' in request.resolver_match.url_name %}open{% endif %}>
-                        <summary><i data-feather="credit-card"></i> Payments</summary>
-                        <ul>
-                            <li><a href="{% url 'payment:payment_list' %}" class="{% if request.resolver_match.url_name == 'payment_list' and not request.GET.status %}active{% endif %}">All Payments</a></li>
-                            {% if request.user.is_superuser or user.is_cashier or user.is_incharge %} {# Only show this link to superusers, cashier, and incharge #}
-                                <li>
-                                    <a href="{% url 'payment:payment_list' %}?status=PENDING_VALIDATION" class="{% if request.resolver_match.url_name == 'payment_list' and request.GET.status == 'PENDING_VALIDATION' %}active{% endif %}">
-                                        <i data-feather="clock" class="w-4 h-4 mr-1"></i> Pending Validation
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="{% url 'payment:create_payment' %}" class="{% if request.resolver_match.url_name == 'create_payment' %}active{% endif %}">
-                                        <i data-feather="plus" class="w-4 h-4 mr-1"></i> Create Payment
-                                    </a>
-                                </li>
-                            {% endif %}
-                        </ul>
-                    </details>
-                </li>
+                <li><a href="{% url 'report:dashboard' %}" class="{% if 'report' in request.resolver_match.app_names and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><i data-feather="file-text"></i> Reports</a></li>
+                {% if church %}
+                <li><a href="{% url 'chat:chat_room' church.id %}" class="{% if request.resolver_match.url_name == 'chat_room' %}active{% endif %}"><i data-feather="message-square"></i> Chat Room</a></li>
+                {% else %}
+                <li><span class="text-base-content/50 cursor-not-allowed" title="Chat Room requires a church context"><i data-feather="message-square"></i> Chat Room</span></li>
+                {% endif %}
+                <li><a href="{% url 'issues:user_issue_list' %}" class="{% if 'issues' in request.resolver_match.app_names %}active{% endif %}"><i data-feather="alert-circle"></i> Issues</a></li>
+                {% if user.is_superuser %}
+                <li><a href="{% url 'account:user_list' %}" class="{% if 'account' in request.resolver_match.app_names and request.resolver_match.url_name != 'create_incharge' %}active{% endif %}"><i data-feather="user-plus"></i> Users</a></li>
+                <li><a href="{% url 'chat:create_incharge' %}" class="{% if request.resolver_match.url_name == 'create_incharge' %}active{% endif %}"><i data-feather="plus-circle"></i> Create In-Charge</a></li>
+                {% endif %}
+                <li><a href="{% url 'account:logout' %}?next={% url 'account:login' %}" class="mt-auto"><i data-feather="log-out"></i> Logout</a></li>
+            </ul>
+        </div>
+    </div>
 
-                <li><a href="{% url 'report:dashboard' %}" class="{% if 'report' in request.resolver_match.app_names and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><i data-feather="file-text"></i> Reports</a></li>
-                {% if church %}
-                <li><a href="{% url 'chat:chat_room' church.id %}" class="{% if request.resolver_match.url_name == 'chat_room' %}active{% endif %}"><i data-feather="message-square"></i> Chat Room</a></li>
-                {% else %}
-                <li><span class="text-base-content/50 cursor-not-allowed" title="Chat Room requires a church context"><i data-feather="message-square"></i> Chat Room</span></li>
-                {% endif %}
-                <li><a href="{% url 'issues:user_issue_list' %}" class="{% if 'issues' in request.resolver_match.app_names %}active{% endif %}"><i data-feather="alert-circle"></i> Issues</a></li>
-                {% if user.is_superuser %}
-                <li><a href="{% url 'account:user_list' %}" class="{% if 'account' in request.resolver_match.app_names and request.resolver_match.url_name != 'create_incharge' %}active{% endif %}"><i data-feather="user-plus"></i> Users</a></li>
-                <li><a href="{% url 'chat:create_incharge' %}" class="{% if request.resolver_match.url_name == 'create_incharge' %}active{% endif %}"><i data-feather="plus-circle"></i> Create In-Charge</a></li>
-                {% endif %}
-                <li><a href="{% url 'account:logout' %}?next={% url 'account:login' %}" class="mt-auto"><i data-feather="log-out"></i> Logout</a></li>
-            </ul>
-        </div>
-    </div>
+    {# Modal and Toast components remain the same #}
+    <dialog id="reusable_modal" class="modal">
+        <div class="modal-box">
+            <h3 id="modal_title" class="font-bold text-lg"></h3>
+            <div id="modal_content" class="py-4"></div>
+            <div class="modal-action">
+                <form method="dialog">
+                    <button class="btn" onclick="hideModal()">Close</button>
+                </form>
+            </div>
+        </div>
+    </dialog>
 
-    {# Reusable Modal #}
-    <dialog id="reusable_modal" class="modal">
-        <div class="modal-box">
-            <h3 id="modal_title" class="font-bold text-lg"></h3>
-            <div id="modal_content" class="py-4"></div>
-            <div class="modal-action">
-                <form method="dialog">
-                    <button class="btn" onclick="hideModal()">Close</button>
-                </form>
-            </div>
-        </div>
-    </dialog>
+    <div id="toast_container" class="toast toast-end z-[999]"></div>
 
-    {# Toast Notification Container #}
-    <div id="toast_container" class="toast toast-end z-[999]"></div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof feather !== 'undefined') {
+                feather.replace();
+            } else {
+                console.warn("Feather Icons library not loaded or 'feather' object is undefined.");
+            }
+        });
+    </script>
 
-    {# Feather Icons initialization needs to be here, outside of extra_js block #}
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            if (typeof feather !== 'undefined') { // Check if feather object exists
-                feather.replace();
-            } else {
-                console.warn("Feather Icons library not loaded or 'feather' object is undefined.");
-            }
-        });
-    </script>
+    {% block extra_js %}
+    <script>
+        // Theme Management
+        function setTheme(themeName) {
+            localStorage.setItem('theme', themeName);
+            document.documentElement.setAttribute('data-theme', themeName);
+        }
 
-    {% block extra_js %}
-    <script>
-        // Theme Management
-        function setTheme(themeName) {
-            localStorage.setItem('theme', themeName);
-            document.documentElement.setAttribute('data-theme', themeName);
-        }
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                document.documentElement.setAttribute('data-theme', savedTheme);
+            } else {
+                setTheme('corporate');
+            }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme) {
-                document.documentElement.setAttribute('data-theme', savedTheme);
-            } else {
-                setTheme('corporate'); // Default theme if nothing is saved
-            }
+            const themeSelect = document.getElementById('id_theme');
+            if (themeSelect) {
+                themeSelect.addEventListener('change', (event) => {
+                    setTheme(event.target.value);
+                });
+            }
+        });
 
-            const themeSelect = document.getElementById('id_theme');
-            if (themeSelect) {
-                themeSelect.addEventListener('change', (event) => {
-                    setTheme(event.target.value);
-                });
-            }
-        });
+        // Close the drawer when a menu item is clicked
+        document.querySelectorAll('.drawer-side ul.menu li a').forEach(item => {
+            item.addEventListener('click', () => {
+                const drawerToggle = document.getElementById('drawer-toggle');
+                if (drawerToggle && drawerToggle.checked) {
+                    drawerToggle.checked = false;
+                }
+            });
+        });
 
-        // Close the drawer when a menu item is clicked
-        document.querySelectorAll('.drawer-side ul.menu li a').forEach(item => {
-            item.addEventListener('click', () => {
-                const drawerToggle = document.getElementById('drawer-toggle');
-                if (drawerToggle && drawerToggle.checked) {
-                    drawerToggle.checked = false; // Uncheck to close drawer
-                }
-            });
-        });
+        // --- Reusable Modal Functions ---
+        const reusableModal = document.getElementById('reusable_modal');
+        const modalTitle = document.getElementById('modal_title');
+        const modalContent = document.getElementById('modal_content');
 
-        // --- Reusable Modal Functions ---
-        const reusableModal = document.getElementById('reusable_modal');
-        const modalTitle = document.getElementById('modal_title');
-        const modalContent = document.getElementById('modal_content');
+        function showModal(title, content) {
+            if (reusableModal && modalTitle && modalContent) {
+                modalTitle.textContent = title;
+                modalContent.innerHTML = content;
+                reusableModal.showModal();
+            } else {
+                console.error("Modal elements not found for showModal.");
+            }
+        }
 
-        function showModal(title, content) {
-            if (reusableModal && modalTitle && modalContent) {
-                modalTitle.textContent = title;
-                modalContent.innerHTML = content;
-                reusableModal.showModal();
-            } else {
-                console.error("Modal elements not found for showModal.");
-            }
-        }
+        function hideModal() {
+            if (reusableModal) {
+                reusableModal.close();
+                if (modalTitle) modalTitle.textContent = '';
+                if (modalContent) modalContent.innerHTML = '';
+            }
+        }
 
-        function hideModal() {
-            if (reusableModal) {
-                reusableModal.close();
-                if (modalTitle) modalTitle.textContent = '';
-                if (modalContent) modalContent.innerHTML = '';
-            }
-        }
+        window.showModal = showModal;
+        window.hideModal = hideModal;
 
-        // Make showModal and hideModal globally accessible
-        window.showModal = showModal;
-        window.hideModal = hideModal;
+        // --- Reusable Toast/Notification Functions ---
+        const toastContainer = document.getElementById('toast_container');
 
-        // --- Reusable Toast/Notification Functions ---
-        const toastContainer = document.getElementById('toast_container');
+        function showToast(message, type = 'info', duration = 3000) {
+            if (!toastContainer) {
+                console.error("Toast container not found.");
+                return;
+            }
 
-        function showToast(message, type = 'info', duration = 3000) {
-            if (!toastContainer) {
-                console.error("Toast container not found.");
-                return;
-            }
+            const toastDiv = document.createElement('div');
+            let alertClass = 'alert';
 
-            const toastDiv = document.createElement('div');
-            let alertClass = 'alert';
+            switch (type) {
+                case 'success': alertClass += ' alert-success'; break;
+                case 'error': alertClass += ' alert-error'; break;
+                case 'warning': alertClass += ' alert-warning'; break;
+                case 'info': default: alertClass += ' alert-info'; break;
+            }
 
-            switch (type) {
-                case 'success': alertClass += ' alert-success'; break;
-                case 'error': alertClass += ' alert-error'; break;
-                case 'warning': alertClass += ' alert-warning'; break;
-                case 'info': default: alertClass += ' alert-info'; break;
-            }
+            toastDiv.className = alertClass + ' rounded-lg shadow-lg flex items-center justify-between p-4 mb-2';
+            toastDiv.innerHTML = `
+                <div class="flex items-center">
+                    <span class="mr-2"></span>
+                    <span>${message}</span>
+                </div>
+                <button class="btn btn-ghost btn-xs" onclick="this.closest('.alert').remove()"><i data-feather="x" class="w-4 h-4"></i></button>
+            `;
 
-            toastDiv.className = alertClass + ' rounded-lg shadow-lg flex items-center justify-between p-4 mb-2';
-            toastDiv.innerHTML = `
-                <div class="flex items-center">
-                    <span class="mr-2"></span>
-                    <span>${message}</span>
-                </div>
-                <button class="btn btn-ghost btn-xs" onclick="this.closest('.alert').remove()"><i data-feather="x" class="w-4 h-4"></i></button>
-            `;
+            if (typeof feather !== 'undefined' && feather.icons) {
+                const iconSpan = toastDiv.querySelector('span.mr-2');
+                let iconName = '';
+                let iconColor = '';
+                switch (type) {
+                    case 'success': iconName = 'check-circle'; iconColor = 'text-white'; break;
+                    case 'error': iconName = 'x-circle'; iconColor = 'text-white'; break;
+                    case 'warning': iconName = 'alert-triangle'; iconColor = 'text-white'; break;
+                    case 'info': default: iconName = 'info'; iconColor = 'text-white'; break;
+                }
+                if (iconName) {
+                    const iconElement = feather.icons[iconName].toSvg({'class': `w-5 h-5 ${iconColor}`});
+                    iconSpan.innerHTML = iconElement;
+                }
+            } else {
+                console.warn("Feather Icons not available for toast icons.");
+            }
 
-            if (typeof feather !== 'undefined' && feather.icons) {
-                const iconSpan = toastDiv.querySelector('span.mr-2');
-                let iconName = '';
-                let iconColor = '';
-                switch (type) {
-                    case 'success': iconName = 'check-circle'; iconColor = 'text-white'; break;
-                    case 'error': iconName = 'x-circle'; iconColor = 'text-white'; break;
-                    case 'warning': iconName = 'alert-triangle'; iconColor = 'text-white'; break;
-                    case 'info': default: iconName = 'info'; iconColor = 'text-white'; break;
-                }
-                if (iconName) {
-                    const iconElement = feather.icons[iconName].toSvg({'class': `w-5 h-5 ${iconColor}`});
-                    iconSpan.innerHTML = iconElement;
-                }
-            } else {
-                console.warn("Feather Icons not available for toast icons.");
-            }
+            toastContainer.appendChild(toastDiv);
 
-            toastContainer.appendChild(toastDiv);
+            setTimeout(() => {
+                toastDiv.remove();
+            }, duration);
+        }
 
-            setTimeout(() => {
-                toastDiv.remove();
-            }, duration);
-        }
+        // --- Integrate Django Flash Messages with Toast System ---
+        document.addEventListener('DOMContentLoaded', function() {
+            const djangoMessagesContainer = document.getElementById('django_messages_container');
+            if (djangoMessagesContainer) {
+                const messages = djangoMessagesContainer.querySelectorAll('.django-message');
+                messages.forEach(msg => {
+                    const messageText = msg.textContent.trim();
+                    let messageType = 'info';
 
-        // --- Integrate Django Flash Messages with Toast System ---
-        document.addEventListener('DOMContentLoaded', function() {
-            const djangoMessagesContainer = document.getElementById('django_messages_container');
-            if (djangoMessagesContainer) {
-                const messages = djangoMessagesContainer.querySelectorAll('.django-message');
-                messages.forEach(msg => {
-                    const messageText = msg.textContent.trim();
-                    let messageType = 'info';
-
-                    if (msg.dataset.tag) {
-                        const tags = msg.dataset.tag.split(' ');
-                        if (tags.includes('success')) {
-                            messageType = 'success';
-                        } else if (tags.includes('error')) {
-                            messageType = 'error';
-                        } else if (tags.includes('warning')) {
-                            messageType = 'warning';
-                        } else if (tags.includes('info')) {
-                            messageType = 'info';
-                        }
-                    }
-                    showToast(messageText, messageType);
-                });
-                djangoMessagesContainer.remove(); // Clean up original Django messages
-            }
-        });
-    </script>
-    {% endblock %}
+                    if (msg.dataset.tag) {
+                        const tags = msg.dataset.tag.split(' ');
+                        if (tags.includes('success')) {
+                            messageType = 'success';
+                        } else if (tags.includes('error')) {
+                            messageType = 'error';
+                        } else if (tags.includes('warning')) {
+                            messageType = 'warning';
+                        } else if (tags.includes('info')) {
+                            messageType = 'info';
+                        }
+                    }
+                    showToast(messageText, messageType);
+                });
+                djangoMessagesContainer.remove();
+            }
+        });
+    </script>
+    {% endblock %}
 </body>
 </html>

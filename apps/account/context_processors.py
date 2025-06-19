@@ -13,3 +13,18 @@ def user_church(request):
         except:
             return {'church': None}
     return {'church': None}
+
+
+def user_roles(request):
+    """
+    Adds user role booleans (is_cashier, is_incharge) to the template context.
+    """
+    is_cashier = False
+    is_incharge = False
+    if request.user.is_authenticated:
+        is_cashier = getattr(request.user, 'is_cashier', False)
+        is_incharge = getattr(request.user, 'is_incharge', False)
+    return {
+        'is_cashier': is_cashier,
+        'is_incharge': is_incharge,
+    }

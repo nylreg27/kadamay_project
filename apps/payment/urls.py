@@ -1,7 +1,9 @@
 # apps/payment/urls.py
 
 from django.urls import path
-from . import views
+# No need to import 'views' as a whole module if you're importing specific views directly
+from . import views 
+
 from .views import (
     PaymentListView,
     AddPaymentView,
@@ -34,6 +36,6 @@ urlpatterns = [
     path('api/contribution_type/<int:pk>/', get_contribution_type_details_api,
          name='api_contribution_type_details'),
 
-    path('create/', views.create_payment,
-         name='create_payment'),  # Added this line!
+    # REMOVED: path('create/', views.create_payment, name='create_payment'), 
+    # This view no longer exists in views.py; AddPaymentView handles creation.
 ]
