@@ -1,46 +1,64 @@
 # apps/account/urls.py
-from django.urls import path
-# Import Django's default auth views
-from django.contrib.auth import views as auth_views
-from django.urls import reverse_lazy  # Import reverse_lazy for success_url
-from . import views  # Single import for views
+
+# Make sure 'include' is imported for auth.urls
+from django.urls import path, include
+from django.contrib.auth import views as auth_views  # Django's default auth views
+from django.urls import reverse_lazy  # For success_url redirects
+
+# Import specific views from your apps.account.views module
+from .views import (
+    UserListView,
+    UserCreateView,
+    UserUpdateView,
+    UserDeleteView,
+    UserRoleAssignView,
+    UserRoleDeleteView,
+    RegisterView,
+    ProfileSettingsView,  # This is your class-based ProfileSettingsView
+)
+
 from .forms import UserLoginForm  # Assuming you have a custom login form
 
-app_name = 'account'  # Tiyakin na may app_name ang iyong app
+# Essential for namespacing (e.g., {% url 'account:login' %})
+app_name = 'account'
 
 urlpatterns = [
-    # User management (admin only)
-    path('users/', views.UserListView.as_view(), name='user_list'),
-    path('users/create/', views.UserCreateView.as_view(), name='user_create'),
-    path('users/<int:pk>/edit/', views.UserUpdateView.as_view(), name='user_edit'),
-    path('users/<int:pk>/delete/',
-         views.UserDeleteView.as_view(), name='user_delete'),
+    # IMPORTANT: Include Django's built-in authentication URLs here FIRST.
 
-    # User church role management
+    path('', include('django.contrib.auth.urls')),
+
+    # --- Your Custom Login URL (If you need to override the default for your custom form/template) ---
+    # This needs to come AFTER the include if you want it to take precedence
+    # for the 'login' URL name.
+    path('login/', auth_views.LoginView.as_view(
+        template_name='registration/login.html',
+        authentication_form=UserLoginForm,
+        redirect_authenticated_user=True,
+    ), name='login'),  # This will override 'account:login' from auth.urls with your custom form
+
+    # --- Your Custom Register View ---
+    path('register/', RegisterView.as_view(), name='register'),
+
+    # --- User Profile Settings (Using the Class-Based View) ---
+    # We changed the name to 'user_profile_settings' to be unique and clear.
+    path('profile/settings/', ProfileSettingsView.as_view(),
+         name='user_profile_settings'),
+
+
+    # --- User Management (Admin/Superuser specific) ---
+    path('users/', UserListView.as_view(), name='user_list'),
+    path('users/create/', UserCreateView.as_view(), name='user_create'),
+    path('users/<int:pk>/edit/', UserUpdateView.as_view(), name='user_edit'),
+    path('users/<int:pk>/delete/', UserDeleteView.as_view(), name='user_delete'),
+
+    # --- User Church Role Management ---
     path('users/<int:user_id>/role/',
-         views.UserRoleAssignView.as_view(), name='user_role'),
+         UserRoleAssignView.as_view(), name='user_role_assign'),
     path('users/<int:user_id>/role/delete/',
-         views.UserRoleDeleteView.as_view(), name='user_role_delete'),
-
-    # User Profile Settings (Ito na ang FINAL na URL para sa profile settings)
-    path('profile-settings/', views.profile_settings, name='profile_settings'),
-
-    # Custom registration
-    path('register/', views.RegisterView.as_view(), name='register'),
-
-    # Custom login (using Django's default LoginView with your custom form)
-    path('login/', auth_views.LoginView.as_view(template_name='registration/login.html',
-                                                authentication_form=UserLoginForm), name='login'),
-
-    # Logout (using Django's default LogoutView)
-    path('logout/', auth_views.LogoutView.as_view(next_page=reverse_lazy('account:login')), name='logout'),
-
-    # Password Change (using Django's default views)
-    path('password_change/', auth_views.PasswordChangeView.as_view(template_name='registration/password_change_form.html',
-                                                                   success_url=reverse_lazy('account:password_change_done')), name='password_change'),
-    path('password_change/done/', auth_views.PasswordChangeDoneView.as_view(
-        template_name='registration/password_change_done.html'), name='password_change_done'),
-
-    path('profile/settings/', views.ProfileSettingsView.as_view(),
-         name='profile_settings'),
+         UserRoleDeleteView.as_view(), name='user_role_delete'),
 ]
+
+# Note: The standard 'logout', 'password_change', 'password_reset', etc.
+# URLs are now provided by `path('', include('django.contrib.auth.urls'))`.
+# Any links in your templates should use their namespaced versions, e.g.,
+# `{% url 'account:password_change' %}`.

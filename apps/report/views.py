@@ -1,138 +1,111 @@
 # apps/report/views.py
 
 from django.views.generic import TemplateView
-from django.db.models import Sum, Count, Q, Case, When, DecimalField, Subquery, OuterRef
-from django.db.models.functions import Coalesce, ExtractMonth, ExtractYear # Added for robust date filtering
-from django.shortcuts import render
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.utils import timezone
-import json
-import datetime
-from decimal import Decimal # Make sure this import is there!
+from apps.payment.models import Payment  # Import the Payment model
+from apps.individual.models import Individual  # Import Individual
+from apps.church.models import Church  # Import Church
+from django.db.models import Sum, Count  # For aggregations
+from django.db.models.functions import Coalesce  # To handle null sums as 0
+from decimal import Decimal  # For Decimal(0)
+from datetime import date, timedelta  # For date calculations
 
-# Import models from their respective apps
-from apps.individual.models import Individual
-from apps.family.models import Family
-from apps.church.models import Church
-from apps.payment.models import Payment, CoveredMember # Ensure CoveredMember is imported
+# Optional: Import UserChurch and Profile if needed for specific filtering/display
+# from apps.account.models import UserChurch, Profile
+
 
 class DashboardView(LoginRequiredMixin, TemplateView):
-
-    template_name = 'report/dashboard.html'
+    template_name = 'report/dashboard.html'  # Make sure this path is correct
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        context['title'] = 'Dashboard'
-
-        churches = Church.objects.all()
-        context['churches'] = churches
-
-        selected_church_id = self.request.GET.get('church')
-
-        # Initialize base querysets
-        families_queryset = Family.objects.all()
-        individuals_queryset = Individual.objects.all()
+        # --- Base Queryset for Payments ---
         payments_queryset = Payment.objects.all()
-        covered_members_queryset = CoveredMember.objects.all() # New: for CoveredMember data
 
-        selected_church = None
-        if selected_church_id:
-            try:
-                selected_church = Church.objects.get(id=selected_church_id)
-                families_queryset = families_queryset.filter(church=selected_church)
-                individuals_queryset = individuals_queryset.filter(family__church=selected_church)
-                # Assuming Payment has a direct ForeignKey to Church
-                payments_queryset = payments_queryset.filter(church=selected_church)
-                # Filter CoveredMember through its payment's church
-                covered_members_queryset = covered_members_queryset.filter(payment__church=selected_church) 
+        # You might want to filter payments based on the user's church if applicable
+        # if hasattr(self.request.user, 'user_church') and self.request.user.user_church.church:
+        #     payments_queryset = payments_queryset.filter(church=self.request.user.user_church.church)
 
-            except Church.DoesNotExist:
-                # If church not found, use all data but ensure selected_church_id is None
-                selected_church_id = None
-        
-        context['selected_church'] = selected_church_id
+        # Optimize with select_related and prefetch_related if you need related data
+        payments_queryset = payments_queryset.select_related(
+            'individual', 'church', 'contribution_type', 'collected_by'
+        ).prefetch_related(
+            'covered_members'
+        )
 
-        # Overall Statistics
-        context['total_families'] = families_queryset.count()
-        context['total_members'] = individuals_queryset.count()
-        context['total_churches'] = 1 if selected_church else churches.count() # Simplified logic
+        # --- Dashboard Metrics ---
 
-        # Fix: Change 0 to Decimal(0)
-        context['total_contributions'] = payments_queryset.aggregate(total=Coalesce(Sum('amount'), Decimal(0)))['total']
+        # Total Contributions
+        context['total_contributions'] = payments_queryset.aggregate(
+            # Corrected: 'amount' to 'amount_paid'
+            total=Coalesce(Sum('amount_paid'), Decimal(0))
+        )['total']
 
-        # Membership Status Distribution (for Pie Chart)
-        membership_status_distribution = individuals_queryset.values(
-            'membership_status').annotate(count=Count('id'))
-        context['membership_status_distribution'] = {
-            item['membership_status']: item['count'] for item in membership_status_distribution
-        }
+        # Total Number of Payments
+        context['total_payments'] = payments_queryset.count()
 
-        # Contributions Over Time Chart (for the current year, month by month)
-        current_year = timezone.now().year
-        monthly_payments = payments_queryset.filter(
-            date_paid__year=current_year
-        ).annotate(
-            month=ExtractMonth('date_paid')
-        ).values('month').annotate(
-            # Fix: Change 0 to Decimal(0)
-            total_amount=Coalesce(Sum('amount'), Decimal(0))
-        ).order_by('month')
-        
-        # Prepare data for chart (e.g., using a list of 12 months)
-        monthly_data = {item['month']: float(item['total_amount']) for item in monthly_payments}
-        month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-        
-        # Fill in missing months with 0
-        monthly_chart_data = [monthly_data.get(i + 1, 0.0) for i in range(12)]
-        
-        context['contributions_over_time_labels'] = month_names
-        context['contributions_over_time_data'] = monthly_chart_data # Already floats
+        # Total Registered Individuals
+        context['total_individuals'] = Individual.objects.count()
 
-        # Top 5 Families with Most Members
-        top_families = families_queryset.annotate(member_count=Count(
-            'members')).order_by('-member_count')[:5]
-        context['top_families_by_members'] = top_families.select_related(
-            'church')
+        # Total Registered Churches
+        context['total_churches'] = Church.objects.count()
 
-        # Top 5 Individual Contributors (using CoveredMember)
-        individual_contributions_subquery = covered_members_queryset.filter(
-            individual=OuterRef('pk')
-        ).values('individual').annotate(
-            # Fix: Change 0 to Decimal(0) and Sum('amount_allocated')
-            total_allocated_amount=Coalesce(Sum('amount_allocated'), Decimal(0)) 
-        ).values('total_allocated_amount')
+        # Number of Active Members (Example: individuals with at least one payment)
+        # This might need refinement based on your definition of "active member"
+        context['active_members_count'] = Individual.objects.filter(
+            payments_made__isnull=False
+        ).distinct().count()
 
-        top_contributors = individuals_queryset.annotate(
-            total_contribution=Subquery(
-                individual_contributions_subquery, output_field=DecimalField())
-        ).exclude(total_contribution__isnull=True).order_by('-total_contribution')[:5]
-        
-        context['top_individual_contributors'] = top_contributors.select_related(
-            'family__church')
+        # --- Recent Payments (Example) ---
+        context['recent_payments'] = payments_queryset.order_by(
+            '-date_paid')[:10]
 
-        # Church-wise Summary Table (always iterates through all churches)
-        church_summaries = []
-        for church_obj in Church.objects.all(): 
-            church_families = Family.objects.filter(church=church_obj)
-            church_individuals = Individual.objects.filter(family__church=church_obj)
-            church_payments = Payment.objects.filter(church=church_obj)
+        # --- Top Churches by Contributions (Example) ---
+        context['top_churches_by_contributions'] = payments_queryset.values('church__name').annotate(
+            # Corrected: 'amount' to 'amount_paid'
+            total_amount=Coalesce(Sum('amount_paid'), Decimal(0))
+        ).order_by('-total_amount')[:5]
 
-            church_summaries.append({
-                'name': church_obj.name,
-                'total_families': church_families.count(),
-                'total_members': church_individuals.count(),
-                # Fix: Change 0 to Decimal(0)
-                'total_contributions': church_payments.aggregate(total=Coalesce(Sum('amount'), Decimal(0)))['total']
-            })
-        context['church_summaries'] = church_summaries
+        # --- Top Contribution Types (Example) ---
+        context['top_contribution_types'] = payments_queryset.values('contribution_type__name').annotate(
+            # Corrected: 'amount' to 'amount_paid'
+            total_amount=Coalesce(Sum('amount_paid'), Decimal(0))
+        ).order_by('-total_amount')[:5]
 
-        # JSON encode data for Chart.js
-        context['membership_status_distribution_json'] = json.dumps(
-            context['membership_status_distribution'])
-        context['contributions_over_time_labels_json'] = json.dumps(
-            context['contributions_over_time_labels'])
-        context['contributions_over_time_data_json'] = json.dumps(
-            context['contributions_over_time_data'])
+        # --- Payments by Status ---
+        context['payments_by_status'] = payments_queryset.values('status').annotate(
+            count=Count('id'),
+            # Corrected: 'amount' to 'amount_paid'
+            total_amount=Coalesce(Sum('amount_paid'), Decimal(0))
+        )
+
+        # --- Monthly Contributions Trend (Last 6 months) ---
+        monthly_contributions = {}
+        today = date.today()
+        for i in range(6):  # Last 6 months including current month
+            month = (today.replace(day=1) - timedelta(days=1)
+                     ).replace(day=1) if i > 0 else today.replace(day=1)
+
+            # Filter payments for the current month in the loop
+            month_payments = payments_queryset.filter(
+                date_paid__year=month.year,
+                date_paid__month=month.month
+            )
+            total_for_month = month_payments.aggregate(
+                # Corrected: 'amount' to 'amount_paid'
+                total=Coalesce(Sum('amount_paid'), Decimal(0))
+            )['total']
+
+            # Convert Decimal to float for JSON/Chart compatibility
+            monthly_contributions[month.strftime(
+                '%Y-%m')] = float(total_for_month)
+
+            # Move to the previous month for the next iteration
+            today = month - timedelta(days=1)
+
+        # Reverse to get chronological order for charts if needed
+        context['monthly_contributions_data'] = dict(
+            sorted(monthly_contributions.items()))
 
         return context

@@ -59,7 +59,7 @@ templates/base.html
                             {% if user.is_staff %}
                             <li><a href="{% url 'admin:index' %}">Admin Dashboard</a></li>
                             {% endif %}
-                            <li><a href="{% url 'password_change' %}">Change Password</a></li>
+                            <li><a href="{% url 'account_password_change' %}">Change Password</a></li>
                             <li><a href="{% url 'account:logout' %}?next={% url 'account:login' %}">Logout</a></li>
                         </ul>
                     </div>

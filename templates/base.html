@@ -51,11 +51,11 @@
                             </div>
                         </div>
                         <ul tabindex="0" class="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 rounded-box w-52">
-                            <li><a href="{% url 'account:profile_settings' %}">Profile Settings</a></li>
+                            <li><a href="{% url 'account:user_profile_settings' %}">Profile Settings</a></li>
                             {% if user.is_staff %}
                             <li><a href="{% url 'admin:index' %}">Admin Dashboard</a></li>
                             {% endif %}
-                            <li><a href="{% url 'password_change' %}">Change Password</a></li>
+                            <li><a href="{% url 'account_password_change' %}">Change Password</a></li>
                             <li><a href="{% url 'account:logout' %}?next={% url 'account:login' %}">Logout</a></li>
                         </ul>
                     </div>

@@ -1,6 +1,6 @@
 # apps/account/views.py
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy  # Already there
 # Use get_user_model() consistently
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group  # For UserRoleForm
@@ -9,6 +9,7 @@ from django.views.generic import (
     ListView, CreateView, UpdateView, DeleteView, View
 )
 from django.contrib.auth.mixins import UserPassesTestMixin, LoginRequiredMixin
+# Still needed if you use other function-based views
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages  # Import messages for toast notifications
 from django import forms  # Import forms for UserRoleForm
@@ -24,50 +25,44 @@ User = get_user_model()  # Define User model
 
 class ProfileOwnerMixin(UserPassesTestMixin):
     def test_func(self):
-        # Ensure the profile exists before trying to get it
         profile_pk = self.kwargs.get('pk')
         if profile_pk:
             profile = get_object_or_404(Profile, pk=profile_pk)
             return profile.user == self.request.user or self.request.user.is_superuser
-        return self.request.user.is_authenticated  # Or adjust as per your create logic
+        return self.request.user.is_authenticated
 
 
 class AdminRequiredMixin(UserPassesTestMixin):
     def test_func(self):
         return self.request.user.is_superuser
 
-# 🆕 NEW VIEW: User Profile Settings (handles theme and picture)
-# Gagamitin natin ito dahil ito ang function-based view sa iyong urls.py
-
-
-@login_required
-def profile_settings(request):
-    try:
-        profile = request.user.profile
-    except Profile.DoesNotExist:
-        # Create a profile if it doesn't exist (should be rare if signals are working)
-        profile = Profile.objects.create(user=request.user)
-        messages.info(request, "A profile has been created for your account.")
-
-    if request.method == 'POST':
-        form = ProfileThemeForm(request.POST, request.FILES, instance=profile)
-        if form.is_valid():
-            form.save()
-            messages.success(
-                request, "Your profile settings have been updated successfully!")
-            return redirect('account:profile_settings')
-        else:
-            messages.error(
-                request, "There was an error updating your profile settings. Please check the form.")
-    else:
-        form = ProfileThemeForm(instance=profile)
-
-    context = {
-        'form': form,
-        'current_theme': profile.theme if profile.theme else 'corporate',
-        'current_profile_picture': profile.profile_picture.url if profile.profile_picture else None,
-    }
-    return render(request, 'account/profile_settings.html', context)
+# 🚫 REMOVED: The redundant function-based 'profile_settings' view.
+# We are consolidating to use the class-based ProfileSettingsView.
+# @login_required
+# def profile_settings(request):
+#    try:
+#        profile = request.user.profile
+#    except Profile.DoesNotExist:
+#        profile = Profile.objects.create(user=request.user)
+#        messages.info(request, "A profile has been created for your account.")
+#
+#    if request.method == 'POST':
+#        form = ProfileThemeForm(request.POST, request.FILES, instance=profile)
+#        if form.is_valid():
+#            form.save()
+#            messages.success(request, "Your profile settings have been updated successfully!")
+#            return redirect('account:profile_settings') # Old URL name
+#        else:
+#            messages.error(request, "There was an error updating your profile settings. Please check the form.")
+#    else:
+#        form = ProfileThemeForm(instance=profile)
+#
+#    context = {
+#        'form': form,
+#        'current_theme': profile.theme if profile.theme else 'corporate',
+#        'current_profile_picture': profile.profile_picture.url if profile.profile_picture else None,
+#    }
+#    return render(request, 'account/profile_settings.html', context)
 
 
 # 👮‍♂️ User Management (Admin Only) - Keep these for admin functionality
@@ -83,7 +78,7 @@ class UserListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
 
 class UserCreateView(LoginRequiredMixin, AdminRequiredMixin, CreateView):
     model = User
-    form_class = StyledUserCreationForm  # Use the correct form
+    form_class = StyledUserCreationForm
     template_name = 'account/user_form.html'
     success_url = reverse_lazy('account:user_list')
 
@@ -100,7 +95,7 @@ class UserCreateView(LoginRequiredMixin, AdminRequiredMixin, CreateView):
 class UserUpdateView(LoginRequiredMixin, AdminRequiredMixin, UpdateView):
     model = User
     fields = ['username', 'email', 'first_name', 'last_name', 'is_active',
-              'is_staff', 'is_superuser']  # Added more relevant fields
+              'is_staff', 'is_superuser']
     template_name = 'account/user_form.html'
     success_url = reverse_lazy('account:user_list')
 
@@ -164,8 +159,8 @@ class UserRoleDeleteView(LoginRequiredMixin, AdminRequiredMixin, View):
 
 class RegisterView(CreateView):
     template_name = 'registration/register.html'
-    form_class = StyledUserCreationForm  # Use the correct form
-    success_url = reverse_lazy('account:login')  # Changed to account:login
+    form_class = StyledUserCreationForm
+    success_url = reverse_lazy('account:login')
 
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -179,17 +174,16 @@ class RegisterView(CreateView):
         return super().form_invalid(form)
 
 
-# --- PROFILE SETTINGS VIEW ---
+# --- PROFILE SETTINGS VIEW (THIS IS THE ONE WE'LL USE) ---
 class ProfileSettingsView(LoginRequiredMixin, UpdateView):
     model = Profile
     form_class = ProfileThemeForm
     template_name = 'account/profile_settings.html'
-    # Redirect back to settings page on success
-    success_url = reverse_lazy('account:profile_settings')
+    # --- IMPORTANT FIX HERE: Use the new URL name ---
+    # Changed from 'profile_settings'
+    success_url = reverse_lazy('account:user_profile_settings')
 
     def get_object(self):
-        # This ensures the view works with the *current logged-in user's* profile
-        # instead of requiring a pk in the URL.
         return self.request.user.profile
 
     def form_valid(self, form):

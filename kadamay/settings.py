@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'apps.report',
     'apps.chat',
     'apps.issues',
+    'apps.contribution_type',
     'tailwind',
     'theme',
     'django_browser_reload',
@@ -43,8 +44,8 @@ INSTALLED_APPS = [
 ]
 
 TAILWIND_APP_NAME = 'theme'
-# CRISPY_ALLOWED_TEMPLATE_PACKS = "tailwind"
-# CRISPY_TEMPLATE_PACK = "tailwind"
+CRISPY_ALLOWED_TEMPLATE_PACKS = "tailwind"
+CRISPY_TEMPLATE_PACK = "tailwind"
 NPM_BIN_PATH = r"C:\Program Files\nodejs\npm.cmd"
 
 MIDDLEWARE = [
@@ -142,7 +143,5 @@ LOGOUT_REDIRECT_URL = 'login'
 # Email settings (for development - prints to console)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = 'noreply@kadamay.org'
-
-LOGOUT_REDIRECT_URL = '/login/'
 
 DEBUG = True

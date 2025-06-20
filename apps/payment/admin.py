@@ -1,79 +1,112 @@
 # apps/payment/admin.py
-from django.contrib import admin
-from .models import Payment, CoveredMember, ContributionType
 
-# Inline for Covered Members
-class CoveredMemberInline(admin.TabularInline): # Use TabularInline for a compact display
+from django.contrib import admin
+from .models import Payment, CoveredMember
+
+# Register your models here.
+
+
+class CoveredMemberInline(admin.TabularInline):
+    """
+    Inline admin for CoveredMember to be used within PaymentAdmin.
+    Allows managing covered members directly from the Payment change form.
+    """
     model = CoveredMember
-    extra = 1 # Number of empty forms to display
-    fields = ('individual', 'amount_allocated', 'notes')
-    raw_id_fields = ('individual',) # Use raw_id_fields for Individual to handle many individuals better
+    extra = 1  # Number of empty forms to display
+    fields = ('individual',)  # The fields to display for each covered member
+
 
 @admin.register(Payment)
 class PaymentAdmin(admin.ModelAdmin):
+    """
+    Admin configuration for the Payment model.
+    """
     list_display = (
-        'receipt_number', 'date_paid', 'amount', 'payment_method',
-        'get_payees_display', # Use the property from Payment model
-        'payment_status', 'is_cancelled', 'collected_by', 'validated_by', 'created_at'
+        'or_number',
+        'individual_full_name',  # Custom method to display payer's full name
+        'amount_paid',          # Corrected from 'amount' to 'amount_paid'
+        'payment_method',
+        'status',
+        'date_paid',
+        'collected_by_username',  # Custom method to display collector's username
+        'validated_by_username',  # Custom method to display validator's username
+        'is_cancelled',          # Property from model
     )
-    list_filter = ('payment_method', 'payment_status', 'is_cancelled', 'church', 'contribution_type')
-    search_fields = ('receipt_number', 'notes', 'covered_members__individual__first_name', 'covered_members__individual__last_name')
-    date_hierarchy = 'date_paid'
-    ordering = ('-date_paid', '-receipt_number')
+    list_filter = (
+        'payment_method',
+        'status',
+        'date_paid',
+        'church',
+        'contribution_type',
+    )
+    search_fields = (
+        'or_number',
+        'individual__first_name',
+        'individual__last_name',
+        'collected_by__username',
+        'notes',
+        'gcash_reference_number',  # Added for search
+    )
+    date_hierarchy = 'date_paid'  # Allows drilling down by date
 
-    inlines = [CoveredMemberInline] # Add the inline here
+    # Corrected readonly_fields
+    readonly_fields = (
+        'or_number',
+        'created_at',
+        'created_by',
+        'updated_at',
+        'updated_by',
+        'validated_at',
+        'cancelled_at',
+    )
 
+    # Fields that should be displayed in the form, in order
     fieldsets = (
         (None, {
             'fields': (
-                'receipt_number', ('date_paid', 'amount'),
+                'or_number',
+                ('individual', 'church'),  # Group these in a row
+                ('contribution_type', 'amount_paid'),  # Group these
+                # Group payment method and Gcash ref
                 ('payment_method', 'gcash_reference_number'),
-                ('church', 'contribution_type'),
+                ('status', 'date_paid'),  # Group status and date
                 'notes',
-            ),
-        }),
-        ('People Involved', {
-            'fields': ('collected_by', 'individual', 'deceased_member'), # individual and deceased_member can still be here if needed for direct assignment in admin
-            'description': 'Select the primary individual or deceased member if applicable for this payment. Use "Payees / Covered Members" below for multiple individuals.',
-            'classes': ('collapse',), # Collapse this section by default
-        }),
-        ('Validation & Cancellation', {
-            'fields': (
-                'payment_status', ('validated_by', 'validation_date'),
-                'is_cancelled', ('cancellation_reason', 'cancellation_date', 'cancelled_by'),
-            ),
-            'classes': ('collapse',),
+                'cancellation_reason',  # Add cancellation reason field
+            )
         }),
         ('Audit Information', {
-            'fields': ('created_by', 'created_at', 'updated_by', 'updated_at', 'is_legacy_record'),
-            'classes': ('collapse',),
+            'classes': ('collapse',),  # Makes this section collapsible
+            'fields': (
+                'created_at', 'created_by',
+                'updated_at', 'updated_by',
+                'collected_by',
+                'validated_by', 'validated_at',
+                'cancelled_by', 'cancelled_at',
+            ),
         }),
     )
 
-    readonly_fields = (
-        'created_at', 'updated_at', 'created_by', 'updated_by',
-        'receipt_number', # This should be set by the system, not manually edited after creation
-        'validated_by', 'validation_date', 'cancellation_date', 'cancelled_by'
-    )
+    inlines = [CoveredMemberInline]  # Link CoveredMember model here
 
-    # Automatically set created_by and updated_by when saving from admin
+    # Custom methods for list_display
+    @admin.display(description='Payer')
+    def individual_full_name(self, obj):
+        return obj.individual.full_name if obj.individual else 'N/A'
+
+    @admin.display(description='Collected By')
+    def collected_by_username(self, obj):
+        return obj.collected_by.username if obj.collected_by else 'N/A'
+
+    @admin.display(description='Validated By')
+    def validated_by_username(self, obj):
+        return obj.validated_by.username if obj.validated_by else 'N/A'
+
+    # Override save_model to automatically set created_by and updated_by
     def save_model(self, request, obj, form, change):
-        if not obj.pk: # Only on creation
+        if not obj.pk:  # Only set created_by on creation
             obj.created_by = request.user
-        obj.updated_by = request.user
+        obj.updated_by = request.user  # Always set updated_by on save
         super().save_model(request, obj, form, change)
 
-    def get_form(self, request, obj=None, **kwargs):
-        form = super().get_form(request, obj, **kwargs)
-        # Make collected_by default to the current user in admin if not set
-        if not obj or not obj.collected_by:
-            form.base_fields['collected_by'].initial = request.user
-        return form
-
-# Register the ContributionType model
-@admin.register(ContributionType)
-class ContributionTypeAdmin(admin.ModelAdmin):
-    list_display = ('name', 'description')
-    search_fields = ('name',)
-    ordering = ('name',)
-
+# If you also need to register CoveredMember separately
+# admin.site.register(CoveredMember)
