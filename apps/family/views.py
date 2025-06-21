@@ -85,29 +85,33 @@ class FamilyDetailView(LoginRequiredMixin, DetailView):
         # Or where any CoveredMember from this family is listed.
         # Let's adjust this to show payments where ANY member of this family is covered.
         context['family_payments'] = Payment.objects.filter(
-            covered_members__individual__family=family # Filter by CoveredMember's individual's family
-        ).distinct().order_by('-date_paid')[:10] # Use distinct() to avoid duplicate payments if multiple family members are covered by same payment
+            # Filter by CoveredMember's individual's family
+            covered_members__individual__family=family
+            # Use distinct() to avoid duplicate payments if multiple family members are covered by same payment
+        ).distinct().order_by('-date_paid')[:10]
 
         # Calculate total contributions made by members of this family (sum of amounts on Payment.amount
         # where Payment.individual is from this family, or any covered_member is from this family)
         # This one sums up the total 'amount' of the payment object itself.
         context['total_family_contributions'] = Payment.objects.filter(
-            Q(individual__family=family) | # If the primary payer is from this family
-            Q(covered_members__individual__family=family) # Or if any covered member is from this family
-        ).distinct().aggregate( # Use distinct() to prevent double counting payments
-            total_sum=Coalesce(Sum('amount'), Decimal('0.00'), output_field=DecimalField())
+            # If the primary payer is from this family
+            Q(individual__family=family) |
+            # Or if any covered member is from this family
+            Q(covered_members__individual__family=family)
+        ).distinct().aggregate(  # Use distinct() to prevent double counting payments
+            total_sum=Coalesce(Sum('amount'), Decimal(
+                '0.00'), output_field=DecimalField())
         )['total_sum']
-
 
         # Calculate the total amount specifically *allocated* to members of this family
         # This sums the 'allocated_amount' from the CoveredMember objects for individuals in this family.
         total_allocated_to_family_members = CoveredMember.objects.filter(
             individual__family=family
         ).aggregate(
-            total_sum=Coalesce(Sum('amount_allocated'), Decimal('0.00'), output_field=DecimalField()) # Use 'amount_allocated'
+            total_sum=Coalesce(Sum('amount_allocated'), Decimal(
+                '0.00'), output_field=DecimalField())  # Use 'amount_allocated'
         )['total_sum']
         context['total_allocated_to_family_members'] = total_allocated_to_family_members
-
 
         # Pass all individuals to the context for use in the template
         context['all_individuals'] = all_individuals

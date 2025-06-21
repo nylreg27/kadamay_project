@@ -4,7 +4,7 @@
 from django.urls import path, include
 from django.contrib.auth import views as auth_views  # Django's default auth views
 from django.urls import reverse_lazy  # For success_url redirects
-
+from . import views
 # Import specific views from your apps.account.views module
 from .views import (
     UserListView,
@@ -14,7 +14,7 @@ from .views import (
     UserRoleAssignView,
     UserRoleDeleteView,
     RegisterView,
-    ProfileSettingsView,  # This is your class-based ProfileSettingsView
+    ProfileSettingsView,
 )
 
 from .forms import UserLoginForm  # Assuming you have a custom login form
@@ -40,7 +40,7 @@ urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
 
     # --- User Profile Settings (Using the Class-Based View) ---
-    # We changed the name to 'user_profile_settings' to be unique and clear.
+
     path('profile/settings/', ProfileSettingsView.as_view(),
          name='user_profile_settings'),
 

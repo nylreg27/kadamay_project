@@ -74,6 +74,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'apps.account.context_processors.user_church',
                 'apps.account.context_processors.user_roles',
+                'kadamay.context_processors.user_permissions',  # <--- CORRECTED LINE HERE
             ],
         },
     },
@@ -144,4 +145,4 @@ LOGOUT_REDIRECT_URL = 'login'
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = 'noreply@kadamay.org'
 
-DEBUG = True
+# DEBUG = True # This is redundant, it's already defined above. You can remove this.

@@ -10,24 +10,21 @@ from django.contrib import messages  # Para sa user feedback
 # Para sa date/time stamps (e.g., validated_at)
 from django.utils import timezone
 
-# Para ma-access ang custom models/objects mo na may kinalaman sa User at Roles
-from apps.account.models import UserChurch, Profile  # Import UserChurch at Profile
-from apps.individual.models import Individual  # Import Individual model
-# from apps.contribution_type.models import ContributionType # Pwede mo rin i-import dito kung gusto mo
-
 # Para sa Django Groups based roles (RECOMMENDED)
 from django.contrib.auth.models import Group
 from django.http import JsonResponse  # Para sa API views
 # Para sa complex queries (e.g., OR conditions sa search)
 from django.db.models import Q
 
-# Import ang Payment at CoveredMember models
+# Import ang Payment at CoveredMember models (KEEP THESE HERE, these are local to payment app)
 from .models import Payment, CoveredMember
-# Import ang PaymentForm at CoveredMemberFormSet
-from .forms import PaymentForm, CoveredMemberFormSet
+# Import ang PaymentForm at CoveredMemberFormSet (KEEP THESE HERE, these are local to payment app)
+from .forms import CoveredMemberFormSet, PaymentForm
 
 
 # --- Helper Function: OR Number Generation ---
+
+
 def generate_or_number():
     """
     Generates the next available Official Receipt (OR) number.
@@ -92,13 +89,16 @@ class PaymentListView(LoginRequiredMixin, ListView):
     paginate_by = 15  # Example: 15 payments per page
 
     def get_queryset(self):
+        # MOVE Individual IMPORT HERE if filtering by individual is enabled and causing circular import
+        # from apps.individual.models import Individual # Temporary import if needed for filters here
+
         queryset = super().get_queryset()
 
         # Use select_related for ForeignKey relationships (one-to-one or many-to-one)
         # This fetches related objects in the same query, reducing database hits.
         queryset = queryset.select_related(
             'individual',        # The payer (ForeignKey to Individual)
-            'church',            # Associated church (ForeignKey to Church)
+            'individual__church',  # <--- CORRECTED: Access church through individual
             # Type of contribution (ForeignKey to ContributionType)
             'contribution_type',
             'collected_by',      # User who collected (ForeignKey to User)
@@ -120,15 +120,20 @@ class PaymentListView(LoginRequiredMixin, ListView):
         start_date = self.request.GET.get('start_date')
         end_date = self.request.GET.get('end_date')
 
-        if or_number_filter:
-            queryset = queryset.filter(or_number__icontains=or_number_filter)
         if payer_filter:
+            # THIS IS WHERE Individual model might be needed.
+            # If `apps.individual.models` causes circular import when imported at top-level,
+            # uncomment this temporary import:
+            # from apps.individual.models import Individual # TEMPORARY: Import Individual here if needed for filter
             queryset = queryset.filter(
-                # Search by first name
                 Q(individual__first_name__icontains=payer_filter) |
-                # Search by last name
                 Q(individual__last_name__icontains=payer_filter)
             )
+
+        # ... (other filters) ...
+
+        if or_number_filter:
+            queryset = queryset.filter(or_number__icontains=or_number_filter)
         if status_filter and status_filter != 'all':
             queryset = queryset.filter(status=status_filter)
         if start_date:
@@ -156,7 +161,8 @@ class PaymentDetailView(LoginRequiredMixin, DetailView):
     def get_queryset(self):
         # Same select_related and prefetch_related for detail view optimization
         queryset = super().get_queryset().select_related(
-            'individual', 'church', 'contribution_type',
+            # <--- CORRECTED: Access church through individual
+            'individual', 'individual__church', 'contribution_type',
             'collected_by', 'validated_by', 'cancelled_by',
         ).prefetch_related(
             'covered_members',
@@ -182,6 +188,10 @@ class PaymentCreateView(LoginRequiredMixin, KadamayRoleRequiredMixin, CreateView
     required_roles = ['Admin', 'Cashier', 'In-Charge']
 
     def get_context_data(self, **kwargs):
+        # MOVE UserChurch, Profile, Individual IMPORTS HERE IF NEEDED FOR FORM FIELDS/CHOICES
+        # from apps.account.models import UserChurch, Profile # TEMPORARY: Import if needed
+        # from apps.individual.models import Individual # TEMPORARY: Import if needed
+
         context = super().get_context_data(**kwargs)
         if self.request.POST:
             # If the form was submitted, use submitted data for formset
@@ -381,6 +391,8 @@ def search_individuals_api(request):
     API endpoint to search for individuals (payers) based on a query string.
     Returns a JSON list of individuals matching the query.
     """
+    # IMPORT Individual MODEL HERE
+    from apps.individual.models import Individual
     query = request.GET.get(
         'q', '')  # Get the search query from GET parameters
     individuals = []
@@ -411,6 +423,8 @@ def get_individual_family_details_api(request, pk):
     API endpoint to retrieve family members details for a given individual (payer).
     Used to pre-populate 'covered_members' options.
     """
+    # IMPORT Individual MODEL HERE
+    from apps.individual.models import Individual
     try:
         # Get the individual and prefetch their family and family members for efficiency
         individual = Individual.objects.prefetch_related(

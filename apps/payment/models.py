@@ -1,166 +1,201 @@
 # apps/payment/models.py
 
 from django.db import models
+from django.conf import settings  # Para sa AUTH_USER_MODEL
+# Para sa auto_now_add, auto_now, default values
 from django.utils import timezone
-# Import for ForeignKey to User model
-from django.contrib.auth import get_user_model
 
-# Import related models from other apps
-# MAKE SURE these import paths are correct based on your project structure!
-# For example, if 'individual' app is in 'apps' directory.
+# IMPORTANT: I-import ni nga mga models gikan sa ilang tagsa-tagsa ka apps.
+# Siguraduhin nga kini nga mga paths husto base sa imong project structure.
+# Kung ang Individual naa sa 'apps/individual/models.py', then kini nga import husto.
 from apps.individual.models import Individual
-from apps.church.models import Church
+# Kung ang UserChurch ug Profile naa sa 'apps/account/models.py', husto kini.
+from apps.account.models import UserChurch, Profile
+# Kung ang ContributionType naa sa 'apps/contribution_type/models.py', husto kini.
 from apps.contribution_type.models import ContributionType
-from django.conf import settings
-
-User = get_user_model()  # Get the currently active User model
 
 
 class Payment(models.Model):
+    """
+    Model para sa matag payment transaction sa KADAMAY.
+    """
+    permissions = [
+        ("can_validate_payment", "Can validate payments (for InCharge/Admin)"),
+        ("can_create_payment", "Can create new payments (for Cashier/InCharge/Admin)"),
+        ("can_cancel_payment", "Can cancel payments (for Auditor/Admin)"),
+        ("view_payment", "Can view payment records"),
+    ]
+
+    # OR Number - Automatic na mag-generate, unique, dili editable
     or_number = models.CharField(
-        max_length=20, unique=True, verbose_name="OR Number")
+        max_length=20, unique=True, db_index=True, verbose_name="OR Number")
 
-    # Existing fields...
+    # Kinsa ang nagbayad (payer) - ForeignKey sa Individual model
     individual = models.ForeignKey(
-        'individual.Individual',
+        Individual,
+        # Kung ma-delete ang Individual, ma-NULL lang ang field, dili ma-delete ang Payment
         on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
         related_name='payments_made',
-        verbose_name="Payer (Main Individual)"
-    )
-    church = models.ForeignKey(
-        'church.Church',
-        on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='payments_received',
-        verbose_name="Assigned Church"
+        verbose_name="Nagbayad (Payer)"
     )
-    contribution_type = models.ForeignKey(
-        'contribution_type.ContributionType',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='payments',
-        verbose_name="Contribution Type"
-    )
-    amount_paid = models.DecimalField(
-        max_digits=10, decimal_places=2, verbose_name="Amount Paid")
-    date_paid = models.DateField(
-        default=timezone.now, verbose_name="Date Paid")
-    notes = models.TextField(
-        blank=True, null=True, verbose_name="Payment Notes")
 
-    # --- New/Updated Fields based on our discussions ---
+    # Kantidad sa gibayad
+    amount = models.DecimalField(
+        max_digits=10, decimal_places=2, verbose_name="Kantidad")
+
+    # Petsa sa pagbayad
+    date_paid = models.DateField(
+        default=timezone.now, verbose_name="Petsa sa Bayad")
+
+    # Pamaagi sa pagbayad
     PAYMENT_METHOD_CHOICES = [
         ('cash', 'Cash'),
         ('gcash', 'GCash'),
-        # Add other methods as needed
+        # Add more methods if needed, e.g., ('bank_transfer', 'Bank Transfer')
     ]
     payment_method = models.CharField(
-        max_length=10, choices=PAYMENT_METHOD_CHOICES, default='cash', verbose_name="Payment Method")
-
-    gcash_reference_number = models.CharField(
-        max_length=50, blank=True, null=True, verbose_name="GCash Reference No."
+        max_length=10,
+        choices=PAYMENT_METHOD_CHOICES,
+        default='cash',
+        verbose_name="Pamaagi sa Bayad"
     )
 
-    STATUS_CHOICES = [
+    # Reference number sa Gcash (kung gcash ang pamaagi)
+    gcash_reference_number = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        verbose_name="GCash Reference Number",
+        help_text="Required if Payment Method is GCash and needs validation."
+    )
+
+    # Status sa Payment
+    PAYMENT_STATUS_CHOICES = [
         ('paid', 'Paid'),
-        ('pending', 'Pending Validation (GCash)'),
+        ('pending', 'Pending (for GCash validation)'),
         ('cancelled', 'Cancelled'),
     ]
     status = models.CharField(
-        max_length=10, choices=STATUS_CHOICES, default='paid', verbose_name="Status"
+        max_length=10,
+        choices=PAYMENT_STATUS_CHOICES,
+        default='paid',
+        verbose_name="Status sa Bayad"
     )
 
-    # Audit fields:
-    created_at = models.DateTimeField(auto_now_add=True)
-    created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+    # Type sa Kontribusyon (e.g., Monthly Dues, Special Fund)
+    contribution_type = models.ForeignKey(
+        ContributionType,
+        # Kung ma-delete ang ContributionType, ma-NULL lang ang field
         on_delete=models.SET_NULL,
+        related_name='payments',
         null=True,
         blank=True,
-        related_name='payments_created',
-        verbose_name="Created By"
+        verbose_name="Tipo sa Kontribusyon"
     )
-    updated_at = models.DateTimeField(auto_now=True)
-    updated_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='payments_updated',
-        verbose_name="Last Updated By"
-    )
+
+    # Kinsa ang nagkolekta sa bayad (usually ang nag-create sa record)
     collected_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
+        related_name='payments_collected',
         null=True,
         blank=True,
-        related_name='payments_collected',
-        verbose_name="Collected By"
+        verbose_name="Gikolekta ni"
     )
+
+    # Kung naay mag-validate (e.g., sa Gcash payments)
     validated_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
+        related_name='payments_validated',
         null=True,
         blank=True,
-        related_name='payments_validated',
-        verbose_name="Validated By"
+        verbose_name="Gi-validate ni"
     )
     validated_at = models.DateTimeField(
-        blank=True, null=True, verbose_name="Validated At"
-    )
+        null=True, blank=True, verbose_name="Petsa sa Pag-validate")
+
+    # Kung naay mag-cancel sa payment
     cancelled_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
+        related_name='payments_cancelled',
         null=True,
         blank=True,
-        related_name='payments_cancelled',
-        verbose_name="Cancelled By"
-    )
-    cancellation_reason = models.TextField(
-        blank=True, null=True, verbose_name="Cancellation Reason"
+        verbose_name="Gi-kansela ni"
     )
     cancelled_at = models.DateTimeField(
-        blank=True, null=True, verbose_name="Cancelled At"
+        null=True, blank=True, verbose_name="Petsa sa Pag-kansela")
+    cancellation_reason = models.TextField(
+        null=True, blank=True, verbose_name="Rason sa Pagkansela")
+
+    # Audit fields
+    created_at = models.DateTimeField(
+        auto_now_add=True, verbose_name="Gihimo niadtong")
+    updated_at = models.DateTimeField(
+        auto_now=True, verbose_name="Gi-update niadtong")
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name='payments_created',
+        null=True,
+        blank=True,
+        verbose_name="Gihimo ni"
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name='payments_updated',
+        null=True,
+        blank=True,
+        verbose_name="Gi-update ni"
     )
 
     class Meta:
-        verbose_name = 'Payment Record'
-        verbose_name_plural = 'Payment Records'
+        verbose_name = "Bayad"
+        verbose_name_plural = "Mga Bayad"
+        # Mag-order based sa petsa, unya OR number
         ordering = ['-date_paid', '-or_number']
 
     def __str__(self):
-        return f"OR #{self.or_number} - {self.individual.full_name if self.individual else 'N/A'} - {self.amount_paid}"
+        return f"OR #{self.or_number} - {self.individual.first_name if self.individual else 'N/A'} - {self.amount}"
 
-    @property
-    def is_cancelled(self):
-        return self.status == 'cancelled'
-
-    @property
-    def is_pending_gcash(self):
-        return self.status == 'pending' and self.payment_method == 'gcash'
-
-# ... (CoveredMember model and other related models if any) ...
+    def save(self, *args, **kwargs):
+        # Example: Ensure only 'pending' Gcash payments have reference number.
+        if self.payment_method != 'gcash' and self.status != 'pending':
+            self.gcash_reference_number = None
+        super().save(*args, **kwargs)
 
 
 class CoveredMember(models.Model):
+    """
+    Model para sa mga miyembro sa pamilya nga gi-cover sa usa ka Payment.
+    """
     payment = models.ForeignKey(
-        Payment, on_delete=models.CASCADE, related_name='covered_members'
+        Payment,
+        # Kung ma-delete ang Payment, ma-delete pud ang CoveredMember records
+        on_delete=models.CASCADE,
+        related_name='covered_members',
+        verbose_name="Bayad"
     )
     individual = models.ForeignKey(
-        'individual.Individual', on_delete=models.CASCADE
+        Individual,
+        # Kung ma-delete ang Individual, ma-delete pud ang CoveredMember record (consider SET_NULL instead if you want to keep payment record)
+        on_delete=models.CASCADE,
+        related_name='covered_payments',
+        verbose_name="Miyembro nga Gi-cover"
     )
-    # You might want to add amount_covered field here if each member pays a specific part
-    # amount_covered = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    amount_covered = models.DecimalField(
+        max_digits=10, decimal_places=2, verbose_name="Kantidad nga Gi-cover")
+    # Pwede nimo butangan og 'notes' field here kung gusto nimo mag-add og remarks per covered member.
 
     class Meta:
-        # A member can only be covered once per payment
+        verbose_name = "Miyembro nga Gi-cover"
+        verbose_name_plural = "Mga Miyembro nga Gi-cover"
+        # Siguraduhin nga ang usa ka Individual dili ma-cover sa parehas nga Payment labaw sa kausa
         unique_together = ('payment', 'individual')
-        verbose_name = 'Covered Member'
-        verbose_name_plural = 'Covered Members'
 
     def __str__(self):
-        return f"{self.individual.full_name} covered by OR #{self.payment.or_number}"
+        return f"{self.individual.first_name if self.individual else 'N/A'} (for OR #{self.payment.or_number})"

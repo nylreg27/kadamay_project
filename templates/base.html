@@ -50,13 +50,36 @@
                                 {% endif %}
                             </div>
                         </div>
+                        
+                        {# AKO NA GI-UNCOMMENT NI! #}
                         <ul tabindex="0" class="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 rounded-box w-52">
-                            <li><a href="{% url 'account:user_profile_settings' %}">Profile Settings</a></li>
-                            {% if user.is_staff %}
-                            <li><a href="{% url 'admin:index' %}">Admin Dashboard</a></li>
+                            <li>
+                                <a href="{% url 'account:profile' %}">
+                                    <i data-feather="user" class="w-4 h-4 mr-2"></i> Profile
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{% url 'account:user_profile_settings' %}">
+                                    <i data-feather="settings" class="w-4 h-4 mr-2"></i> Profile Settings
+                                </a>
+                            </li>
+                            {% if user.is_staff or user.is_superuser %}
+                            <li>
+                                <a href="{% url 'admin:index' %}">
+                                    <i data-feather="tool" class="w-4 h-4 mr-2"></i> Admin Dashboard
+                                </a>
+                            </li>
                             {% endif %}
-                            <li><a href="{% url 'account_password_change' %}">Change Password</a></li>
-                            <li><a href="{% url 'account:logout' %}?next={% url 'account:login' %}">Logout</a></li>
+                            <li>
+                                <a href="{% url 'account:password_change' %}">
+                                    <i data-feather="key" class="w-4 h-4 mr-2"></i> Change Password
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{% url 'account:logout' %}?next={% url 'account:login' %}">
+                                    <i data-feather="log-out" class="w-4 h-4 mr-2"></i> Logout
+                                </a>
+                            </li>
                         </ul>
                     </div>
                 </div>
@@ -114,12 +137,12 @@
                                         <input type="file" class="file-input file-input-bordered w-full" name="{{ field.name }}" id="{{ field.id_for_label }}" {% if field.field.required %}required{% endif %}>
                                     {% else %}
                                         <input type="{{ field.field.widget.input_type }}" 
-                                               class="input input-bordered w-full {% if field.errors %}input-error{% endif %}" 
-                                               name="{{ field.name }}" 
-                                               id="{{ field.id_for_label }}" 
-                                               value="{{ field.value|default_if_none:'' }}" 
-                                               placeholder="{{ field.field.widget.attrs.placeholder|default:'' }}"
-                                               {% if field.field.required %}required{% endif %}>
+                                                    class="input input-bordered w-full {% if field.errors %}input-error{% endif %}" 
+                                                    name="{{ field.name }}" 
+                                                    id="{{ field.id_for_label }}" 
+                                                    value="{{ field.value|default_if_none:'' }}" 
+                                                    placeholder="{{ field.field.widget.attrs.placeholder|default:'' }}"
+                                                    {% if field.field.required %}required{% endif %}>
                                     {% endif %}
                                     
                                     {% if field.help_text %}
@@ -184,6 +207,8 @@
                         </div>
                         <div>
                             <p class="font-semibold">{{ user.get_full_name|default:user.username }}</p>
+                            {# NOTE: Assuming you have a get_role_display method on your User model or profile. #}
+                            {# If not, you might need to define how roles are displayed (e.g., from user.assigned_church.first.role) #}
                             <p class="text-sm text-base-content/80">{{ user.get_role_display }}</p>
                         </div>
                     </div>
@@ -198,25 +223,28 @@
                 <li><a href="{% url 'family:family_list' %}" class="{% if 'family' in request.resolver_match.app_names %}active{% endif %}"><i data-feather="user-check"></i> Families</a></li>
                 <li><a href="{% url 'church:church_list' %}" class="{% if 'church' in request.resolver_match.app_names %}active{% endif %}"><i data-feather="layout"></i> Churches</a></li>
                 
-                {# Payments section #}
+                {# Payments section - UNCOMMENTED AND ROLE-BASED #}
                 <li>
                     <details {% if 'payment' in request.resolver_match.app_names and 'payment_list' in request.resolver_match.url_name or 'add_payment' in request.resolver_match.url_name %}open{% endif %}>
                         <summary><i data-feather="credit-card"></i> Payments</summary>
-                        <ul>
                             <li><a href="{% url 'payment:payment_list' %}" class="{% if request.resolver_match.url_name == 'payment_list' and not request.GET.status %}active{% endif %}">All Payments</a></li>
-                            {% if request.user.is_superuser or user.is_cashier or user.is_incharge %}
+
+                            {# Check user roles before showing specific payment links #}
+                            {# Assuming roles are handled by user.is_superuser or a custom method like user.is_cashier / user.is_incharge #}
+                            {# You might need to add these methods to your User or UserChurch/Profile model later if not already there #}
+                            {% if user_has_any_payment_access %}
                                 <li>
                                     <a href="{% url 'payment:payment_list' %}?status=PENDING_VALIDATION" class="{% if request.resolver_match.url_name == 'payment_list' and request.GET.status == 'PENDING_VALIDATION' %}active{% endif %}">
                                         <i data-feather="clock" class="w-4 h-4 mr-1"></i> Pending Validation
                                     </a>
                                 </li>
+
                                 <li>
                                     <a href="{% url 'payment:add_payment' %}" class="{% if request.resolver_match.url_name == 'add_payment' %}active{% endif %}">
                                         <i data-feather="plus" class="w-4 h-4 mr-1"></i> Create Payment
                                     </a>
                                 </li>
                             {% endif %}
-                        </ul>
                     </details>
                 </li>
 
