@@ -118,11 +118,11 @@ class IndividualDetailView(DetailView):
 
     def get_queryset(self):
         queryset = Individual.objects.all().prefetch_related(
-            'payments__contribution_type',
-            'payments__church',
-            'payment_allocations',
-            'payment_allocations__payment__contribution_type',
-            'payment_allocations__payment__church'
+            'payments_made__contribution_type', # Corrected from 'payments'
+            'payments_made__church',             # Corrected from 'payments'
+            'covered_payments',
+            'covered_payments__payment__contribution_type',
+            'covered_payments__payment__church'
         )
         return queryset
 
@@ -132,29 +132,30 @@ class IndividualDetailView(DetailView):
 
         combined_payments = []
 
-        for payment in individual.payments.all():
+        # The loop below now correctly accesses 'payments_made'
+        for payment in individual.payments_made.all(): # Corrected from 'payments'
             combined_payments.append({
                 'payment_type': 'Direct Payment',
-                'receipt_number': payment.receipt_number,
+                'receipt_number': payment.or_number, # Assuming receipt_number is now or_number based on models.py
                 'amount': payment.amount,
                 'allocated_amount': payment.amount,
                 'date_paid': payment.date_paid,
                 'contribution_type_name': payment.contribution_type.name if payment.contribution_type else 'N/A',
-                'payment_status_display': payment.get_payment_status_display(),
+                'payment_status_display': payment.get_status_display(), # Changed from get_payment_status_display
                 'primary_payer_name': individual.full_name,
                 'primary_payer_id': individual.pk,
                 'payment_id': payment.pk,
             })
 
-        for allocation in individual.payment_allocations.all():
+        for allocation in individual.covered_payments.all():
             combined_payments.append({
                 'payment_type': 'Allocation',
-                'receipt_number': allocation.payment.receipt_number,
+                'receipt_number': allocation.payment.or_number, # Assuming receipt_number is now or_number
                 'amount': allocation.payment.amount,
                 'allocated_amount': allocation.allocated_amount,
                 'date_paid': allocation.payment.date_paid,
                 'contribution_type_name': allocation.payment.contribution_type.name if allocation.payment.contribution_type else 'N/A',
-                'payment_status_display': allocation.payment.get_payment_status_display(),
+                'payment_status_display': allocation.payment.get_status_display(), # Changed from get_payment_status_display
                 'primary_payer_name': allocation.payment.individual.full_name if allocation.payment.individual else 'N/A',
                 'primary_payer_id': allocation.payment.individual.pk if allocation.payment.individual else None,
                 'payment_id': allocation.payment.pk,

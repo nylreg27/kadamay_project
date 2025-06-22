@@ -1,200 +1,314 @@
 {# templates/family/family_detail.html #}
 {% extends 'base.html' %}
-{% load static %} {# If you use static files like images/icons #}
+{% load static %}
 
-{% block title %}FAMILY: {{ family.family_name|upper }} - KADAMAY MORTUARY SYSTEM{% endblock %} {# TITLE IS NOW UPPERCASE #}
+{% block title %}FAMILY: {{ family.family_name|upper }} - KADAMAY MORTUARY SYSTEM{% endblock %}
 
 {% block content %}
-<div class="container mx-auto p-4 lg:p-8 max-w-6xl">
+<div class="container mx-auto p-4 lg:p-8 max-w-6xl"> 
     <div class="bg-base-100 shadow-xl rounded-lg p-6 lg:p-8">
         {# Header section: Family Name, Description, and Action Buttons #}
-        <div class="flex justify-between items-center mb-8 flex-wrap gap-4"> {# Added flex-wrap and gap for responsiveness #}
+        <div class="flex justify-between items-center mb-8 flex-wrap gap-4">
             <div>
-                <h1 class="text-3xl font-extrabold text-base-content uppercase">{{ family.family_name|upper }}</h1> {# ADDED uppercase CLASS AND FILTER #}
-                <p class="text-base-content/80 text-md mt-2 uppercase">DETAILS AND ASSOCIATED RECORDS FOR THIS FAMILY.</p> {# ADDED uppercase CLASS #}
+                <h1 class="text-2xl md:text-3xl font-extrabold text-base-content uppercase">{{ family.family_name|upper }}</h1>
+                <p class="text-xs md:text-sm text-base-content/80 mt-2 uppercase">DETAILS AND ASSOCIATED RECORDS FOR THIS FAMILY.</p>
             </div>
-            <div class="flex space-x-3">
-                <a href="{% url 'family:family_list' %}" class="btn btn-md btn-outline btn-neutral flex items-center gap-2 rounded-lg font-semibold uppercase"> {# ADDED uppercase CLASS #}
-                    <i data-feather="arrow-left" class="w-5 h-5"></i>
+            <div class="flex flex-wrap gap-3"> 
+                <a href="{% url 'family:family_list' %}" class="btn btn-sm btn-outline btn-neutral flex items-center gap-2 rounded-lg font-semibold uppercase">
+                    <i data-feather="arrow-left" class="w-4 h-4"></i>
                     BACK TO LIST
                 </a>
-                <a href="{% url 'family:family_update' pk=family.pk %}" class="btn btn-md btn-primary flex items-center gap-2 rounded-lg font-semibold uppercase"> {# ADDED uppercase CLASS #}
-                    <i data-feather="edit" class="w-5 h-5"></i>
+                <a href="{% url 'family:family_update' pk=family.pk %}" class="btn btn-sm btn-primary flex items-center gap-2 rounded-lg font-semibold uppercase">
+                    <i data-feather="edit" class="w-4 h-4"></i>
                     EDIT FAMILY
                 </a>
-                {# Conditionally display button to edit Head of Family, only if a Head of Family is assigned #}
                 {% if family.head_of_family %}
-                <a href="{% url 'individual:individual_update' pk=family.head_of_family.pk %}" class="btn btn-md btn-info flex items-center gap-2 rounded-lg font-semibold uppercase"> {# ADDED uppercase CLASS #}
-                    <i data-feather="user" class="w-5 h-5"></i>
+                <a href="{% url 'individual:individual_update' pk=family.head_of_family.pk %}" class="btn btn-sm btn-info flex items-center gap-2 rounded-lg font-semibold uppercase">
+                    <i data-feather="user" class="w-4 h-4"></i>
                     EDIT HEAD OF FAMILY
                 </a>
                 {% endif %}
-                {# Button to delete family #}
-                <a href="{% url 'family:family_delete' pk=family.pk %}" class="btn btn-md btn-error flex items-center gap-2 rounded-lg font-semibold uppercase"> {# ADDED uppercase CLASS #}
-                    <i data-feather="trash-2" class="w-5 h-5"></i>
+                <a href="{% url 'family:family_delete' pk=family.pk %}" class="btn btn-sm btn-error flex items-center gap-2 rounded-lg font-semibold uppercase">
+                    <i data-feather="trash-2" class="w-4 h-4"></i>
                     DELETE FAMILY
                 </a>
             </div>
         </div>
 
         {# Basic Family Information Card #}
-        <div class="card bg-base-200 shadow-lg rounded-lg p-6 mb-8"> {# Changed bg to base-200 for distinction #}
-            <h2 class="text-2xl font-bold text-base-content mb-4 flex items-center gap-3 cursor-pointer uppercase" id="familyInfoToggle"> {# ADDED uppercase CLASS #}
-                <i data-feather="info" class="w-5 h-5 text-primary"></i> {# Changed icon color #}
+        <div class="card bg-base-200 shadow-lg rounded-lg p-6 mb-8">
+            <h2 class="text-lg md:text-xl font-bold text-base-content mb-4 flex items-center gap-2 cursor-pointer uppercase" id="familyInfoToggle">
+                <i data-feather="info" class="w-4 h-4 text-primary"></i>
                 FAMILY INFORMATION
             </h2>
-            <div id="familyInfoContent" class="uppercase"> {# ADDED uppercase CLASS TO CONTENT #}
-                <p class="text-lg text-base-content mb-2"><strong class="text-base-content/80">FAMILY NAME:</strong> {{ family.family_name|default:"N/A"|upper }}</p> {# ADDED FILTER #}
-                <p class="text-lg text-base-content mb-2"><strong class="text-base-content/80">ADDRESS:</strong> {{ family.address|default:"N/A"|upper }}</p> {# ADDED FILTER #}
-                <p class="text-lg text-base-content mb-2">
+            <div id="familyInfoContent" class="uppercase grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1"> 
+                <p class="text-xs md:text-sm text-base-content mb-1"><strong class="text-base-content/80">FAMILY NAME:</strong> {{ family.family_name|default:"N/A"|upper }}</p>
+                <p class="text-xs md:text-sm text-base-content mb-1"><strong class="text-base-content/80">ADDRESS:</strong> {{ family.address|default:"N/A"|upper }}</p>
+                <p class="text-xs md:text-sm text-base-content mb-1">
                     <strong class="text-base-content/80">ASSOCIATED CHURCH:</strong> 
                     {% if family.church %}
-                        <a href="{% url 'church:church_detail' pk=family.church.pk %}" class="link link-hover text-primary">{{ family.church.name|upper }}</a> {# ADDED FILTER #}
+                        <a href="{% url 'church:church_detail' pk=family.church.pk %}" class="link link-hover text-primary">{{ family.church.name|upper }}</a>
                     {% else %}
                         N/A
                     {% endif %}
                 </p>
-                <p class="text-lg text-base-content mb-2">
+                <p class="text-xs md:text-sm text-base-content mb-1">
                     <strong class="text-base-content/80">HEAD OF FAMILY:</strong> 
                     {% if family.head_of_family %}
-                        <a href="{% url 'individual:individual_detail' pk=family.head_of_family.pk %}" class="link link-hover text-primary">{{ family.head_of_family.full_name|upper }}</a> {# ADDED FILTER #}
+                        <a href="{% url 'individual:individual_detail' pk=family.head_of_family.pk %}" class="link link-hover text-primary">{{ family.head_of_family.full_name|upper }}</a>
                     {% else %}
                         NOT ASSIGNED
                     {% endif %}
                 </p>
-                <p class="text-lg text-base-content mb-2"><strong class="text-base-content/80">CONTACT NUMBER:</strong> {{ family.contact_number|default:"N/A"|upper }}</p> {# ADDED FILTER #}
-                <p class="text-lg text-base-content mb-2"><strong class="text-base-content/80">ACTIVE:</strong> 
+                <p class="text-xs md:text-sm text-base-content mb-1"><strong class="text-base-content/80">CONTACT NUMBER:</strong> {{ family.contact_number|default:"N/A"|upper }}</p>
+                <p class="text-xs md:text-sm text-base-content mb-1"><strong class="text-base-content/80">ACTIVE:</strong> 
                     {% if family.is_active %}
-                        <span class="badge badge-success text-success-content">YES</span> {# ALREADY CAPS, ENSURE #}
+                        <span class="badge badge-success text-success-content text-xs">YES</span>
                     {% else %}
-                        <span class="badge badge-error text-error-content">NO</span> {# ALREADY CAPS, ENSURE #}
+                        <span class="badge badge-error text-error-content text-xs">NO</span>
                     {% endif %}
                 </p>
-                <p class="text-lg text-base-content mb-2"><strong class="text-base-content/80">DATE CREATED:</strong> {{ family.date_created|date:"M d, Y P"|upper }}</p> {# ADDED FILTER #}
-                <p class="text-lg text-base-content mb-2"><strong class="text-base-content/80">LAST UPDATED:</strong> {{ family.date_updated|date:"M d, Y P"|upper }}</p> {# ADDED FILTER #}
+                <p class="text-xs md:text-sm text-base-content mb-1"><strong class="text-base-content/80">DATE CREATED:</strong> {{ family.date_created|date:"M d, Y P"|upper }}</p>
+                <p class="text-xs md:text-sm text-base-content mb-1"><strong class="text-base-content/80">LAST UPDATED:</strong> {{ family.date_updated|date:"M d, Y P"|upper }}</p>
             </div>
         </div>
 
-        {# Family Members Section #}
-        <div class="card bg-base-200 shadow-lg rounded-lg p-6 mb-8">
-            <h2 class="text-2xl font-bold text-base-content mb-4 flex items-center gap-3 cursor-pointer uppercase" id="membersToggle"> {# ADDED uppercase CLASS #}
-                <i data-feather="users" class="w-5 h-5 text-secondary"></i>
-                FAMILY MEMBERS ({{ total_members_count }} TOTAL - {{ active_members_count }} ACTIVE, {{ deceased_members_count }} DECEASED) {# ADDED uppercase CLASS #}
-            </h2>
-            <div id="membersContent">
-                {# FIXED: Changed 'individual_create_in_family' to 'family_individual_create' #}
-                <a href="{% url 'individual:family_individual_create' family_id=family.pk %}" class="btn btn-sm btn-accent mb-4 uppercase">ADD NEW MEMBER</a> {# ADDED uppercase CLASS #}
+        {# --- Desktop Tabs Section (Family Members & Financial Contributions) --- #}
+        {# This entire section is visible on medium screens and up, hidden on small screens #}
+        <div class="card bg-base-200 shadow-lg rounded-lg p-6 mb-8 hidden md:block">
+            <div role="tablist" class="tabs tabs-boxed tabs-sm mb-4">
+               <a role="tab" class="tab tab-active uppercase" id="membersTab">
+                    <i data-feather="users" class="w-4 h-4 mr-2"></i> FAMILY MEMBERS
+                </a>
+                <a role="tab" class="tab uppercase" id="financeTab">
+                    <i data-feather="dollar-sign" class="w-4 h-4 mr-2"></i> FINANCIAL CONTRIBUTIONS
+                </a>    
+            </div>
+
+            {# Members Content (Initially active by JS) #}
+            <div id="membersContent" class="tab-content"> {# Do NOT add 'hidden' here, JS will manage #}
+                <h2 class="text-lg md:text-xl font-bold text-base-content mb-4 flex items-center gap-2 uppercase">
+                    FAMILY MEMBERS ({{ total_members_count }} TOTAL - {{ active_members_count }} ACTIVE, {{ deceased_members_count }} DECEASED)
+                </h2>
+                <a href="{% url 'individual:family_individual_create' family_id=family.pk %}" class="btn btn-sm btn-accent mb-4 uppercase">ADD NEW MEMBER</a> 
                 
-                {% if all_individuals %}
-                    <div class="overflow-x-auto">
-                        <table class="table w-full">
+                <div class="overflow-x-auto"> 
+                    <table class="table w-full text-xs md:text-sm">
+                        <thead>
+                            <tr>
+                                <th class="uppercase whitespace-nowrap">FULL NAME</th> 
+                                <th class="uppercase whitespace-nowrap">STATUS</th> 
+                                <th class="uppercase whitespace-nowrap">MEMBER SINCE</th> 
+                                <th class="uppercase whitespace-nowrap">ACTIONS</th> 
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for member in all_individuals %}
+                            <tr>
+                                <td class="whitespace-nowrap">
+                                    <a href="{% url 'individual:individual_detail' pk=member.pk %}" class="link link-hover text-primary font-semibold uppercase">
+                                        {{ member.full_name|upper }}
+                                    </a>
+                                    {% if member == family_head %}
+                                        <span class="badge badge-info ml-2 text-xs">HEAD</span>
+                                    {% endif %}
+                                </td>
+                                <td class="whitespace-nowrap">
+                                    {% if member.is_alive and member.is_active_member %}
+                                        <span class="badge badge-success uppercase text-xs">ACTIVE LIVING</span>
+                                    {% elif not member.is_alive %}
+                                        <span class="badge badge-error uppercase text-xs">DECEASED</span>
+                                    {% else %}
+                                        <span class="badge badge-warning uppercase text-xs">INACTIVE LIVING</span>
+                                    {% endif %}
+                                </td>
+                                <td class="uppercase whitespace-nowrap">{{ member.date_joined|date:"M d, Y"|upper }}</td> 
+                                <td class="whitespace-nowrap">
+                                    <a href="{% url 'individual:individual_detail' pk=member.pk %}" class="btn btn-xs btn-outline btn-info uppercase">VIEW</a>
+                                    <a href="{% url 'individual:individual_update' pk=member.pk %}" class="btn btn-xs btn-outline btn-primary uppercase">EDIT</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center p-4 uppercase">NO INDIVIDUALS FOUND FOR THIS FAMILY.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {# Financial Contributions Content (Initially hidden by JS) #}
+            <div id="financeContent" class="tab-content hidden"> {# Add 'hidden' here initially, JS will remove/add #}
+                <h2 class="text-lg md:text-xl font-bold text-base-content mb-4 flex items-center gap-2 uppercase">
+                    FINANCIAL CONTRIBUTIONS
+                </h2>
+                <p class="text-xs md:text-sm text-base-content mb-1 uppercase">
+                    <strong class="text-base-content/80">TOTAL FAMILY CONTRIBUTIONS (PAYMENTS MADE):</strong>
+                    <span class="font-bold text-success">₱{{ total_family_contributions|floatformat:2 }}</span>
+                </p>
+                <p class="text-xs md:text-sm text-base-content mb-1 uppercase">
+                    <strong class="text-base-content/80">TOTAL ALLOCATED FOR PAYER CONTRIBUTIONS:</strong>
+                    <span class="font-bold text-info">₱{{ total_allocated_payer_contributions|floatformat:2 }}</span>
+                </p>
+                
+                <h3 class="text-sm md:text-base font-semibold text-base-content mt-4 mb-2 uppercase">RECENT PAYMENTS BY FAMILY MEMBERS</h3>
+                <div class="overflow-x-auto"> 
+                    <table class="table w-full text-xs md:text-sm">
+                        <thead>
+                            <tr>
+                                <th class="uppercase whitespace-nowrap">DATE PAID</th>
+                                <th class="uppercase whitespace-nowrap">MEMBER (PAYER)</th>
+                                <th class="uppercase whitespace-nowrap">AMOUNT</th>
+                                <th class="uppercase whitespace-nowrap">REFERENCE/REMARKS</th>
+                                <th class="uppercase whitespace-nowrap">ACTIONS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in family_payments %}
+                            <tr>
+                                <td class="uppercase whitespace-nowrap">{{ payment.date_paid|date:"M d, Y P"|upper }}</td>
+                                <td class="whitespace-nowrap">
+                                    <a href="{% url 'individual:individual_detail' pk=payment.individual.pk %}" class="link link-hover text-primary uppercase">
+                                        {{ payment.individual.full_name|upper }}
+                                    </a>
+                                </td>
+                                <td class="whitespace-nowrap">₱{{ payment.amount|floatformat:2 }}</td>
+                                <td class="uppercase whitespace-nowrap">{{ payment.remarks|default:"N/A"|upper }}</td>
+                                <td class="whitespace-nowrap">
+                                    <a href="{% url 'payment:payment_detail' pk=payment.pk %}" class="btn btn-xs btn-outline btn-info uppercase">VIEW</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center p-4 uppercase">NO PAYMENTS RECORDED FOR THIS FAMILY YET.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>{# End of Desktop Tabs Section #}
+
+        {# --- Mobile Accordion (visible on small screens only) --- #}
+        {# IMPORTANT: Keep this section active ONLY for small screens. #}
+        {# If you commented it out, uncomment it unless you truly don't want it for mobile. #}
+        <div class="md:hidden"> {# Only visible on small screens (hidden on medium screens and up) #}
+            <div class="collapse collapse-arrow bg-base-200 shadow-lg mb-4">
+                <input type="checkbox" id="mobileMembersAccordion" class="peer" checked /> {# Checked by default #}
+                <div class="collapse-title text-base md:text-xl font-bold uppercase flex items-center gap-2">
+                    <i data-feather="users" class="w-5 h-5 text-accent"></i> FAMILY MEMBERS
+                </div>
+                <div class="collapse-content">
+                    {# Content for Family Members - same as desktop content, just wrapped #}
+                    <h2 class="text-base md:text-lg font-bold text-base-content mb-4 flex items-center gap-2 uppercase">
+                        FAMILY MEMBERS ({{ total_members_count }} TOTAL)
+                    </h2>
+                    <a href="{% url 'individual:family_individual_create' family_id=family.pk %}" class="btn btn-sm btn-accent mb-4 uppercase">ADD NEW MEMBER</a> 
+                    
+                    <div class="overflow-x-auto"> 
+                        <table class="table w-full text-xs md:text-sm">
                             <thead>
                                 <tr>
-                                    <th class="uppercase">FULL NAME</th> {# ADDED uppercase CLASS #}
-                                    <th class="uppercase">STATUS</th> {# ADDED uppercase CLASS #}
-                                    <th class="uppercase">MEMBER SINCE</th> {# ADDED uppercase CLASS #}
-                                    <th class="uppercase">ACTIONS</th> {# ADDED uppercase CLASS #}
+                                    <th class="uppercase whitespace-nowrap">FULL NAME</th> 
+                                    <th class="uppercase whitespace-nowrap">STATUS</th> 
+                                    <th class="uppercase whitespace-nowrap">MEMBER SINCE</th> 
+                                    <th class="uppercase whitespace-nowrap">ACTIONS</th> 
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for member in all_individuals %}
                                 <tr>
-                                    <td>
-                                        <a href="{% url 'individual:individual_detail' pk=member.pk %}" class="link link-hover text-primary font-semibold uppercase"> {# ADDED uppercase CLASS #}
-                                            {{ member.full_name|upper }} {# ADDED FILTER #}
+                                    <td class="whitespace-nowrap">
+                                        <a href="{% url 'individual:individual_detail' pk=member.pk %}" class="link link-hover text-primary font-semibold uppercase">
+                                            {{ member.full_name|upper }}
                                         </a>
                                         {% if member == family_head %}
-                                            <span class="badge badge-info ml-2">HEAD</span> {# ALREADY CAPS, ENSURE #}
+                                            <span class="badge badge-info ml-2 text-xs">HEAD</span>
                                         {% endif %}
                                     </td>
-                                    <td>
+                                    <td class="whitespace-nowrap">
                                         {% if member.is_alive and member.is_active_member %}
-                                            <span class="badge badge-success uppercase">ACTIVE LIVING</span> {# ADDED uppercase CLASS #}
+                                            <span class="badge badge-success uppercase text-xs">ACTIVE LIVING</span>
                                         {% elif not member.is_alive %}
-                                            <span class="badge badge-error uppercase">DECEASED</span> {# ADDED uppercase CLASS #}
+                                            <span class="badge badge-error uppercase text-xs">DECEASED</span>
                                         {% else %}
-                                            <span class="badge badge-warning uppercase">INACTIVE LIVING</span> {# ADDED uppercase CLASS #}
+                                            <span class="badge badge-warning uppercase text-xs">INACTIVE LIVING</span>
                                         {% endif %}
                                     </td>
-                                    <td class="uppercase">{{ member.date_joined|date:"M d, Y"|upper }}</td> {# ADDED uppercase CLASS AND FILTER #}
-                                    <td>
-                                        <a href="{% url 'individual:individual_detail' pk=member.pk %}" class="btn btn-xs btn-outline btn-info uppercase">VIEW</a> {# ADDED uppercase CLASS #}
-                                        <a href="{% url 'individual:individual_update' pk=member.pk %}" class="btn btn-xs btn-outline btn-primary uppercase">EDIT</a> {# ADDED uppercase CLASS #}
+                                    <td class="uppercase whitespace-nowrap">{{ member.date_joined|date:"M d, Y"|upper }}</td> 
+                                    <td class="whitespace-nowrap">
+                                        <a href="{% url 'individual:individual_detail' pk=member.pk %}" class="btn btn-xs btn-outline btn-info uppercase">VIEW</a>
+                                        <a href="{% url 'individual:individual_update' pk=member.pk %}" class="btn btn-xs btn-outline btn-primary uppercase">EDIT</a>
                                     </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center p-4 uppercase">NO INDIVIDUALS FOUND FOR THIS FAMILY.</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
-                {% else %}
-                    <div class="alert alert-info shadow-lg uppercase"> {# ADDED uppercase CLASS #}
-                        <div>
-                            <i data-feather="info" class="w-6 h-6"></i>
-                            <span>NO INDIVIDUALS CURRENTLY REGISTERED UNDER THIS FAMILY.</span>
-                        </div>
-                    </div>
-                {% endif %}
+                </div>
             </div>
-        </div>
 
-        {# Financial Contributions Section #}
-        <div class="card bg-base-200 shadow-lg rounded-lg p-6 mb-8">
-            <h2 class="text-2xl font-bold text-base-content mb-4 flex items-center gap-3 cursor-pointer uppercase" id="financeToggle"> {# ADDED uppercase CLASS #}
-                <i data-feather="dollar-sign" class="w-5 h-5 text-success"></i>
-                FINANCIAL CONTRIBUTIONS
-            </h2>
-            <div id="financeContent" class="uppercase"> {# ADDED uppercase CLASS TO CONTENT #}
-                <p class="text-lg text-base-content mb-2">
-                    <strong class="text-base-content/80">TOTAL FAMILY CONTRIBUTIONS (PAYMENTS MADE):</strong> 
-                    <span class="font-bold text-success">₱{{ total_family_contributions|floatformat:2 }}</span>
-                </p>
-                <p class="text-lg text-base-content mb-2">
-                    <strong class="text-base-content/80">TOTAL ALLOCATED FOR PAYER CONTRIBUTIONS:</strong> 
-                    <span class="font-bold text-info">₱{{ total_allocated_payer_contributions|floatformat:2 }}</span>
-                </p>
-                
-                <h3 class="text-xl font-semibold text-base-content mt-6 mb-3 uppercase">RECENT PAYMENTS BY FAMILY MEMBERS</h3> {# ADDED uppercase CLASS #}
-                {% if family_payments %}
-                    <div class="overflow-x-auto">
-                        <table class="table w-full">
+            <div class="collapse collapse-arrow bg-base-200 shadow-lg mb-4">
+                <input type="checkbox" id="mobileFinanceAccordion" class="peer" />
+                <div class="collapse-title text-base md:text-xl font-bold uppercase flex items-center gap-2">
+                    <i data-feather="dollar-sign" class="w-5 h-5 text-success"></i> FINANCIAL CONTRIBUTIONS
+                </div>
+                <div class="collapse-content">
+                    {# Content for Financial Contributions - same as desktop content, just wrapped #}
+                    <h2 class="text-base md:text-lg font-bold text-base-content mb-4 flex items-center gap-2 uppercase">
+                        FINANCIAL CONTRIBUTIONS
+                    </h2>
+                    <p class="text-xs md:text-sm text-base-content mb-1 uppercase">
+                        <strong class="text-base-content/80">TOTAL FAMILY CONTRIBUTIONS (PAYMENTS MADE):</strong>
+                        <span class="font-bold text-success">₱{{ total_family_contributions|floatformat:2 }}</span>
+                    </p>
+                    <p class="text-xs md:text-sm text-base-content mb-1 uppercase">
+                        <strong class="text-base-content/80">TOTAL ALLOCATED FOR PAYER CONTRIBUTIONS:</strong>
+                        <span class="font-bold text-info">₱{{ total_allocated_payer_contributions|floatformat:2 }}</span>
+                    </p>
+                    
+                    <h3 class="text-sm md:text-base font-semibold text-base-content mt-4 mb-2 uppercase">RECENT PAYMENTS BY FAMILY MEMBERS</h3>
+                    <div class="overflow-x-auto"> 
+                        <table class="table w-full text-xs md:text-sm">
                             <thead>
                                 <tr>
-                                    <th class="uppercase">DATE PAID</th> {# ADDED uppercase CLASS #}
-                                    <th class="uppercase">MEMBER (PAYER)</th> {# ADDED uppercase CLASS #}
-                                    <th class="uppercase">AMOUNT</th> {# ADDED uppercase CLASS #}
-                                    <th class="uppercase">REFERENCE/REMARKS</th> {# ADDED uppercase CLASS #}
-                                    <th class="uppercase">ACTIONS</th> {# ADDED uppercase CLASS #}
+                                    <th class="uppercase whitespace-nowrap">DATE PAID</th>
+                                    <th class="uppercase whitespace-nowrap">MEMBER (PAYER)</th>
+                                    <th class="uppercase whitespace-nowrap">AMOUNT</th>
+                                    <th class="uppercase whitespace-nowrap">REFERENCE/REMARKS</th>
+                                    <th class="uppercase whitespace-nowrap">ACTIONS</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for payment in family_payments %}
                                 <tr>
-                                    <td class="uppercase">{{ payment.date_paid|date:"M d, Y P"|upper }}</td> {# ADDED uppercase CLASS AND FILTER #}
-                                    <td>
-                                        <a href="{% url 'individual:individual_detail' pk=payment.individual.pk %}" class="link link-hover text-primary uppercase"> {# ADDED uppercase CLASS #}
-                                            {{ payment.individual.full_name|upper }} {# ADDED FILTER #}
+                                    <td class="uppercase whitespace-nowrap">{{ payment.date_paid|date:"M d, Y P"|upper }}</td>
+                                    <td class="whitespace-nowrap">
+                                        <a href="{% url 'individual:individual_detail' pk=payment.individual.pk %}" class="link link-hover text-primary uppercase">
+                                            {{ payment.individual.full_name|upper }}
                                         </a>
                                     </td>
-                                    <td>₱{{ payment.amount|floatformat:2 }}</td>
-                                    <td class="uppercase">{{ payment.remarks|default:"N/A"|upper }}</td> {# ADDED uppercase CLASS AND FILTER #}
-                                    <td>
-                                        <a href="{% url 'payment:payment_detail' pk=payment.pk %}" class="btn btn-xs btn-outline btn-info uppercase">VIEW</a> {# ADDED uppercase CLASS #}
+                                    <td class="whitespace-nowrap">₱{{ payment.amount|floatformat:2 }}</td>
+                                    <td class="uppercase whitespace-nowrap">{{ payment.remarks|default:"N/A"|upper }}</td>
+                                    <td class="whitespace-nowrap">
+                                        <a href="{% url 'payment:payment_detail' pk=payment.pk %}" class="btn btn-xs btn-outline btn-info uppercase">VIEW</a>
                                     </td>
                                 </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% else %}
-                    <div class="alert alert-info shadow-lg uppercase"> {# ADDED uppercase CLASS #}
-                        <div>
-                            <i data-feather="info" class="w-6 h-6"></i>
-                            <span>NO PAYMENTS RECORDED FOR THIS FAMILY YET.</span>
-                        </div>
-                    </div>
-                {% endif %}
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center p-4 uppercase">NO PAYMENTS RECORDED FOR THIS FAMILY YET.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </div>
+        </div>{# End of Mobile Accordion Container #}
 
     </div>
 </div>
@@ -205,23 +319,64 @@
 <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        console.log("DOM Content Loaded. Initializing Feather icons.");
         feather.replace(); // Initialize feather icons
 
-        // Toggle functionality for info cards
+        // Toggle for Family Information Card
         const toggleCard = (toggleId, contentId) => {
             const toggleBtn = document.getElementById(toggleId);
             const content = document.getElementById(contentId);
             if (toggleBtn && content) {
-                toggleBtn.style.cursor = 'pointer'; // Ensure cursor indicates interactivity
+                toggleBtn.style.cursor = 'pointer';
                 toggleBtn.addEventListener('click', function() {
                     content.classList.toggle('hidden');
+                    console.log(`Toggled visibility for ${contentId}`);
                 });
+            } else {
+                console.warn(`Toggle elements not found for ${toggleId} and ${contentId}`);
+            }
+        };
+        toggleCard('familyInfoToggle', 'familyInfoContent');
+        
+        // --- Desktop Tab Logic ---
+        const membersTab = document.getElementById('membersTab');
+        const financeTab = document.getElementById('financeTab');
+        const membersContent = document.getElementById('membersContent');
+        const financeContent = document.getElementById('financeContent');
+
+        // Function to handle tab clicks
+        const activateTab = (activeTab, activeContent, inactiveTab, inactiveContent) => {
+            if (activeTab && activeContent) {
+                activeTab.classList.add('tab-active');
+                activeContent.classList.remove('hidden');
+            }
+            if (inactiveTab && inactiveContent) {
+                inactiveTab.classList.remove('tab-active');
+                inactiveContent.classList.add('hidden');
             }
         };
 
-        toggleCard('familyInfoToggle', 'familyInfoContent');
-        toggleCard('membersToggle', 'membersContent');
-        toggleCard('financeToggle', 'financeContent');
+        // Set initial active tab on page load (Members Tab by default)
+        if (window.innerWidth >= 768) { // Only apply desktop tab logic on desktop screens
+            activateTab(membersTab, membersContent, financeTab, financeContent);
+            console.log("Desktop tabs initialized. Members tab active by default.");
+        }
+
+        // Add event listeners for tab clicks
+        if (membersTab) {
+            membersTab.addEventListener('click', () => {
+                activateTab(membersTab, membersContent, financeTab, financeContent);
+                console.log("Members tab clicked and activated.");
+            });
+        }
+        if (financeTab) {
+            financeTab.addEventListener('click', () => {
+                activateTab(financeTab, financeContent, membersTab, membersContent);
+                console.log("Finance tab clicked and activated.");
+            });
+        }
+
+        console.log("Initial load complete for family_detail.html.");
     });
 </script>
 {% endblock %}

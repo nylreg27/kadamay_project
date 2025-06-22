@@ -11,14 +11,16 @@
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div class="flex items-center gap-2">
                     <div class="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
-                        <i data-feather="user" class="w-5 h-5 text-primary"></i>
+                        {# ICON SIZE CHANGED FROM w-5 h-5 to w-4.5 h-4.5 #}
+                        <i data-feather="user" class="w-4.5 h-4.5 text-primary"></i>
                     </div>
                     <h1 class="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-                        Profile Settings
+                        Profile
                     </h1>
                 </div>
                 <a href="{% url 'report:dashboard' %}" class="btn btn-ghost btn-sm hover:bg-base-200/50 transition-colors">
-                    <i data-feather="arrow-left" class="w-3.5 h-3.5 mr-1.5"></i> Back to Dashboard
+                    {# ICON SIZE CHANGED FROM w-3.5 h-3.5 to w-3 h-3 #}
+                    <i data-feather="arrow-left" class="w-3 h-3 mr-1.5"></i> Back to Dashboard
                 </a>
             </div>
         </div>
@@ -29,7 +31,8 @@
             {# Combined non-field errors from both forms #}
             {% if profile_form.non_field_errors or user_form.non_field_errors %}
             <div class="alert alert-error bg-base-200/50 border border-error/20 text-error-content rounded-lg p-3 flex items-start gap-2 text-sm">
-                <i data-feather="alert-circle" class="w-4 h-4 mt-0.5"></i>
+                {# ICON SIZE CHANGED FROM w-4 h-4 to w-3.5 h-3.5 #}
+                <i data-feather="alert-circle" class="w-3.5 h-3.5 mt-0.5"></i>
                 <div>
                     {% for error in profile_form.non_field_errors %}
                     <p>{{ error }}</p>
@@ -42,11 +45,12 @@
             {% endif %}
 
             {# NEW: Grid container for Theme and Profile Picture Sections #}
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4"> {# Added gap-x-6 and gap-y-4 for spacing between these two sections #}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                 <section class="space-y-3">
                     <div class="flex items-center gap-2 mb-3">
                         <div class="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <i data-feather="sun" class="w-4.5 h-4.5 text-primary"></i>
+                            {# ICON SIZE CHANGED FROM w-4.5 h-4.5 to w-4 h-4 #}
+                            <i data-feather="sun" class="w-4 h-4 text-primary"></i>
                         </div>
                         <h2 class="text-lg font-semibold text-base-content">Theme Preferences</h2>
                     </div>
@@ -59,7 +63,8 @@
                             {# Use profile_form.theme #}
                             {% render_field profile_form.theme class="select select-bordered select-sm w-full bg-base-200/50 focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-lg" %}
                             <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none text-base-content/40">
-                                <i data-feather="chevron-down" class="w-3.5 h-3.5"></i>
+                                {# ICON SIZE CHANGED FROM w-3.5 h-3.5 to w-3 h-3 #}
+                                <i data-feather="chevron-down" class="w-3 h-3"></i>
                             </div>
                         </div>
                         {% if profile_form.theme.help_text %}
@@ -70,7 +75,8 @@
                         {% if profile_form.theme.errors %}
                             <label class="label">
                                 <span class="label-text-alt text-error text-xs flex items-center gap-1">
-                                    <i data-feather="alert-circle" class="w-3 h-3"></i>
+                                    {# ICON SIZE CHANGED FROM w-3 h-3 to w-2.5 h-2.5 #}
+                                    <i data-feather="alert-circle" class="w-2.5 h-2.5"></i>
                                     {% for error in profile_form.theme.errors %}{{ error }}{% endfor %}
                                 </span>
                             </label>
@@ -81,13 +87,14 @@
                 <section class="space-y-3">
                     <div class="flex items-center gap-2 mb-3">
                         <div class="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <i data-feather="image" class="w-4.5 h-4.5 text-primary"></i>
+                            {# ICON SIZE CHANGED FROM w-4.5 h-4.5 to w-4 h-4 #}
+                            <i data-feather="image" class="w-4 h-4 text-primary"></i>
                         </div>
                         <h2 class="text-lg font-semibold text-base-content">Profile Picture</h2>
                     </div>
 
                     {# Inner layout for Profile Picture: Upload on left, Current Picture on right #}
-                    <div class="grid grid-cols-1 gap-y-4"> {# Removed md:flex-row and gap-5 to simplify. Use inner grid. #}
+                    <div class="grid grid-cols-1 gap-y-4">
                         {# Upload New Picture Column #}
                         <div class="col-span-1">
                             <div class="form-control w-full">
@@ -96,8 +103,7 @@
                                 </label>
                                 
                                 <input type="file" name="{{ profile_form.profile_picture.name }}" id="{{ profile_form.profile_picture.id_for_label }}"
-                                    class="file-input file-input-bordered file-input-sm w-full bg-base-200/50 border-2 border-base-300 focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-lg text-sm text-base-content" {# ADDED border-2 and border-base-300 #}
-                                    {% if profile_form.profile_picture.field.required %}required{% endif %}>
+                                    class="file-input file-input-bordered file-input-sm w-full bg-base-200/50 border-2 border-base-300 focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-lg text-sm text-base-content">
 
                                 {% comment %} Removed the 'Currently:' text as requested {% endcomment %}
 
@@ -109,7 +115,8 @@
                                 {% if profile_form.profile_picture.errors %}
                                     <label class="label">
                                         <span class="label-text-alt text-error text-xs flex items-center gap-1">
-                                            <i data-feather="alert-circle" class="w-3 h-3"></i>
+                                            {# ICON SIZE CHANGED FROM w-3 h-3 to w-2.5 h-2.5 #}
+                                            <i data-feather="alert-circle" class="w-2.5 h-2.5"></i>
                                             {% for error in profile_form.profile_picture.errors %}{{ error }}{% endfor %}
                                         </span>
                                     </label>
@@ -123,18 +130,19 @@
                             <div class="form-control w-full">
                                 <p class="label-text text-base-content/80 text-sm font-medium mb-1">Current Picture:</p>
                                 {# Current Picture Image #}
-                                <div class="relative group w-24 h-24 mx-auto md:mx-0 mb-2"> {# Added mb-2 for spacing #}
+                                <div class="relative group w-24 h-24 mx-auto md:mx-0 mb-2">
                                     <img src="{{ user.profile.profile_picture.url }}" 
                                         alt="Profile" 
                                         class="w-full h-full rounded-lg object-cover border border-base-200/50 shadow-md 
-                                                transition-all duration-300 group-hover:shadow-lg group-hover:scale-105">
+                                               transition-all duration-300 group-hover:shadow-lg group-hover:scale-105">
                                     <div class="absolute inset-0 bg-black/20 rounded-lg opacity-0 group-hover:opacity-100 
                                                 transition-opacity flex items-center justify-center">
-                                        <i data-feather="eye" class="w-5 h-5 text-white"></i>
+                                        {# ICON SIZE CHANGED FROM w-5 h-5 to w-4 h-4 #}
+                                        <i data-feather="eye" class="w-4 h-4 text-white"></i>
                                     </div>
                                 </div>
                                 {# Clear existing checkbox moved below the image #}
-                                <label class="label cursor-pointer p-0 flex items-center gap-1.5 justify-center md:justify-start"> {# Center for mobile, left-align for desktop #}
+                                <label class="label cursor-pointer p-0 flex items-center gap-1.5 justify-center md:justify-start">
                                     {{ profile_form.profile_picture.clear_field|add_class:"checkbox checkbox-primary checkbox-sm border-base-300 rounded-sm" }}
                                     <span class="label-text text-base-content/80 text-sm">Clear existing picture</span>
                                 </label>
@@ -143,23 +151,21 @@
                         {% endif %}
                     </div>
                 </section>
-            </div> {# End of NEW Grid container for Theme and Profile Picture Sections #}
 
 
             <section class="space-y-3">
                 <div class="flex items-center gap-2 mb-3">
                     <div class="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <i data-feather="info" class="w-4.5 h-4.5 text-primary"></i>
+                        {# ICON SIZE CHANGED FROM w-4.5 h-4.5 to w-4 h-4 #}
+                        <i data-feather="info" class="w-4 h-4 text-primary"></i>
                     </div>
                     <h2 class="text-lg font-semibold text-base-content">Personal Details</h2>
                 </div>
 
-                {# Changed gap-4 to gap-x-4 gap-y-2 to reduce vertical spacing #}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
                     {# Editable fields: First Name, Last Name, Email - from user_form #}
-                    {% for field in user_form %} {# NOW CORRECTLY ITERATING user_form #}
+                    {% for field in user_form %}
                         <div class="form-control w-full">
-                            {# Changed label py-1 to py-0 and added mb-0.5 to reduce label spacing #}
                             <label class="label py-0 mb-0.5" for="{{ field.id_for_label }}">
                                 <span class="label-text text-base-content/80 text-sm font-medium">{{ field.label }}</span>
                                 {% if field.field.required %}
@@ -180,7 +186,8 @@
                             {% if field.errors %}
                             <label class="label py-0 mt-0.5">
                                 <span class="label-text-alt text-error text-xs flex items-center gap-1">
-                                    <i data-feather="alert-circle" class="w-3 h-3"></i>
+                                    {# ICON SIZE CHANGED FROM w-3 h-3 to w-2.5 h-2.5 #}
+                                    <i data-feather="alert-circle" class="w-2.5 h-2.5"></i>
                                     {% for error in field.errors %}{{ error }}{% endfor %}
                                 </span>
                             </label>
@@ -209,7 +216,8 @@
 
             <div class="flex justify-end pt-5 border-t border-base-200/50 mt-6">
                 <button type="submit" class="btn btn-primary btn-sm hover:scale-105 transition-transform shadow-lg hover:shadow-xl">
-                    <i data-feather="save" class="w-4 h-4 mr-1.5"></i>
+                    {# ICON SIZE CHANGED FROM w-4 h-4 to w-3.5 h-3.5 #}
+                    <i data-feather="save" class="w-3.5 h-3.5 mr-1.5"></i>
                     Save Changes
                 </button>
             </div>

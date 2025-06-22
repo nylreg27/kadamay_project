@@ -13,7 +13,7 @@ from apps.individual.models import Individual
 from apps.payment.models import Payment
 from .forms import FamilyForm
 from django.db.models.functions import Coalesce
-
+from apps.payment.models import CoveredMember
 
 class FamilyListView(LoginRequiredMixin, ListView):
     model = Family
@@ -108,8 +108,8 @@ class FamilyDetailView(LoginRequiredMixin, DetailView):
         total_allocated_to_family_members = CoveredMember.objects.filter(
             individual__family=family
         ).aggregate(
-            total_sum=Coalesce(Sum('amount_allocated'), Decimal(
-                '0.00'), output_field=DecimalField())  # Use 'amount_allocated'
+            total_sum=Coalesce(Sum('amount_covered'), Decimal(
+                '0.00'), output_field=DecimalField())  # Use 'amount_covered'
         )['total_sum']
         context['total_allocated_to_family_members'] = total_allocated_to_family_members
 

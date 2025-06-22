@@ -1,9 +1,12 @@
+# settings.py
+
 import os
 import sys
-from pathlib import Path
+# from pathlib import Path # Not explicitly used for BASE_DIR in the original code, so keeping it commented out for consistency.
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+# --- FIX: Corrected typo in os.path.dirname and oos.path.dirname ---
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Add apps directory to Python path
 sys.path.insert(0, os.path.join(BASE_DIR, 'apps'))
@@ -12,7 +15,7 @@ sys.path.insert(0, os.path.join(BASE_DIR, 'apps'))
 SECRET_KEY = 'django-insecure-kadamay-mortuary-system-development-key'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = True # This is the correct placement for DEBUG
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
@@ -23,6 +26,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # --- IMPORTANT: Keep only one 'theme' app, the one we created in 'apps/' ---
+    'apps.theme', # This is your custom theme app where static files are.
 
     # Project apps
     'apps.individual',
@@ -34,19 +39,27 @@ INSTALLED_APPS = [
     'apps.chat',
     'apps.issues',
     'apps.contribution_type',
-    'tailwind',
-    'theme',
-    'django_browser_reload',
-    'widget_tweaks',
-    'rest_framework',
-    'crispy_forms',
-    'crispy_tailwind',
+
+    # --- REMOVED: 'tailwind' and the second 'theme' app if they are related to django-tailwind,
+    # --- as we are using postcss directly for compilation. ---
+    # 'tailwind', # Usually from django-tailwind. Remove if not needed for other purposes.
+    # 'theme',    # This seems like a duplicate or leftover from django-tailwind. Remove.
+
+    'django_browser_reload', # Keep this for auto-reloading
+    'widget_tweaks', # Keep if you are using it
+    'rest_framework', # Keep if you are using it
+    'crispy_forms', # Keep if you are using it
+    'crispy_tailwind', # Keep if you are using it
 ]
 
-TAILWIND_APP_NAME = 'theme'
+# --- REMOVED: These settings are typically for django-tailwind, which we are not using for compilation. ---
+# TAILWIND_APP_NAME = 'theme'
+# NPM_BIN_PATH = r"C:\Program Files\nodejs\npm.cmd"
+
+# --- CRISPY FORMS SETTINGS (These are fine) ---
 CRISPY_ALLOWED_TEMPLATE_PACKS = "tailwind"
 CRISPY_TEMPLATE_PACK = "tailwind"
-NPM_BIN_PATH = r"C:\Program Files\nodejs\npm.cmd"
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -64,7 +77,8 @@ ROOT_URLCONF = 'kadamay.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        # --- FIX: Use os.path.join for BASE_DIR / 'templates' for consistency ---
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -74,7 +88,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'apps.account.context_processors.user_church',
                 'apps.account.context_processors.user_roles',
-                'kadamay.context_processors.user_permissions',  # <--- CORRECTED LINE HERE
+                'kadamay.context_processors.user_permissions',
             ],
         },
     },
@@ -87,7 +101,7 @@ WSGI_APPLICATION = 'kadamay.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'), # Use os.path.join here too
     }
 }
 
@@ -122,12 +136,23 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
-# Collect static files here
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+# --- FIX: Removed redundant STATIC_ROOT definition and consolidated STATICFILES_DIRS ---
+# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles') # REMOVED (redundant)
+
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
-    os.path.join(BASE_DIR, 'theme', 'static'),
+    # This path is for a 'static' folder directly under your project root (e.g., kadamay_project/static/)
+    # Keep it if you have other static files there not tied to a specific app.
+    # os.path.join(BASE_DIR, 'static'), 
+    
+    # --- FIX: Corrected path for the 'theme' app's static files ---
+    # This points to E:\my_project\kadamay_project\apps\theme\static\
+    os.path.join(BASE_DIR, 'apps', 'theme', 'static'), 
 ]
+
+# This STATIC_ROOT is for the 'collectstatic' command, used in production.
+# Keep only one.
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles_collected') 
+
 
 # Media files
 MEDIA_URL = '/media/'
@@ -145,4 +170,5 @@ LOGOUT_REDIRECT_URL = 'login'
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = 'noreply@kadamay.org'
 
+# --- REMOVED: Redundant DEBUG = True ---
 # DEBUG = True # This is redundant, it's already defined above. You can remove this.

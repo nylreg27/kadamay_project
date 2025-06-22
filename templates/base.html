@@ -1,12 +1,11 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en" data-theme="{{ request.user.profile.theme|default:'corporate' }}">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %}Kadamay Mortuary System{% endblock %}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@4.10.1/dist/full.min.css" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" rel="stylesheet" />
+    <link href="{% static 'output.css' %}" rel="stylesheet">
     <script src="https://unpkg.com/feather-icons"></script> 
     
     {% block extra_css %}{% endblock %}
