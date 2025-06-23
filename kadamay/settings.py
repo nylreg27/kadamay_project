@@ -16,7 +16,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 CSRF_TRUSTED_ORIGINS = ['http://localhost', 'http://127.0.0.1',
-                        'http://127.0.0.1:8000/', 'http://localhost:8000/']
+                         'http://127.0.0.1:8000/', 'http://localhost:8000/']
 
 
 # Application definition
@@ -34,18 +34,19 @@ INSTALLED_APPS = [
     'apps.church',
     'apps.family',
     'apps.payment',
-    'apps.account',     # This is 'apps.account' because it's in the 'apps' folder
+    'apps.account',
     'apps.report',
     'apps.chat',
     'apps.issues',
     'apps.contribution_type',
 
     # Third-party apps
-    'django_browser_reload',
+  #  'django_browser_reload',
     'widget_tweaks',
     'rest_framework',
     'crispy_forms',
     'crispy_tailwind',
+    # 'django_tailwind', # Removed as we manually compile Tailwind CSS
 ]
 
 MIDDLEWARE = [
@@ -56,7 +57,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'django_browser_reload.middleware.BrowserReloadMiddleware',  # For browser auto-reload
+   # 'django_browser_reload.middleware.BrowserReloadMiddleware',  # For browser auto-reload
 ]
 
 ROOT_URLCONF = 'kadamay.urls'
@@ -66,9 +67,8 @@ ROOT_URLCONF = 'kadamay.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        # Added your templates folder here if it's not already
-        'DIRS': [BASE_DIR / 'templates'],
-        'APP_DIRS': True,
+        'DIRS': [BASE_DIR / 'templates'], # This is good for project-level templates
+        'APP_DIRS': True, # This tells Django to look in app_name/templates
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
@@ -76,7 +76,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'apps.account.context_processors.user_church',
-                'apps.account.context_processors.user_permissions_context',  # Use the new name here
+                'apps.account.context_processors.user_permissions_context',
             ],
         },
     },
@@ -131,11 +131,14 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = '/static/'
-# Where collectstatic will put files
+# Where collectstatic will put files in production (should be outside project root)
 STATIC_ROOT = BASE_DIR / 'staticfiles_collected'
 
+# Tell Django where to look for additional static files during development
 STATICFILES_DIRS = [
-    BASE_DIR / 'theme' / 'static',  # <--- Para sa static files sa theme app
+    BASE_DIR / 'static', # <--- AKOA GI-ADD NI PARA MA-APIL ANG IMONG ROOT STATIC FOLDER
+    BASE_DIR / 'theme' / 'static', # This is for static files specific to your 'theme' app/folder
+    # You can add more paths here if you have other project-level static folders
 ]
 
 MEDIA_URL = '/media/'
@@ -153,8 +156,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Login/Logout Redirect URLs
 LOGIN_URL = 'account:login'  # Name of the login URL
 LOGIN_REDIRECT_URL = 'home'  # Name of the URL to redirect to after successful login
-# Name of the URL to redirect to after logout
-LOGOUT_REDIRECT_URL = 'account:login'
+LOGOUT_REDIRECT_URL = 'account:login' # Name of the URL to redirect to after logout
 
 # Crispy Forms
 CRISPY_ALLOWED_TEMPLATE_PACKS = 'tailwind'

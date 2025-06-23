@@ -1,19 +1,19 @@
 # apps/individual/views.py
 
 from django.views.generic import (
-    # NEW: Import View for API
     CreateView, DetailView, ListView, UpdateView, DeleteView, View
 )
 from django.urls import reverse_lazy
 from django.db.models import Q
-from django.http import JsonResponse  # NEW: Import JsonResponse for API output
-import json  # Not directly used but often helpful for JSON manipulation
+from django.http import JsonResponse
+import json
 
 from apps.individual.models import Individual
 from apps.church.models import Church
 from apps.family.models import Family
+# Import PaymentCoveredMember (assuming this is the class name you're using)
+from apps.payment.models import PaymentCoveredMember, Payment
 from apps.individual.forms import IndividualForm
-# FIX: Ensure UserPassesTestMixin is imported here
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.shortcuts import get_object_or_404
 
@@ -118,11 +118,12 @@ class IndividualDetailView(DetailView):
 
     def get_queryset(self):
         queryset = Individual.objects.all().prefetch_related(
-            'payments_made__contribution_type', # Corrected from 'payments'
-            'payments_made__church',             # Corrected from 'payments'
-            'covered_payments',
-            'covered_payments__payment__contribution_type',
-            'covered_payments__payment__church'
+            'payments_made__contribution_type',
+            'payments_made__church', # Note: The Payment model doesn't directly link to Church in your provided models.py. This might cause issues later if not handled.
+            # ETO NA ANG SAKTO NA RELATED_NAME!
+            'paymentcoveredmember_set',
+            'paymentcoveredmember_set__payment__contribution_type',
+            'paymentcoveredmember_set__payment__church' # Note: The Payment model doesn't directly link to Church in your provided models.py. This might cause issues later if not handled.
         )
         return queryset
 
@@ -133,29 +134,30 @@ class IndividualDetailView(DetailView):
         combined_payments = []
 
         # The loop below now correctly accesses 'payments_made'
-        for payment in individual.payments_made.all(): # Corrected from 'payments'
+        for payment in individual.payments_made.all():
             combined_payments.append({
                 'payment_type': 'Direct Payment',
-                'receipt_number': payment.or_number, # Assuming receipt_number is now or_number based on models.py
+                'receipt_number': payment.or_number,
                 'amount': payment.amount,
-                'allocated_amount': payment.amount,
+                'allocated_amount': payment.amount, # Amount from the direct payment
                 'date_paid': payment.date_paid,
                 'contribution_type_name': payment.contribution_type.name if payment.contribution_type else 'N/A',
-                'payment_status_display': payment.get_status_display(), # Changed from get_payment_status_display
+                'payment_status_display': payment.get_status_display(),
                 'primary_payer_name': individual.full_name,
                 'primary_payer_id': individual.pk,
                 'payment_id': payment.pk,
             })
 
-        for allocation in individual.covered_payments.all():
+        # ETO NA ANG SAKTO NA RELATED_NAME!
+        for allocation in individual.paymentcoveredmember_set.all():
             combined_payments.append({
                 'payment_type': 'Allocation',
-                'receipt_number': allocation.payment.or_number, # Assuming receipt_number is now or_number
+                'receipt_number': allocation.payment.or_number,
                 'amount': allocation.payment.amount,
-                'allocated_amount': allocation.allocated_amount,
+                'allocated_amount': allocation.amount_covered, # Here we access amount_covered from the allocation object
                 'date_paid': allocation.payment.date_paid,
                 'contribution_type_name': allocation.payment.contribution_type.name if allocation.payment.contribution_type else 'N/A',
-                'payment_status_display': allocation.payment.get_status_display(), # Changed from get_payment_status_display
+                'payment_status_display': allocation.payment.get_status_display(),
                 'primary_payer_name': allocation.payment.individual.full_name if allocation.payment.individual else 'N/A',
                 'primary_payer_id': allocation.payment.individual.pk if allocation.payment.individual else None,
                 'payment_id': allocation.payment.pk,
@@ -250,7 +252,7 @@ class IndividualSearchAPIView(View):
                 Q(middle_name__icontains=query) |
                 Q(surname__icontains=query) |
                 Q(membership_id__icontains=query)
-            ).distinct()[:20]  # Limit results to top 20 for performance
+            ).distinct()[:20] # Limit results to top 20 for performance
 
             for individual in results:
                 individuals.append({

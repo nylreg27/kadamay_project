@@ -9,7 +9,7 @@ from django.views.generic import (
 from django.contrib.auth.mixins import UserPassesTestMixin, LoginRequiredMixin
 from django.contrib import messages
 from django import forms
-
+from django.db import transaction
 from .models import Profile
 from .forms import ProfileThemeForm, UserDetailsForm, StyledUserCreationForm, UserLoginForm
 

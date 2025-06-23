@@ -42,7 +42,7 @@
                             {% endif %}
                         </td>
                         <td class="px-5 py-3 text-center space-x-2 whitespace-nowrap"> {# Reduced space-x for btn-xs #}
-                            <a href="{% url 'account:user_edit' user.id %}" class="btn btn-sm btn-info" title="Edit User">
+                            <a href="{% url 'account:user_update' user.id %}" class="btn btn-sm btn-info" title="Edit User">
                                 <i data-feather="edit" class="w-4 h-4"></i> {# Added feather icon #}
                             </a>
                             <a href="{% url 'account:user_delete' user.id %}" class="btn btn-sm btn-error" title="Delete User">

@@ -13,7 +13,7 @@ from apps.individual.models import Individual
 from apps.payment.models import Payment
 from .forms import FamilyForm
 from django.db.models.functions import Coalesce
-from apps.payment.models import CoveredMember
+from apps.payment.models import PaymentCoveredMember
 
 class FamilyListView(LoginRequiredMixin, ListView):
     model = Family

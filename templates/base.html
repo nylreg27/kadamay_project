@@ -1,4 +1,4 @@
-{% load static %}
+{% load static %} {# Siguraduhon nga naa ni sa ibabaw #}
 <!DOCTYPE html>
 <html lang="en" data-theme="{{ request.user.profile.theme|default:'corporate' }}">
 <head>
@@ -22,7 +22,11 @@
     {# Mobile Header #}
     <header class="lg:hidden navbar bg-base-100 shadow-md z-50 fixed top-0 w-full">
         <div class="flex-1">
-            <a class="btn btn-ghost normal-case text-xl">Kadamay Mortuary</a>
+            {# MOBILE LOGO HERE - USING STATIC #}
+            <a class="btn btn-ghost normal-case text-xl" href="{% url 'report:dashboard' %}">
+                <img src="{% static 'image/logo.jpg' %}" alt="Kadamay Logo" class="h-10 w-auto rounded-md">
+                <span class="ml-2">Kadamay Mortuary</span>
+            </a>
         </div>
         <div class="flex-none">
             <button class="btn btn-square btn-ghost" onclick="document.getElementById('drawer-toggle').checked = true;">
@@ -43,7 +47,10 @@
                     <button class="btn btn-square btn-ghost mr-2" onclick="document.getElementById('drawer-toggle').checked = !document.getElementById('drawer-toggle').checked;">
                         <i data-feather="menu"></i>
                     </button>
-                    <a class="btn btn-ghost text-xl">Kadamay Mortuary System</a>
+                    <a class="btn btn-ghost text-xl" href="{% url 'report:dashboard' %}">
+                        <img src="{% static 'image/logo.jpg' %}" alt="Kadamay Logo" class="h-10 w-auto rounded-md">
+                        <span class="ml-2">Kadamay Mortuary System</span>
+                    </a>
                 </div>
                 <div class="flex-none gap-2">
                     <div class="dropdown dropdown-end">
@@ -138,12 +145,12 @@
                                         <input type="file" class="file-input file-input-bordered w-full" name="{{ field.name }}" id="{{ field.id_for_label }}" {% if field.field.required %}required{% endif %}>
                                     {% else %}
                                         <input type="{{ field.field.widget.input_type }}" 
-                                                    class="input input-bordered w-full {% if field.errors %}input-error{% endif %}" 
-                                                    name="{{ field.name }}" 
-                                                    id="{{ field.id_for_label }}" 
-                                                    value="{{ field.value|default_if_none:'' }}" 
-                                                    placeholder="{{ field.field.widget.attrs.placeholder|default:'' }}"
-                                                    {% if field.field.required %}required{% endif %}>
+                                                 class="input input-bordered w-full {% if field.errors %}input-error{% endif %}" 
+                                                 name="{{ field.name }}" 
+                                                 id="{{ field.id_for_label }}" 
+                                                 value="{{ field.value|default_if_none:'' }}" 
+                                                 placeholder="{{ field.field.widget.attrs.placeholder|default:'' }}"
+                                                 {% if field.field.required %}required{% endif %}>
                                     {% endif %}
                                     
                                     {% if field.help_text %}
@@ -193,7 +200,10 @@
                     <button class="btn btn-ghost btn-circle" onclick="document.getElementById('drawer-toggle').checked = false;">
                         <i data-feather="x"></i>
                     </button>
-                    <a class="btn btn-ghost normal-case text-xl">Kadamay Mortuary</a>
+                    <a class="btn btn-ghost normal-case text-xl" href="{% url 'report:dashboard' %}">
+                        <img src="{% static 'image/logo.jpg' %}" alt="Kadamay Logo" class="h-10 w-auto rounded-md">
+                        <span class="ml-2">Kadamay Mortuary</span>
+                    </a>
                 </li>
                 
                 {% if user.is_authenticated %}
@@ -210,7 +220,7 @@
                             <p class="font-semibold">{{ user.get_full_name|default:user.username }}</p>
                             {# NOTE: Assuming you have a get_role_display method on your User model or profile. #}
                             {# If not, you might need to define how roles are displayed (e.g., from user.assigned_church.first.role) #}
-                            <p class="text-sm text-base-content/80">{{ user.get_role_display }}</p>
+                            <p class="text-sm text-base-content/80">{{ user.profile.get_role_display }}</p>
                         </div>
                     </div>
                 </li>

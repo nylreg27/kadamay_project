@@ -2,26 +2,84 @@
 {% load widget_tweaks %}
 
 {% block content %}
+{# Alpine.js script - Ensure this is correctly loaded, ideally in base.html #}
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script> 
+
 <div class="max-w-xl mx-auto mt-10 bg-base-100 p-8 rounded-lg shadow-lg border border-base-300 text-base-content">
-    <h2 class="text-3xl font-bold mb-6 text-primary">Create New User</h2>
+    <h2 class="text-3xl font-bold mb-6 text-primary">
+        {# Dynamic title based on context_data from views.py #}
+        {% if page_title %}{{ page_title }}{% else %}User Form{% endif %}
+    </h2>
     <form method="post" novalidate>
         {% csrf_token %}
 
         {% for field in form %}
             <div class="mb-5">
-                <label for="{{ field.id_for_label }}" class="block text-base-content font-semibold mb-2">
-                    {{ field.label }}
-                    {% if field.field.required %}
-                        <span class="text-error">*</span> {# Changed to text-error for theme consistency #}
+                {# Remove this diagnostic line once confirmed working #}
+                {# <p class="text-warning text-xs">DEBUG: Field Name: {{ field.name }}</p> #}
+
+                {# Check if the field is a checkbox #}
+                {% if field.field.widget.input_type == 'checkbox' %}
+                    <div class="form-control flex-row items-center space-x-3"> {# DaisyUI form-control for checkboxes #}
+                        {# Apply DaisyUI checkbox classes #}
+                        {{ field|add_class:"checkbox checkbox-primary" }}
+                        <label for="{{ field.id_for_label }}" class="label cursor-pointer">
+                            <span class="label-text text-base-content font-semibold">{{ field.label }}</span>
+                        </label>
+                    </div>
+                    {% if field.help_text %}
+                        <p class="text-base-content/70 text-xs mt-1">{{ field.help_text }}</p>
                     {% endif %}
-                </label>
-                {# Using DaisyUI input classes for theme consistency #}
-                {{ field|add_class:"input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-primary" }}
-                {% if field.help_text %}
-                    <p class="text-base-content/70 text-xs mt-1">{{ field.help_text }}</p> {# Adjusted text color for theme #}
-                {% endif %}
-                {% if field.errors %}
-                    <p class="text-error text-sm mt-1">{{ field.errors }}</p> {# Changed to text-error #}
+                    {% if field.errors %}
+                        <p class="text-error text-sm mt-1">{{ field.errors }}</p>
+                    {% endif %}
+                {% else %}
+                    {# Render other input types (text, email, password, etc.) normally #}
+                    <label for="{{ field.id_for_label }}" class="block text-base-content font-semibold mb-2">
+                        {{ field.label }}
+                        {% if field.field.required %}
+                            <span class="text-error">*</span>
+                        {% endif %}
+                    </label>
+                    
+                    {# Special handling for password fields with Alpine.js #}
+                    {# CORRECTED: Now checks for 'password1' and 'password2' #}
+                    {% if field.name == 'password1' or field.name == 'password2' %}
+                        <div x-data="{ showHelp: false }" class="w-full"> {# Alpine.js scope for password field and its help text #}
+                            {# Render the input field manually to attach Alpine.js events #}
+                            <input 
+                                type="{{ field.field.widget.input_type }}" 
+                                id="{{ field.id_for_label }}" 
+                                name="{{ field.html_name }}" 
+                                class="input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-primary"
+                                x-on:focus="showHelp = true" {# Show help when input is focused #}
+                                x-on:blur="showHelp = false"  {# Hide help when input loses focus #}
+                                {% if field.value %}value="{{ field.value }}"{% endif %} {# Preserve value on update #}
+                                {% if field.field.required %}required{% endif %}
+                                {# Copy any other attributes from the field's widget attrs #}
+                                {% for attr, value in field.field.widget.attrs.items %}
+                                    {{ attr }}="{{ value }}"
+                                {% endfor %}
+                            >
+                            {% if field.help_text %}
+                                {# Use x-show on a div wrapping the help text, which will be a <ul> #}
+                                <div class="help-text text-base-content/70 text-xs mt-1" x-show="showHelp">
+                                    {{ field.help_text }}
+                                    {# Diagnostic: Remove this line once confirmed working #}
+                                    {# <span class="font-bold text-sm text-warning ml-2" x-text="showHelp ? 'Visible' : 'Hidden'"></span> #}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        {# Default for other text, email, number fields - use widget_tweaks #}
+                        {{ field|add_class:"input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-primary" }}
+                        {% if field.help_text %}
+                            <p class="text-base-content/70 text-xs mt-1">{{ field.help_text }}</p>
+                        {% endif %}
+                    {% endif %}
+                    {% if field.errors %}
+                        <p class="text-error text-sm mt-1">{{ field.errors }}</p>
+                    {% endif %}
                 {% endif %}
             </div>
         {% endfor %}

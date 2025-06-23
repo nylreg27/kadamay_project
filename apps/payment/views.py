@@ -17,9 +17,9 @@ from django.http import JsonResponse  # Para sa API views
 from django.db.models import Q
 
 # Import ang Payment at CoveredMember models (KEEP THESE HERE, these are local to payment app)
-from .models import Payment, CoveredMember
+from .models import Payment, PaymentCoveredMember
 # Import ang PaymentForm at CoveredMemberFormSet (KEEP THESE HERE, these are local to payment app)
-from .forms import CoveredMemberFormSet, PaymentForm
+from .forms import PaymentCoveredMemberFormSet, PaymentForm
 
 
 # --- Helper Function: OR Number Generation ---
@@ -195,11 +195,11 @@ class PaymentCreateView(LoginRequiredMixin, KadamayRoleRequiredMixin, CreateView
         context = super().get_context_data(**kwargs)
         if self.request.POST:
             # If the form was submitted, use submitted data for formset
-            context['covered_member_formset'] = CoveredMemberFormSet(
+            context['covered_member_formset'] = PaymentCoveredMemberFormSet(
                 self.request.POST, instance=self.object)
         else:
             # Otherwise, create an empty formset for new entry
-            context['covered_member_formset'] = CoveredMemberFormSet(
+            context['covered_member_formset'] = PaymentCoveredMemberFormSet(
                 instance=self.object)
 
         # Pass the next generated OR number to the template/form
@@ -268,10 +268,10 @@ class PaymentUpdateView(LoginRequiredMixin, KadamayRoleRequiredMixin, UpdateView
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.request.POST:
-            context['covered_member_formset'] = CoveredMemberFormSet(
+            context['covered_member_formset'] = PaymentCoveredMemberFormSet(
                 self.request.POST, instance=self.object)
         else:
-            context['covered_member_formset'] = CoveredMemberFormSet(
+            context['covered_member_formset'] = PaymentCoveredMemberFormSet(
                 instance=self.object)
         return context
 

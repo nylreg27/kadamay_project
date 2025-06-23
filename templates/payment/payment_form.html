@@ -43,18 +43,6 @@
                     {% if form.individual.errors %}<div class="text-error text-sm mt-1">{{ form.individual.errors }}</div>{% endif %}
                 </div>
 
-                <div>
-                    {{ form.church|as_crispy_field }}
-                </div>
-                <div>
-                    {{ form.contribution_type|as_crispy_field }}
-                </div>
-                <div>
-                    {{ form.amount_paid|as_crispy_field }}
-                </div>
-                <div>
-                    {{ form.payment_method|as_crispy_field }}
-                </div>
                 <div id="gcash-ref-container" style="display: none;"> {# This container will be toggled by JS #}
                     {{ form.gcash_reference_number|as_crispy_field }}
                 </div>
@@ -64,7 +52,7 @@
             </div>
             
             <div class="mt-4">
-                {{ form.notes|as_crispy_field }}
+                
             </div>
 
             <h3 class="text-xl font-semibold mt-6 mb-3">Covered Members</h3>
