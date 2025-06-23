@@ -1,22 +1,24 @@
 {% extends "base.html" %}
+{% load static %} {# Make sure static files can be loaded, especially for images #}
 
 {% block content %}
-<div class="container mx-auto p-4 mt-8 lg:mt-4">
+{# Main content wrapper to ensure all text within is readable on the current theme background #}
+<div class="container mx-auto p-4 mt-8 lg:mt-4 text-base-content">
     {# Header with title and filter #}
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-        <h1 class="text-3xl font-bold text-base-content">{{ title }}</h1>
+        <h1 class="text-3xl font-bold text-base-content">{{ title }}</h1> {# Already has text-base-content #}
         
         <form action="{% url 'report:dashboard' %}" method="get" class="w-full md:w-auto">
             <div class="join">
-                <label for="church-select" class="join-item btn btn-ghost bg-base-200">
+                <label for="church-select" class="join-item btn btn-ghost bg-base-200 text-base-content">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
                     <span class="ml-2">Church:</span>
                 </label>
-                <select name="church" id="church-select" class="select select-bordered join-item w-full md:w-64" onchange="this.form.submit()">
+                <select name="church" id="church-select" class="select select-bordered join-item w-full md:w-64 text-base-content" onchange="this.form.submit()">
                     <option value="">All Churches</option>
-                    {% for church_obj in churches %}
+                    {% for church_obj in churches %} {# Uses 'churches' from context #}
                     <option value="{{ church_obj.id }}" {% if selected_church|stringformat:"s" == church_obj.id|stringformat:"s" %}selected{% endif %}>
                         {{ church_obj.name }}
                     </option>
@@ -39,13 +41,13 @@
                 <div class="flex items-center gap-4">
                     <div class="rounded-full bg-primary/10 p-3">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                         </svg>
                     </div>
                     <div>
-                        <h2 class="text-lg font-semibold opacity-70">Total Families</h2>
-                        <p class="text-2xl font-bold">{{ total_families }}</p>
-                        <p class="text-sm opacity-50">All registered families</p>
+                        <h2 class="text-lg font-semibold opacity-70 text-base-content">Total Families</h2> {# Added text-base-content #}
+                        <p class="text-2xl font-bold text-base-content">{{ total_families }}</p> {# Added text-base-content #}
+                        <p class="text-sm opacity-50 text-base-content">All registered families</p> {# Added text-base-content #}
                     </div>
                 </div>
             </div>
@@ -56,13 +58,13 @@
                 <div class="flex items-center gap-4">
                     <div class="rounded-full bg-secondary/10 p-3">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
                     </div>
                     <div>
-                        <h2 class="text-lg font-semibold opacity-70">Total Members</h2>
-                        <p class="text-2xl font-bold">{{ total_members }}</p>
-                        <p class="text-sm opacity-50">Includes all individuals</p>
+                        <h2 class="text-lg font-semibold opacity-70 text-base-content">Total Members</h2> {# Added text-base-content #}
+                        <p class="text-2xl font-bold text-base-content">{{ total_members }}</p> {# Added text-base-content #}
+                        <p class="text-sm opacity-50 text-base-content">Includes all individuals</p> {# Added text-base-content #}
                     </div>
                 </div>
             </div>
@@ -73,13 +75,13 @@
                 <div class="flex items-center gap-4">
                     <div class="rounded-full bg-accent/10 p-3">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                         </svg>
                     </div>
                     <div>
-                        <h2 class="text-lg font-semibold opacity-70">Total Churches</h2>
-                        <p class="text-2xl font-bold">{{ total_churches }}</p>
-                        <p class="text-sm opacity-50">Active churches registered</p>
+                        <h2 class="text-lg font-semibold opacity-70 text-base-content">Total Churches</h2> {# Added text-base-content #}
+                        <p class="text-2xl font-bold text-base-content">{{ total_churches }}</p> {# Added text-base-content #}
+                        <p class="text-sm opacity-50 text-base-content">Active churches registered</p> {# Added text-base-content #}
                     </div>
                 </div>
             </div>
@@ -90,13 +92,13 @@
                 <div class="flex items-center gap-4">
                     <div class="rounded-full bg-info/10 p-3">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-info" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
                     <div>
-                        <h2 class="text-lg font-semibold opacity-70">Total Contributions</h2>
-                        <p class="text-2xl font-bold">₱{{ total_contributions|floatformat:2 }}</p>
-                        <p class="text-sm opacity-50">Overall financial contributions</p>
+                        <h2 class="text-lg font-semibold opacity-70 text-base-content">Total Contributions</h2> {# Added text-base-content #}
+                        <p class="text-2xl font-bold text-base-content">₱{{ total_contributions|floatformat:2 }}</p> {# Added text-base-content #}
+                        <p class="text-sm opacity-50 text-base-content">Overall financial contributions</p> {# Added text-base-content #}
                     </div>
                 </div>
             </div>
@@ -108,9 +110,9 @@
         {# Membership Status Chart #}
         <div class="card bg-base-100 shadow-lg">
             <div class="card-body">
-                <h2 class="card-title text-xl font-semibold mb-4">
+                <h2 class="card-title text-xl font-semibold mb-4 text-base-content"> {# Added text-base-content #}
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
                     Membership Status Distribution
                 </h2>
@@ -123,9 +125,9 @@
         {# Contributions Chart #}
         <div class="card bg-base-100 shadow-lg">
             <div class="card-body">
-                <h2 class="card-title text-xl font-semibold mb-4">
+                <h2 class="card-title text-xl font-semibold mb-4 text-base-content"> {# Added text-base-content #}
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                     </svg>
                     Contributions Over Time
                 </h2>
@@ -139,9 +141,9 @@
     {# Top Families Table #}
     <div class="card bg-base-100 shadow-lg mb-8">
         <div class="card-body">
-            <h2 class="card-title text-xl font-semibold mb-4">
+            <h2 class="card-title text-xl font-semibold mb-4 text-base-content"> {# Added text-base-content #}
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
                 Top 5 Families with Most Members
             </h2>
@@ -149,17 +151,17 @@
                 <table class="table table-zebra">
                     <thead>
                         <tr>
-                            <th class="w-16">Rank</th>
-                            <th>Family Name</th>
-                            <th class="text-right">Members Count</th>
-                            <th>Church</th>
+                            <th class="w-16 text-base-content">Rank</th> {# Added text-base-content #}
+                            <th class="text-base-content">Family Name</th> {# Added text-base-content #}
+                            <th class="text-right text-base-content">Members Count</th> {# Added text-base-content #}
+                            <th class="text-base-content">Church</th> {# Added text-base-content #}
                         </tr>
                     </thead>
                     <tbody>
-                        {% for family in top_families_by_members %}
+                        {% for family in top_families_by_members %} {# Now linked to context #}
                         <tr>
                             <td>
-                                <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-2 text-base-content"> {# Added text-base-content #}
                                     <span class="font-bold">{{ forloop.counter }}</span>
                                     {% if forloop.counter == 1 %}
                                     <div class="badge badge-primary">Top</div>
@@ -167,7 +169,7 @@
                                 </div>
                             </td>
                             <td>
-                                <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-2 text-base-content"> {# Added text-base-content #}
                                     <div class="avatar">
                                         <div class="w-8 rounded-full">
                                             {% if family.family_picture %}
@@ -182,17 +184,17 @@
                                     <span>{{ family.family_name }}</span>
                                 </div>
                             </td>
-                            <td class="text-right font-mono">{{ family.member_count }}</td>
+                            <td class="text-right font-mono text-base-content">{{ family.member_count }}</td> {# Added text-base-content #}
                             <td>
-                                <div class="badge badge-outline">{{ family.church.name|truncatechars:20 }}</div>
+                                <div class="badge badge-outline text-base-content">{{ family.church.name|truncatechars:20 }}</div> {# Added text-base-content #}
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
                             <td colspan="4" class="text-center py-8">
-                                <div class="text-gray-500">
+                                <div class="text-gray-500 text-base-content"> {# Changed to text-base-content for consistency #}
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                     No families found.
                                 </div>
@@ -208,9 +210,9 @@
     {# Top Contributors Table #}
     <div class="card bg-base-100 shadow-lg mb-8">
         <div class="card-body">
-            <h2 class="card-title text-xl font-semibold mb-4">
+            <h2 class="card-title text-xl font-semibold mb-4 text-base-content"> {# Added text-base-content #}
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 Top 5 Individual Contributors
             </h2>
@@ -218,17 +220,17 @@
                 <table class="table table-zebra">
                     <thead>
                         <tr>
-                            <th class="w-16">Rank</th>
-                            <th>Individual Name</th>
-                            <th class="text-right">Total Contribution</th>
-                            <th>Church</th>
+                            <th class="w-16 text-base-content">Rank</th> {# Added text-base-content #}
+                            <th class="text-base-content">Individual Name</th> {# Added text-base-content #}
+                            <th class="text-right text-base-content">Total Contribution</th> {# Added text-base-content #}
+                            <th class="text-base-content">Church</th> {# Added text-base-content #}
                         </tr>
                     </thead>
                     <tbody>
-                        {% for contributor in top_individual_contributors %}
+                        {% for contributor in top_individual_contributors %} {# Now linked to context #}
                         <tr>
                             <td>
-                                <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-2 text-base-content"> {# Added text-base-content #}
                                     <span class="font-bold">{{ forloop.counter }}</span>
                                     {% if forloop.counter == 1 %}
                                     <div class="badge badge-primary">Top</div>
@@ -236,10 +238,10 @@
                                 </div>
                             </td>
                             <td>
-                                <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-2 text-base-content"> {# Added text-base-content #}
                                     <div class="avatar">
                                         <div class="w-8 rounded-full">
-                                            {% if contributor.profile_picture %}
+                                            {% if contributor.profile_picture %} {# Assumes Profile model has profile_picture #}
                                             <img src="{{ contributor.profile_picture.url }}" alt="{{ contributor.full_name }}" />
                                             {% else %}
                                             <div class="bg-neutral text-neutral-content w-full h-full flex items-center justify-center text-xs">
@@ -251,17 +253,17 @@
                                     <span>{{ contributor.full_name }}</span>
                                 </div>
                             </td>
-                            <td class="text-right font-mono">₱{{ contributor.total_contribution|floatformat:2 }}</td>
+                            <td class="text-right font-mono text-base-content">₱{{ contributor.total_contribution|floatformat:2 }}</td> {# Added text-base-content #}
                             <td>
-                                <div class="badge badge-outline">{{ contributor.family.church.name|truncatechars:20 }}</div>
+                                <div class="badge badge-outline text-base-content">{{ contributor.church.name|truncatechars:20 }}</div> {# Added text-base-content #}
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
                             <td colspan="4" class="text-center py-8">
-                                <div class="text-gray-500">
+                                <div class="text-gray-500 text-base-content"> {# Changed to text-base-content for consistency #}
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                     No contributors found.
                                 </div>
@@ -273,211 +275,276 @@
             </div>
         </div>
     </div>
-
-    {# Church Summary Table #}
-    <div class="card bg-base-100 shadow-lg">
-        <div class="card-body">
-            <h2 class="card-title text-xl font-semibold mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
-                </svg>
-                Church-wise Summary
-            </h2>
-            <div class="overflow-x-auto">
-                <table class="table table-zebra">
-                    <thead>
-                        <tr>
-                            <th>Church Name</th>
-                            <th class="text-right">Total Families</th>
-                            <th class="text-right">Total Members</th>
-                            <th class="text-right">Total Contributions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for church_summary in church_summaries %}
-                        <tr>
-                            <td>
-                                <div class="flex items-center gap-2">
-                                    <div class="avatar">
-                                        <div class="w-8 rounded-full">
-                                            {% if church_summary.logo %}
-                                            <img src="{{ church_summary.logo.url }}" alt="{{ church_summary.name }}" />
-                                            {% else %}
-                                            <div class="bg-neutral text-neutral-content w-full h-full flex items-center justify-center text-xs">
-                                                {{ church_summary.name|slice:":2"|upper }}
-                                            </div>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                    <span>{{ church_summary.name }}</span>
-                                </div>
-                            </td>
-                            <td class="text-right font-mono">{{ church_summary.total_families }}</td>
-                            <td class="text-right font-mono">{{ church_summary.total_members }}</td>
-                            <td class="text-right font-mono">₱{{ church_summary.total_contributions|floatformat:2 }}</td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="4" class="text-center py-8">
-                                <div class="text-gray-500">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    No church summaries found.
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
 </div>
 
+{% endblock content %}
+
+{% block extra_js %}
+{# Link Chart.js library (ensure this is before your custom script) #}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{# Include Chart.js Data Labels plugin if you plan to use it (optional) #}
+{# <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script> #}
+<script src="{% static 'js/dashboard_charts.js' %}"></script> {# Create this file #}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Parse JSON data from Django context safely
-        const membershipStatusDistribution = JSON.parse('{{ membership_status_distribution_json|escapejs }}');
-        const contributionsOverTimeLabels = JSON.parse('{{ contributions_over_time_labels_json|escapejs }}');
-        const contributionsOverTimeData = JSON.parse('{{ contributions_over_time_data_json|escapejs }}');
+        // Always ensure a fallback to an empty object/array
+        let membershipStatusDistribution;
+        try {
+            membershipStatusDistribution = JSON.parse('{{ membership_status_distribution_json|escapejs }}');
+        } catch (e) {
+            console.error("Error parsing membershipStatusDistribution JSON:", e);
+            membershipStatusDistribution = {};
+        }
 
-        // Chart colors based on DaisyUI theme
-        const themeColors = {
-            primary: getComputedStyle(document.documentElement).getPropertyValue('--p'),
-            secondary: getComputedStyle(document.documentElement).getPropertyValue('--s'),
-            accent: getComputedStyle(document.documentElement).getPropertyValue('--a'),
-            info: getComputedStyle(document.documentElement).getPropertyValue('--in'),
-            warning: getComputedStyle(document.documentElement).getPropertyValue('--wa'),
-            error: getComputedStyle(document.documentElement).getPropertyValue('--er'),
-            success: getComputedStyle(document.documentElement).getPropertyValue('--su')
+        let contributionsOverTimeLabels;
+        try {
+            contributionsOverTimeLabels = JSON.parse('{{ contributions_over_time_labels_json|escapejs }}');
+        } catch (e) {
+            console.error("Error parsing contributionsOverTimeLabels JSON:", e);
+            contributionsOverTimeLabels = [];
+        }
+
+        let contributionsOverTimeData;
+        try {
+            contributionsOverTimeData = JSON.parse('{{ contributions_over_time_data_json|escapejs }}');
+        } catch (e) {
+            console.error("Error parsing contributionsOverTimeData JSON:", e);
+            contributionsOverTimeData = [];
+        }
+
+        // --- DaisyUI Theme Color Extraction Helper ---
+        // This function extracts the raw HSL components from DaisyUI CSS variables
+        // and returns them as a string suitable for hsl() or hsla()
+        const getHslValue = (cssVar) => {
+            const style = getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim();
+            // DaisyUI typically returns space-separated HSL values (e.g., "220 100% 70%")
+            // Ensure they are correctly formatted for `hsl()` or `hsla()` if needed
+            return style; // Directly use the string as it often includes '%' if needed
         };
 
-        // Membership Status Chart
-        const membershipCtx = document.getElementById('membershipStatusChart').getContext('2d');
-        new Chart(membershipCtx, {
-            type: 'doughnut',
-            data: {
-                labels: Object.keys(membershipStatusDistribution),
-                datasets: [{
-                    data: Object.values(membershipStatusDistribution),
-                    backgroundColor: [
-                        `hsl(${themeColors.success})`,
-                        `hsl(${themeColors.error})`,
-                        `hsl(${themeColors.warning})`,
-                        `hsl(${themeColors.info})`
-                    ],
-                    borderColor: 'hsl(var(--b1))',
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '70%',
-                plugins: {
-                    legend: {
-                        position: 'right',
-                        labels: {
-                            color: 'hsl(var(--bc))',
-                            font: {
-                                family: 'inherit'
-                            },
-                            padding: 20,
-                            usePointStyle: true,
-                            pointStyle: 'circle'
-                        }
-                    },
-                    tooltip: {
-                        backgroundColor: 'hsl(var(--b1))',
-                        titleColor: 'hsl(var(--bc))',
-                        bodyColor: 'hsl(var(--bc))',
-                        borderColor: 'hsl(var(--b3))',
-                        borderWidth: 1,
-                        padding: 12,
-                        usePointStyle: true,
-                        callbacks: {
-                            label: function(context) {
-                                return `${context.label}: ${context.raw}`;
-                            }
-                        }
-                    }
-                }
-            }
+        const themeColors = {
+            primary: getHslValue('--p'),
+            secondary: getHslValue('--s'),
+            accent: getHslValue('--a'),
+            info: getHslValue('--in'),
+            warning: getHslValue('--wa'),
+            error: getHslValue('--er'),
+            success: getHslValue('--su'),
+            baseContent: getHslValue('--bc'), 
+            base100: getHslValue('--b1'),     
+            base300: getHslValue('--b3')      
+        };
+        
+        // Define a consistent color palette for doughnut chart based on potential statuses
+        const statusColors = {
+            'Active': `hsl(${themeColors.success})`,
+            'Inactive': `hsl(${themeColors.error})`,
+            'Pending': `hsl(${themeColors.warning})`,
+            'Unknown/Not Set': `hsl(${themeColors.info})`,
+            // Add more statuses as needed and assign colors
+        };
+
+        const membershipChartBackgroundColors = Object.keys(membershipStatusDistribution).map(status => {
+            return statusColors[status] || `hsl(${themeColors.info})`; // Default to info if status not found
         });
 
-        // Contributions Over Time Chart
-        const contributionsCtx = document.getElementById('contributionsChart').getContext('2d');
-        new Chart(contributionsCtx, {
-            type: 'line',
-            data: {
-                labels: contributionsOverTimeLabels,
-                datasets: [{
-                    label: 'Total Contributions (₱)',
-                    data: contributionsOverTimeData,
-                    borderColor: `hsl(${themeColors.primary})`,
-                    backgroundColor: `hsla(${themeColors.primary}, 0.1)`,
-                    tension: 0.3,
-                    fill: true,
-                    borderWidth: 2,
-                    pointBackgroundColor: `hsl(${themeColors.primary})`,
-                    pointRadius: 4,
-                    pointHoverRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            color: 'hsl(var(--b3))'
-                        },
-                        ticks: {
-                            color: 'hsl(var(--bc))',
-                            callback: function(value) {
-                                return '₱' + value.toLocaleString();
-                            }
-                        }
-                    },
-                    x: {
-                        grid: {
-                            color: 'hsl(var(--b3))'
-                        },
-                        ticks: {
-                            color: 'hsl(var(--bc))'
-                        }
-                    }
+
+        // Membership Status Chart
+        const membershipCtx = document.getElementById('membershipStatusChart');
+        let membershipStatusChartInstance; // Declare variable to hold chart instance
+        if (membershipCtx) { // Check if canvas element exists
+            membershipStatusChartInstance = new Chart(membershipCtx.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(membershipStatusDistribution),
+                    datasets: [{
+                        data: Object.values(membershipStatusDistribution),
+                        backgroundColor: membershipChartBackgroundColors, // Use derived colors
+                        borderColor: `hsl(${themeColors.base100})`, // Background color of the card
+                        borderWidth: 2
+                    }]
                 },
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: 'hsl(var(--bc))',
-                            font: {
-                                family: 'inherit'
-                            },
-                            usePointStyle: true
-                        }
-                    },
-                    tooltip: {
-                        backgroundColor: 'hsl(var(--b1))',
-                        titleColor: 'hsl(var(--bc))',
-                        bodyColor: 'hsl(var(--bc))',
-                        borderColor: 'hsl(var(--b3))',
-                        borderWidth: 1,
-                        padding: 12,
-                        usePointStyle: true,
-                        callbacks: {
-                            label: function(context) {
-                                return `${context.dataset.label}: ₱${context.raw.toLocaleString()}`;
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: `hsl(${themeColors.baseContent})`, // Base content color
+                                font: {
+                                    family: 'inherit'
+                                },
+                                padding: 20,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: `hsl(${themeColors.base100})`, // Base 100 color for tooltip background
+                            titleColor: `hsl(${themeColors.baseContent})`,
+                            bodyColor: `hsl(${themeColors.baseContent})`,
+                            borderColor: `hsl(${themeColors.base300})`, // Base 300 color for tooltip border
+                            borderWidth: 1,
+                            padding: 12,
+                            usePointStyle: true,
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.raw;
+                                    const total = context.dataset.data.reduce((sum, current) => sum + current, 0);
+                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                    return `${context.label}: ${value} (${percentage}%)`;
+                                }
                             }
                         }
                     }
                 }
-            }
+            });
+        }
+
+
+        // Contributions Over Time Chart (CHANGED TO BAR GRAPH!)
+        const contributionsCtx = document.getElementById('contributionsChart');
+        let contributionsChartInstance; // Declare variable to hold chart instance
+        if (contributionsCtx) { // Check if canvas element exists
+            contributionsChartInstance = new Chart(contributionsCtx.getContext('2d'), {
+                type: 'bar', // <<<--- THIS IS THE KEY CHANGE!
+                data: {
+                    labels: contributionsOverTimeLabels,
+                    datasets: [{
+                        label: 'Total Contributions (₱)',
+                        data: contributionsOverTimeData,
+                        // For bar charts, we use backgroundColor, not borderColor for the bar fill
+                        backgroundColor: `hsla(${themeColors.primary}, 0.6)`, // Primary color with some transparency
+                        borderColor: `hsl(${themeColors.primary})`, // Border of each bar
+                        borderWidth: 1,
+                        borderRadius: 5, // Slightly rounded bars for a modern look
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: `hsla(${themeColors.baseContent}, 0.1)`, // Lighter grid lines
+                                drawBorder: false, // Don't draw the axis line itself
+                            },
+                            ticks: {
+                                color: `hsl(${themeColors.baseContent})`, // Tick label color
+                                callback: function(value) {
+                                    return '₱' + value.toLocaleString();
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: `hsla(${themeColors.baseContent}, 0.1)`, // Lighter grid lines
+                                drawBorder: false, // Don't draw the axis line itself
+                            },
+                            ticks: {
+                                color: `hsl(${themeColors.baseContent})` // Tick label color
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: `hsl(${themeColors.baseContent})`,
+                                font: {
+                                    family: 'inherit'
+                                },
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: `hsl(${themeColors.base100})`,
+                            titleColor: `hsl(${themeColors.baseContent})`,
+                            bodyColor: `hsl(${themeColors.baseContent})`,
+                            borderColor: `hsl(${themeColors.base300})`,
+                            borderWidth: 1,
+                            padding: 12,
+                            usePointStyle: true,
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ₱${context.raw.toLocaleString()}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+
+        // --- Theme Change Observer for ALL Charts ---
+        // This will ensure chart colors update when the DaisyUI theme changes
+        const htmlElement = document.documentElement;
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.attributeName === 'data-theme') {
+                    // Recalculate theme colors
+                    const updatedThemeColors = {
+                        primary: getHslValue('--p'),
+                        secondary: getHslValue('--s'),
+                        accent: getHslValue('--a'),
+                        info: getHslValue('--in'),
+                        warning: getHslValue('--wa'),
+                        error: getHslValue('--er'),
+                        success: getHslValue('--su'),
+                        baseContent: getHslValue('--bc'),
+                        base100: getHslValue('--b1'),
+                        base300: getHslValue('--b3')
+                    };
+
+                    // Update Membership Status Chart colors
+                    if (membershipStatusChartInstance) {
+                        const updatedStatusColors = {
+                            'Active': `hsl(${updatedThemeColors.success})`,
+                            'Inactive': `hsl(${updatedThemeColors.error})`,
+                            'Pending': `hsl(${updatedThemeColors.warning})`,
+                            'Unknown/Not Set': `hsl(${updatedThemeColors.info})`,
+                        };
+                        membershipStatusChartInstance.data.datasets[0].backgroundColor = Object.keys(membershipStatusDistribution).map(status => {
+                            return updatedStatusColors[status] || `hsl(${updatedThemeColors.info})`;
+                        });
+                        membershipStatusChartInstance.data.datasets[0].borderColor = `hsl(${updatedThemeColors.base100})`;
+                        membershipStatusChartInstance.options.plugins.legend.labels.color = `hsl(${updatedThemeColors.baseContent})`;
+                        membershipStatusChartInstance.options.plugins.tooltip.backgroundColor = `hsl(${updatedThemeColors.base100})`;
+                        membershipStatusChartInstance.options.plugins.tooltip.titleColor = `hsl(${updatedThemeColors.baseContent})`;
+                        membershipStatusChartInstance.options.plugins.tooltip.bodyColor = `hsl(${updatedThemeColors.baseContent})`;
+                        membershipStatusChartInstance.options.plugins.tooltip.borderColor = `hsl(${updatedThemeColors.base300})`;
+                        membershipStatusChartInstance.update();
+                    }
+
+                    // Update Contributions Chart colors
+                    if (contributionsChartInstance) {
+                        contributionsChartInstance.data.datasets[0].backgroundColor = `hsla(${updatedThemeColors.primary}, 0.6)`;
+                        contributionsChartInstance.data.datasets[0].borderColor = `hsl(${updatedThemeColors.primary})`;
+                        contributionsChartInstance.data.datasets[0].pointBackgroundColor = `hsl(${updatedThemeColors.primary})`; // If it were a line
+                        
+                        contributionsChartInstance.options.scales.y.grid.color = `hsla(${updatedThemeColors.baseContent}, 0.1)`;
+                        contributionsChartInstance.options.scales.y.ticks.color = `hsl(${updatedThemeColors.baseContent})`;
+                        contributionsChartInstance.options.scales.x.grid.color = `hsla(${updatedThemeColors.baseContent}, 0.1)`;
+                        contributionsChartInstance.options.scales.x.ticks.color = `hsl(${updatedThemeColors.baseContent})`;
+                        contributionsChartInstance.options.plugins.legend.labels.color = `hsl(${updatedThemeColors.baseContent})`;
+                        contributionsChartInstance.options.plugins.tooltip.backgroundColor = `hsl(${updatedThemeColors.base100})`;
+                        contributionsChartInstance.options.plugins.tooltip.titleColor = `hsl(${updatedThemeColors.baseContent})`;
+                        contributionsChartInstance.options.plugins.tooltip.bodyColor = `hsl(${updatedThemeColors.baseContent})`;
+                        contributionsChartInstance.options.plugins.tooltip.borderColor = `hsl(${updatedThemeColors.base300})`;
+
+                        contributionsChartInstance.update();
+                    }
+                }
+            });
         });
+
+        // Start observing the <html> tag for data-theme changes
+        observer.observe(htmlElement, { attributes: true });
+
     });
 </script>
-{% endblock content %}
+{% endblock extra_js %}

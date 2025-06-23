@@ -8,6 +8,13 @@
     <link href="{% static 'output.css' %}" rel="stylesheet">
     <script src="https://unpkg.com/feather-icons"></script> 
     
+    {# DIRI DAPAT ANG ALPINE.JS, SA DILI PA MAGDAGAN ANG Ubang JS nga naggamit ana #}
+    {# Option 1: Using CDN (recommended for simplicity if connection is stable) #}
+    <script defer src="https://unpkg.com/alpinejs@3.14.0/dist/cdn.min.js"></script> 
+    
+    {# Option 2: If you prefer using your local file (theme/static/js/alpine.min.js) #}
+    {# <script defer src="{% static 'js/alpine.min.js' %}"></script> #}
+    
     {% block extra_css %}{% endblock %}
 </head>
 
@@ -249,7 +256,7 @@
                 <li><a href="{% url 'issues:user_issue_list' %}" class="{% if 'issues' in request.resolver_match.app_names %}active{% endif %}"><i data-feather="alert-circle"></i> Issues</a></li>
                 {% if user.is_superuser %}
                 <li><a href="{% url 'account:user_list' %}" class="{% if 'account' in request.resolver_match.app_names and request.resolver_match.url_name != 'create_incharge' %}active{% endif %}"><i data-feather="user-plus"></i> Users</a></li>
-                <li><a href="{% url 'chat:create_incharge' %}" class="{% if request.resolver_match.url_name == 'create_incharge' %}active{% endif %}"><i data-feather="plus-circle"></i> Create In-Charge</a></li>
+                <li><a href="{% url 'account:create_incharge' %}" class="{% if request.resolver_match.url_name == 'create_incharge' %}active{% endif %}"><i data-feather="plus-circle"></i> Create In-Charge</a></li>
                 {% endif %}
                 <li><a href="{% url 'account:logout' %}?next={% url 'account:login' %}" class="mt-auto"><i data-feather="log-out"></i> Logout</a></li>
             </ul>

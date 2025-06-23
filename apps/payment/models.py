@@ -4,10 +4,6 @@ from django.db import models
 from django.conf import settings  # Para sa AUTH_USER_MODEL
 # Para sa auto_now_add, auto_now, default values
 from django.utils import timezone
-
-# IMPORTANT: I-import ni nga mga models gikan sa ilang tagsa-tagsa ka apps.
-# Siguraduhin nga kini nga mga paths husto base sa imong project structure.
-# Kung ang Individual naa sa 'apps/individual/models.py', then kini nga import husto.
 from apps.individual.models import Individual
 # Kung ang UserChurch ug Profile naa sa 'apps/account/models.py', husto kini.
 from apps.account.models import UserChurch, Profile

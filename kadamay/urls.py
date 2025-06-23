@@ -1,38 +1,40 @@
-# kadamay/urls.py
+# kadamay_project/kadamay/urls.py
 
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-# Import this if you have a RedirectView for home
-from django.views.generic import RedirectView
+from django.views.generic.base import TemplateView  # For a simple home page
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    # Include URLs from your 'account' app
+    path('account/', include('apps.account.urls')),
+    # Include URLs from your 'theme' app (if it has any)
+    # path('theme/', include('theme.urls')),
 
-    # COMMENT OUT ALL OTHER APP INCLUDES FOR NOW
-    path('account/', include(('apps.account.urls', 'account'), namespace='account')),
-    path('church/', include(('apps.church.urls', 'church'), namespace='church')),
-    path('family/', include(('apps.family.urls', 'family'), namespace='family')),
-    path('individual/', include(('apps.individual.urls',
-         'individual'), namespace='individual')),
-    path('payment/', include(('apps.payment.urls', 'payment'),
-         namespace='payment')),  # COMMENT THIS OUT AGAIN!
-    path('report/', include(('apps.report.urls', 'report'), namespace='report')),
-    path('chat/', include(('apps.chat.urls', 'chat'), namespace='chat')),
-    path('issues/', include(('apps.issues.urls', 'issues'), namespace='issues')),
-    path('contribution-type/', include(('apps.contribution_type.urls',
-         'contribution_type'), namespace='contribution_type')),
+    # Simple home page (you can replace this with a proper view later)
+    path('', TemplateView.as_view(
+        template_name='./report/dashboard.html'), name='home'),
 
-    # If you have a RedirectView for home, keep it commented too
-    path('', RedirectView.as_view(pattern_name='report:dashboard'), name='home'),
-
+    # For django-browser-reload
     path("__reload__/", include("django_browser_reload.urls")),
+
+    # Include other app URLs as needed
+    path('individual/', include('apps.individual.urls')),
+    path('family/', include('apps.family.urls')),
+    path('payment/', include('apps.payment.urls')),
+    path('church/', include('apps.church.urls')),
+    path('report/', include('apps.report.urls')),
+    path('chat/', include('apps.chat.urls')),
+    path('issues/', include('apps.issues.urls')),
+    path('contribution-type/', include('apps.contribution_type.urls')),
 ]
 
-# Serve media files (user uploads) and static files during development
+# Serve static and media files during development
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL,
-                          document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL,
                           document_root=settings.STATIC_ROOT)
+    urlpatterns += static(settings.MEDIA_URL,
+                          document_root=settings.MEDIA_ROOT)

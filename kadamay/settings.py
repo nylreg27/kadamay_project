@@ -1,23 +1,25 @@
-# settings.py
-
 import os
-import sys
-# from pathlib import Path # Not explicitly used for BASE_DIR in the original code, so keeping it commented out for consistency.
+from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-# --- FIX: Corrected typo in os.path.dirname and oos.path.dirname ---
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Add apps directory to Python path
-sys.path.insert(0, os.path.join(BASE_DIR, 'apps'))
+# Quick-start development settings - unsuitable for production
+# See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-kadamay-mortuary-system-development-key'
+# Replace with your actual SECRET_KEY
+SECRET_KEY = 'django-insecure-*************************************************'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True # This is the correct placement for DEBUG
+DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+CSRF_TRUSTED_ORIGINS = ['http://localhost', 'http://127.0.0.1',
+                        'http://127.0.0.1:8000/', 'http://localhost:8000/']
+
+
+# Application definition
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -26,40 +28,25 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # --- IMPORTANT: Keep only one 'theme' app, the one we created in 'apps/' ---
-    'apps.theme', # This is your custom theme app where static files are.
 
-    # Project apps
+    # My Apps (Important: Check paths for each app)
     'apps.individual',
     'apps.church',
     'apps.family',
     'apps.payment',
-    'apps.account',
+    'apps.account',     # This is 'apps.account' because it's in the 'apps' folder
     'apps.report',
     'apps.chat',
     'apps.issues',
     'apps.contribution_type',
 
-    # --- REMOVED: 'tailwind' and the second 'theme' app if they are related to django-tailwind,
-    # --- as we are using postcss directly for compilation. ---
-    # 'tailwind', # Usually from django-tailwind. Remove if not needed for other purposes.
-    # 'theme',    # This seems like a duplicate or leftover from django-tailwind. Remove.
-
-    'django_browser_reload', # Keep this for auto-reloading
-    'widget_tweaks', # Keep if you are using it
-    'rest_framework', # Keep if you are using it
-    'crispy_forms', # Keep if you are using it
-    'crispy_tailwind', # Keep if you are using it
+    # Third-party apps
+    'django_browser_reload',
+    'widget_tweaks',
+    'rest_framework',
+    'crispy_forms',
+    'crispy_tailwind',
 ]
-
-# --- REMOVED: These settings are typically for django-tailwind, which we are not using for compilation. ---
-# TAILWIND_APP_NAME = 'theme'
-# NPM_BIN_PATH = r"C:\Program Files\nodejs\npm.cmd"
-
-# --- CRISPY FORMS SETTINGS (These are fine) ---
-CRISPY_ALLOWED_TEMPLATE_PACKS = "tailwind"
-CRISPY_TEMPLATE_PACK = "tailwind"
-
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -69,16 +56,18 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    "django_browser_reload.middleware.BrowserReloadMiddleware",
+    'django_browser_reload.middleware.BrowserReloadMiddleware',  # For browser auto-reload
 ]
 
 ROOT_URLCONF = 'kadamay.urls'
 
+# kadamay/settings.py
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        # --- FIX: Use os.path.join for BASE_DIR / 'templates' for consistency ---
-        'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        # Added your templates folder here if it's not already
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -87,8 +76,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'apps.account.context_processors.user_church',
-                'apps.account.context_processors.user_roles',
-                'kadamay.context_processors.user_permissions',
+                'apps.account.context_processors.user_permissions_context',  # Use the new name here
             ],
         },
     },
@@ -98,14 +86,19 @@ WSGI_APPLICATION = 'kadamay.wsgi.application'
 
 
 # Database
+# https://docs.djangoproject.com/en/4.2/ref/settings/#databases
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'), # Use os.path.join here too
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
+
 # Password validation
+# https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
+
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -121,54 +114,48 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-CSRF_TRUSTED_ORIGINS = [
-    'http://localhost',
-    'http://127.0.0.1',
-    'http://127.0.0.1:8000',
-    'http://localhost:8000',
-]
 
 # Internationalization
+# https://docs.djangoproject.com/en/4.2/topics/i18n/
+
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'Asia/Manila'  # Philippines timezone
+
+TIME_ZONE = 'Asia/Manila'  # Set to your local timezone
+
 USE_I18N = True
+
 USE_TZ = True
 
+
 # Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/4.2/howto/static-files/
+
 STATIC_URL = '/static/'
-# --- FIX: Removed redundant STATIC_ROOT definition and consolidated STATICFILES_DIRS ---
-# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles') # REMOVED (redundant)
+# Where collectstatic will put files
+STATIC_ROOT = BASE_DIR / 'staticfiles_collected'
 
 STATICFILES_DIRS = [
-    # This path is for a 'static' folder directly under your project root (e.g., kadamay_project/static/)
-    # Keep it if you have other static files there not tied to a specific app.
-    # os.path.join(BASE_DIR, 'static'), 
-    
-    # --- FIX: Corrected path for the 'theme' app's static files ---
-    # This points to E:\my_project\kadamay_project\apps\theme\static\
-    os.path.join(BASE_DIR, 'apps', 'theme', 'static'), 
+    BASE_DIR / 'theme' / 'static',  # <--- Para sa static files sa theme app
 ]
 
-# This STATIC_ROOT is for the 'collectstatic' command, used in production.
-# Keep only one.
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles_collected') 
-
-
-# Media files
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = BASE_DIR / 'media'
+
 
 # Default primary key field type
+# https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Login URLs
-LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'home'
-LOGOUT_REDIRECT_URL = 'login'
+# Custom user model if applicable
+# AUTH_USER_MODEL = 'account.User' # Uncomment if you have a custom User model
 
-# Email settings (for development - prints to console)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-DEFAULT_FROM_EMAIL = 'noreply@kadamay.org'
+# Login/Logout Redirect URLs
+LOGIN_URL = 'account:login'  # Name of the login URL
+LOGIN_REDIRECT_URL = 'home'  # Name of the URL to redirect to after successful login
+# Name of the URL to redirect to after logout
+LOGOUT_REDIRECT_URL = 'account:login'
 
-# --- REMOVED: Redundant DEBUG = True ---
-# DEBUG = True # This is redundant, it's already defined above. You can remove this.
+# Crispy Forms
+CRISPY_ALLOWED_TEMPLATE_PACKS = 'tailwind'
+CRISPY_TEMPLATE_PACK = 'tailwind'

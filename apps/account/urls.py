@@ -1,62 +1,60 @@
 # apps/account/urls.py
 
-# Make sure 'include' is imported for auth.urls
-from django.urls import path, include
-# No need for `from . import views` if you're importing classes directly.
-# But keeping it if you might use views.some_function later. For now, let's stick to explicit imports.
+from django.urls import path, reverse_lazy
+from django.contrib.auth import views as auth_views
+from . import views  # Import all views from this app
 
-from django.contrib.auth import views as auth_views  # Django's default auth views
-# from django.urls import reverse_lazy  # reverse_lazy is used in views.py, not always directly in urls.py for path definition
-
-from .views import (
-    UserListView,
-    UserCreateView,
-    UserUpdateView,
-    UserDeleteView,
-    UserRoleAssignView,
-    UserRoleDeleteView,
-    RegisterView,
-    ProfileSettingsView, # Import ProfileSettingsView direkta
-)
-
-from .forms import UserLoginForm  # Assuming you have a custom login form
-
-# Essential for namespacing (e.g., {% url 'account:login' %})
-app_name = 'account'
+app_name = 'account'  # Define app_name for namespacing URLs
 
 urlpatterns = [
-    # IMPORTANT: Include Django's built-in authentication URLs here FIRST.
-    # This provides 'logout', 'password_change', 'password_change_done', 'password_reset', etc.
-    # The names will be 'account:logout', 'account:password_change', etc.
-    path('', include('django.contrib.auth.urls')),
+    # User creation form (using Class-Based View)
+    path('users/create/', views.UserCreateView.as_view(), name='user_create'),
+    # User list (using Class-Based View)
+    path('users/', views.UserListView.as_view(), name='user_list'),
+    # User update (using Class-Based View)
+    path('users/<int:pk>/update/',
+         views.UserUpdateView.as_view(), name='user_update'),
+    # User delete (using Class-Based View)
+    path('users/<int:pk>/delete/',
+         views.UserDeleteView.as_view(), name='user_delete'),
 
-    # --- Your Custom Login URL (If you need to override the default for your custom form/template) ---
-    # Only keep this if your 'registration/login.html' is specific and not picked up by default.
-    # Make sure 'name='login' matches the default behavior of `django.contrib.auth.urls`
-    # or give it a unique name if you want both login pages.
-    # For simplicity, if `path('', include('django.contrib.auth.urls'))` already provides a good login view,
-    # you might not need this custom one.
-    path('login/', auth_views.LoginView.as_view(
-        template_name='registration/login.html',
-        authentication_form=UserLoginForm,
-        redirect_authenticated_user=True,
-    ), name='login'),
+    # Role Management
+    path('users/<int:user_id>/assign_role/',
+         views.UserRoleAssignView.as_view(), name='assign_role'),
+    path('users/<int:user_id>/clear_roles/',
+         views.UserRoleDeleteView.as_view(), name='clear_roles'),
 
-    # --- Your Custom Register View ---
-    path('register/', RegisterView.as_view(), name='register'),
+    # KINI ANG KINAHANGLAN NIMO IDUGANG PARA SA 'CREATE IN-CHARGE':
+    # Assuming kini Class-Based View. Palihug i-adjust ang 'UserCreateInchargeView'
+    # kung lahi ang ngalan sa imong actual nga view sa views.py
+    path('create_incharge/', views.UserCreateInchargeView.as_view(),
+         name='create_incharge'),
 
-    # --- MAIN PROFILE PAGE (View/Edit) ---
-    path('profile/', ProfileSettingsView.as_view(), name='profile'),
 
-    # --- User Management (Admin/Superuser specific) ---
-    path('users/', UserListView.as_view(), name='user_list'),
-    path('users/create/', UserCreateView.as_view(), name='user_create'),
-    path('users/<int:pk>/edit/', UserUpdateView.as_view(), name='user_edit'),
-    path('users/<int:pk>/delete/', UserDeleteView.as_view(), name='user_delete'),
+    # Authentication URLs
+    path('login/', auth_views.LoginView.as_view(template_name='registration/login.html',
+                                                authentication_form=views.UserLoginForm), name='login'),
+    path('logout/', auth_views.LogoutView.as_view(), name='logout'),
 
-    # --- User Church Role Management ---
-    path('users/<int:user_id>/role/',
-         UserRoleAssignView.as_view(), name='user_role_assign'),
-    path('users/<int:user_id>/role/delete/',
-         UserRoleDeleteView.as_view(), name='user_role_delete'),
+    # Registration
+    path('register/', views.RegisterView.as_view(), name='register'),
+
+    # Profile Settings (using Class-Based View)
+    path('profile/', views.ProfileSettingsView.as_view(), name='profile'),
+
+    # Password Change (using Django's built-in views - templates needed for these)
+    path('password_change/', auth_views.PasswordChangeView.as_view(template_name='account/password_change.html',
+                                                                   success_url=reverse_lazy('account:password_change_done')), name='password_change'),
+    path('password_change/done/', auth_views.PasswordChangeDoneView.as_view(
+        template_name='account/password_change_done.html'), name='password_change_done'),
+
+    # Password Reset (requires email configuration)
+    path('password_reset/', auth_views.PasswordResetView.as_view(template_name='account/password_reset_form.html',
+                                                                 email_template_name='account/password_reset_email.html', success_url=reverse_lazy('account:password_reset_done')), name='password_reset'),
+    path('password_reset/done/', auth_views.PasswordResetDoneView.as_view(
+        template_name='account/password_reset_done.html'), name='password_reset_done'),
+    path('reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(template_name='account/password_reset_confirm.html',
+                                                                                success_url=reverse_lazy('account:password_reset_complete')), name='password_reset_confirm'),
+    path('reset/done/', auth_views.PasswordResetCompleteView.as_view(
+        template_name='account/password_reset_complete.html'), name='password_reset_complete'),
 ]

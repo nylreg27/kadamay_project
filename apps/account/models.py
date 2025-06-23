@@ -10,7 +10,31 @@ User = get_user_model()
 
 
 class Profile(models.Model):
+   # Choices for user roles
+    ADMIN = 'ADMIN'
+    CASHIER = 'CASHIER'
+    IN_CHARGE = 'IN_CHARGE'
+    USER = 'USER'  # Standard user without special payment access
+
+    USER_ROLES = [
+        (ADMIN, 'Admin'),
+        (CASHIER, 'Cashier'),
+        (IN_CHARGE, 'In-Charge'),
+        (USER, 'User'),
+    ]
+
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    # Default role is 'USER'
+    role = models.CharField(max_length=20, choices=USER_ROLES, default=USER)
+    profile_picture = models.ImageField(
+        upload_to='profile_pics/', blank=True, null=True)
+
+    def get_role_display(self):
+        # Returns the human-readable role name
+        return dict(self.USER_ROLES).get(self.role, self.role)
+
+    def __str__(self):
+        return f"{self.user.username}'s Profile ({self.get_role_display()})"
 
     # Inilipat ang THEME_CHOICES sa loob ng Profile class
     THEME_CHOICES = [
@@ -54,7 +78,6 @@ class Profile(models.Model):
 def create_or_update_user_profile(sender, instance, created, **kwargs):
     if created:
         Profile.objects.create(user=instance)
-    # Always save the profile, whether created or not, to ensure updates
     instance.profile.save()
 
 

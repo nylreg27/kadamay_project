@@ -1,20 +1,20 @@
 {
-  "name": "kadamay-project",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "build": "tailwindcss -i ./theme/static_src/src/input.css -o ./apps/theme/static/output.css",
-    "watch": "tailwindcss -i ./theme/static_src/src/input.css -o ./apps/theme/static/output.css --watch"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "autoprefixer": "^10.4.10",
-    "postcss": "^8.4.38",
-    "postcss-cli": "^11.0.0",
-    "tailwindcss": "^3.4.1",      
-    "daisyui": "^4.10.1"         
-  }
+    "name": "kadamay-project",
+    "version": "1.2.1",
+    "description": "Kadamay Mortuary System project setup",
+    "main": "index.js",
+    "scripts": {
+        "build": "tailwindcss -i ./theme/static_src/src/input.css -o ./theme/static/output.css",
+        "watch": "tailwindcss -i ./theme/static_src/src/input.css -o ./theme/static/output.css --watch"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "autoprefixer": "^10.4.19",
+        "daisyui": "^4.12.24",
+        "postcss": "^8.4.38",
+        "tailwindcss": "^3.4.17"
+    }
+
 }
