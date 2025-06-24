@@ -1,197 +1,243 @@
 {# apps/payment/templates/payment/payment_list.html #}
 {% extends 'base.html' %}
 {% load static %}
-{% load crispy_forms_tags %}
+{% load humanize %} {# Make sure this is loaded for intcomma filter #}
 
 {% block title %}
-    {{ page_title }} - Kadamay Mortuary System
-{% endblock %}
-
-{% block extra_css %}
-{# Add any specific CSS for this page here if needed #}
-<style>
-    /* Add basic card styles for the payment list items */
-    .payment-card {
-        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-    }
-    .payment-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    }
-</style>
+    Payment Records - KADAMAY
 {% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <div class="flex flex-col md:flex-row md:items-center justify-between mb-8">
-        <div class="mb-4 md:mb-0">
-            <h1 class="text-2xl md:text-3xl font-bold text-primary flex items-center uppercase">
-                <i data-feather="credit-card" class="w-6 h-6 md:w-7 md:h-7 mr-2"></i>
-                PAYMENT RECORDS
-            </h1>
-            <p class="text-sm text-base-content/70 mt-1 uppercase">
-                MANAGE ALL MEMBER CONTRIBUTIONS AND PAYMENTS
-            </p>
-        </div>
-        <div class="flex items-center space-x-2">
-            {# FIXED: Changed URL from 'payment:payment_create' to 'payment:add_payment' #}
-            <a href="{% url 'payment:add_payment' %}" 
-               class="btn btn-primary btn-sm md:btn-md flex items-center gap-2 transition-all hover:shadow-md uppercase">
-                <i data-feather="plus" class="w-4 h-4"></i> 
-                <span class="hidden sm:inline">NEW PAYMENT</span>
-            </a>
-        </div>
-    </div>
-
-    {# Display Django messages #}
-    {% if messages %}
-        <div class="mb-6">
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} shadow-lg mb-3 rounded-lg text-sm">
-                    <div>
-                        {% if message.tags == 'success' %}
-                            <i data-feather="check-circle" class="w-6 h-6"></i>
-                        {% elif message.tags == 'error' %}
-                            <i data-feather="alert-circle" class="w-6 h-6"></i>
-                        {% else %}
-                            <i data-feather="info" class="w-6 h-6"></i>
-                        {% endif %}
-                        <span class="font-medium">{{ message }}</span>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-    {% endif %}
-
-    <div class="card bg-base-200/50 shadow-sm p-4 rounded-lg mb-6 border border-base-300">
-        <div class="flex flex-col md:flex-row md:items-center justify-between mb-3">
-            <h3 class="text-lg font-semibold text-base-content mb-2 md:mb-0">Filter Payments</h3>
-            <div class="flex items-center space-x-3">
-                <form method="GET" action="{% url 'payment:payment_list' %}" class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-                    <input type="text" name="search" placeholder="Search OR#, payer, notes..."
-                           value="{{ search_query }}"
-                           class="input input-bordered input-sm md:input-md w-full max-w-xs focus:outline-none focus:border-primary">
-                    
-                    <select name="status" class="select select-bordered select-sm md:select-md w-full max-w-xs focus:outline-none focus:border-primary">
-                        <option value="ALL" {% if current_status_filter == 'ALL' %}selected{% endif %}>All Statuses</option>
-                        {% for status_code, status_display in payment_statuses %}
-                            <option value="{{ status_code }}" {% if current_status_filter == status_code %}selected{% endif %}>{{ status_display }}</option>
-                        {% endfor %}
-                    </select>
-
-                    <select name="method" class="select select-bordered select-sm md:select-md w-full max-w-xs focus:outline-none focus:border-primary">
-                        <option value="ALL" {% if current_method_filter == 'ALL' %}selected{% endif %}>All Methods</option>
-                        {% for method_code, method_display in payment_methods %}
-                            <option value="{{ method_code }}" {% if current_method_filter == method_code %}selected{% endif %}>{{ method_display }}</option>
-                        {% endfor %}
-                    </select>
-                    
-                    <button type="submit" class="btn btn-primary btn-sm md:btn-md flex-shrink-0">
-                        <i data-feather="filter" class="w-4 h-4"></i> Apply Filters
-                    </button>
-                    <a href="{% url 'payment:payment_list' %}" class="btn btn-ghost btn-sm md:btn-md flex-shrink-0">
-                        <i data-feather="x-circle" class="w-4 h-4"></i> Clear
-                    </a>
-                </form>
+<div class="container mx-auto p-4 lg:p-8 max-w-6xl">
+    <div class="bg-base-100 shadow-xl rounded-lg p-6 lg:p-8">
+        {# Header Section #}
+        <div class="flex justify-between items-center mb-8 flex-wrap gap-4">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-extrabold text-base-content uppercase flex items-center">
+                    <i data-feather="credit-card" class="w-6 h-6 md:w-7 md:h-7 mr-2"></i>
+                    PAYMENT RECORDS
+                </h1>
+                <p class="text-xs md:text-sm text-base-content/80 mt-2 uppercase">
+                    MANAGE ALL KADAMAY PAYMENT TRANSACTIONS.
+                </p>
+            </div>
+            <div class="flex flex-wrap gap-3">
+                {# Ensured to use 'payment_create' as discussed for consistency, assuming your urls.py uses this name. #}
+                {# If your urls.py uses 'add_payment', please change this back: {% url 'payment:add_payment' %} #}
+                <a href="{% url 'payment:payment_create' %}"
+                   class="btn btn-sm btn-primary flex items-center gap-2 rounded-lg font-semibold uppercase">
+                    <i data-feather="plus" class="w-4 h-4"></i>
+                    Add New Payment
+                </a>
             </div>
         </div>
-    </div>
 
-    {% if payments %}
-        <div class="overflow-x-auto bg-base-100 shadow-lg rounded-lg p-4">
-            <table class="table table-zebra w-full">
-                {# head #}
-                <thead>
-                    <tr>
-                        <th class="text-base-content/80 text-sm font-semibold uppercase">OR No.</th>
-                        <th class="text-base-content/80 text-sm font-semibold uppercase">Date Paid</th>
-                        <th class="text-base-content/80 text-sm font-semibold uppercase">Payer</th>
-                        <th class="text-base-content/80 text-sm font-semibold uppercase text-right">Amount</th>
-                        <th class="text-base-content/80 text-sm font-semibold uppercase">Method</th>
-                        <th class="text-base-content/80 text-sm font-semibold uppercase text-center">Status</th>
-                        <th class="text-base-content/80 text-sm font-semibold uppercase text-center">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for payment in payments %}
-                        <tr class="hover:bg-base-200">
-                            <td>
-                                <div class="font-bold text-primary">{{ payment.receipt_number|default:"N/A" }}</div>
+        {# Display Django messages #}
+        {% if messages %}
+            <div class="mb-6">
+                {% for message in messages %}
+                    <div role="alert" class="alert alert-{{ message.tags }} shadow-lg mb-3 rounded-lg text-sm">
+                        <div>
+                            {% if message.tags == 'success' %}
+                                <i data-feather="check-circle" class="w-6 h-6"></i>
+                            {% elif message.tags == 'error' %}
+                                <i data-feather="alert-circle" class="w-6 h-6"></i>
+                            {% else %}
+                                <i data-feather="info" class="w-6 h-6"></i>
+                            {% endif %}
+                            <span class="font-medium">{{ message }}</span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {# Search and Filter Form #}
+        <form method="get" class="mb-8 p-4 bg-base-200 rounded-lg shadow-inner flex flex-wrap items-end gap-4">
+            {# Search by OR#, payer, notes #}
+            <div class="form-control flex-1 min-w-[180px]">
+                <label class="label"><span class="label-text text-base-content/70">Search</span></label>
+                <input type="text" name="search" placeholder="OR#, payer, notes..." class="input input-bordered input-sm w-full" value="{{ request.GET.search|default:'' }}">
+            </div>
+
+            {# Status Filter #}
+            <div class="form-control flex-1 min-w-[150px]">
+                <label class="label"><span class="label-text text-base-content/70">Status</span></label>
+                <select name="status_filter" class="select select-bordered select-sm w-full">
+                    <option value="all" {% if not request.GET.status_filter or request.GET.status_filter == 'all' %}selected{% endif %}>All Statuses</option>
+                    <option value="paid" {% if request.GET.status_filter == 'paid' %}selected{% endif %}>Paid</option>
+                    <option value="pending" {% if request.GET.status_filter == 'pending' %}selected{% endif %}>Pending (GCash)</option>
+                    <option value="cancelled" {% if request.GET.status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                </select>
+            </div>
+
+            {# Method Filter #}
+            <div class="form-control flex-1 min-w-[150px]">
+                <label class="label"><span class="label-text text-base-content/70">Method</span></label>
+                <select name="method_filter" class="select select-bordered select-sm w-full">
+                    <option value="all" {% if not request.GET.method_filter or request.GET.method_filter == 'all' %}selected{% endif %}>All Methods</option>
+                    <option value="cash" {% if request.GET.method_filter == 'cash' %}selected{% endif %}>Cash</option>
+                    <option value="gcash" {% if request.GET.method_filter == 'gcash' %}selected{% endif %}>GCash</option>
+                </select>
+            </div>
+
+            {# Date Range Filters #}
+            <div class="form-control flex-1 min-w-[150px]">
+                <label class="label"><span class="label-text text-base-content/70">From Date</span></label>
+                <input type="date" name="start_date" class="input input-bordered input-sm w-full" value="{{ request.GET.start_date|default:'' }}">
+            </div>
+            <div class="form-control flex-1 min-w-[150px]">
+                <label class="label"><span class="label-text text-base-content/70">To Date</span></label>
+                <input type="date" name="end_date" class="input input-bordered input-sm w-full" value="{{ request.GET.end_date|default:'' }}">
+            </div>
+
+            {# Buttons #}
+            <div class="flex gap-2">
+                <button type="submit" class="btn btn-primary btn-sm flex items-center gap-2 rounded-lg font-semibold uppercase">
+                    <i data-feather="filter" class="w-4 h-4"></i>
+                    Apply
+                </button>
+                <a href="{% url 'payment:payment_list' %}" class="btn btn-ghost btn-sm flex items-center gap-2 rounded-lg font-semibold uppercase">
+                    <i data-feather="x-circle" class="w-4 h-4"></i>
+                    Clear
+                </a>
+            </div>
+        </form>
+
+        {# Payments Table #}
+        {% if payments %}
+            <div class="overflow-x-auto rounded-lg shadow border border-base-300">
+                <table class="table table-zebra w-full">
+                    {# Table Header #}
+                    <thead class="bg-base-200 text-base-content uppercase text-sm">
+                        <tr>
+                            <th class="py-3 px-4 text-left">OR No.</th>
+                            <th class="py-3 px-4 text-left">Payer</th>
+                            <th class="py-3 px-4 text-left">Amount</th>
+                            <th class="py-3 px-4 text-left">Date Paid</th>
+                            <th class="py-3 px-4 text-left">Method</th>
+                            <th class="py-3 px-4 text-left">Status</th>
+                            <th class="py-3 px-4 text-left">Collected By</th>
+                            <th class="py-3 px-4 text-left">Actions</th>
+                        </tr>
+                    </thead>
+                    {# Table Body #}
+                    <tbody>
+                        {% for payment in payments %}
+                        <tr class="hover:bg-base-200/50">
+                            <td class="py-3 px-4 text-base-content font-medium">
+                                {{ payment.or_number|default:"N/A" }}
                                 {% if payment.is_legacy_record %}
                                     <div class="badge badge-outline badge-info badge-sm mt-1">Legacy</div>
                                 {% endif %}
                             </td>
-                            <td>{{ payment.date_paid|date:"M d, Y" }}</td>
-                            <td>
+                            <td class="py-3 px-4 text-base-content">
                                 {% if payment.individual %}
                                     <a href="{% url 'individual:individual_detail' pk=payment.individual.pk %}" class="link link-hover link-primary">
                                         {{ payment.individual.full_name }}
                                     </a>
                                 {% else %}
-                                    N/A
+                                    <span class="text-error">N/A</span>
                                 {% endif %}
                             </td>
-                            <td class="text-right font-semibold text-lg text-success">₱{{ payment.amount|floatformat:2 }}</td>
-                            <td>
-                                <span class="badge badge-outline {% if payment.payment_method == 'CASH' %}badge-success{% else %}badge-info{% endif %} badge-sm">
+                            <td class="py-3 px-4 text-base-content">
+                                ₱{{ payment.amount|floatformat:2|intcomma }}
+                            </td>
+                            <td class="py-3 px-4 text-base-content">
+                                {{ payment.date_paid|date:"M d, Y" }}
+                            </td>
+                            <td class="py-3 px-4 text-base-content capitalize">
+                                <span class="badge badge-outline {% if payment.payment_method == 'cash' %}badge-success{% else %}badge-info{% endif %} badge-sm">
                                     {{ payment.get_payment_method_display }}
                                 </span>
                             </td>
-                            <td class="text-center">
-                                {% if payment.payment_status == 'PENDING_VALIDATION' %}
-                                    <span class="badge badge-warning badge-outline">Pending</span>
-                                {% elif payment.payment_status == 'VALIDATED' %}
-                                    <span class="badge badge-success badge-outline">Validated</span>
-                                {% elif payment.payment_status == 'CANCELLED' %}
-                                    <span class="badge badge-error badge-outline">Cancelled</span>
+                            <td class="py-3 px-4">
+                                {% if payment.status == 'paid' %}
+                                    <span class="badge badge-success badge-sm capitalize">{{ payment.status }}</span>
+                                {% elif payment.status == 'pending' %}
+                                    <span class="badge badge-warning badge-sm capitalize">{{ payment.status }}</span>
+                                {% elif payment.status == 'cancelled' %}
+                                    <span class="badge badge-error badge-sm capitalize">{{ payment.status }}</span>
                                 {% else %}
-                                    <span class="badge badge-neutral badge-outline">Unknown</span>
+                                    <span class="badge badge-info badge-sm capitalize">{{ payment.status }}</span>
                                 {% endif %}
                             </td>
-                            <td class="text-center">
-                                <a href="{% url 'payment:payment_detail' pk=payment.pk %}" class="btn btn-ghost btn-sm">
-                                    <i data-feather="eye" class="w-4 h-4"></i> View
-                                </a>
-                                {# Add edit/delete buttons later with appropriate permissions #}
+                            <td class="py-3 px-4 text-base-content">
+                                {% if payment.collected_by %}{{ payment.collected_by.username }}{% else %}N/A{% endif %}
+                            </td>
+                            <td class="py-3 px-4">
+                                <div class="flex items-center space-x-2">
+                                    <a href="{% url 'payment:payment_detail' pk=payment.pk %}" class="btn btn-ghost btn-xs tooltip tooltip-bottom" data-tip="View Details">
+                                        <i data-feather="eye" class="w-4 h-4 text-info"></i>
+                                    </a>
+                                    <a href="{% url 'payment:payment_update' pk=payment.pk %}" class="btn btn-ghost btn-xs tooltip tooltip-bottom" data-tip="Edit Payment">
+                                        <i data-feather="edit" class="w-4 h-4 text-warning"></i>
+                                    </a>
+                                    176 {% if payment.status == 'pending' and request.user.is_superuser or 'In-Charge' in user_groups %}
+                                        <a href="{% url 'payment:payment_validate' pk=payment.pk %}" class="btn btn-ghost btn-xs tooltip tooltip-bottom" data-tip="Validate Payment">
+                                            <i data-feather="check-circle" class="w-4 h-4 text-success"></i>
+                                        </a>
+                                    {% endif %}
+                                    {% if payment.status != 'cancelled' %}
+                                        <a href="{% url 'payment:payment_cancel' pk=payment.pk %}" class="btn btn-ghost btn-xs tooltip tooltip-bottom" data-tip="Cancel Payment">
+                                            <i data-feather="x-circle" class="w-4 h-4 text-error"></i>
+                                        </a>
+                                    {% endif %}
+                                    <a href="{% url 'payment:payment_delete' pk=payment.pk %}" class="btn btn-ghost btn-xs tooltip tooltip-bottom" data-tip="Delete Payment">
+                                        <i data-feather="trash-2" class="w-4 h-4 text-error"></i>
+                                    </a>
+                                </div>
                             </td>
                         </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        {# Pagination #}
-        {% if is_paginated %}
-        <div class="flex justify-center mt-6">
-            <div class="join">
-                {% if page_obj.has_previous %}
-                    <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status_filter %}&status={{ current_status_filter }}{% endif %}{% if current_method_filter %}&method={{ current_method_filter }}{% endif %}" class="join-item btn">«</a>
-                    <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status_filter %}&status={{ current_status_filter }}{% endif %}{% if current_method_filter %}&method={{ current_method_filter }}{% endif %}" class="join-item btn">‹</a>
-                {% endif %}
-
-                <button class="join-item btn btn-active">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</button>
-
-                {% if page_obj.has_next %}
-                    <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status_filter %}&status={{ current_status_filter }}{% endif %}{% if current_method_filter %}&method={{ current_method_filter }}{% endif %}" class="join-item btn">›</a>
-                    <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_status_filter %}&status={{ current_status_filter }}{% endif %}{% if current_method_filter %}&method={{ current_method_filter }}{% endif %}" class="join-item btn">»</a>
-                {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-        </div>
+
+            {# Pagination Controls #}
+            {% if is_paginated %}
+            <div class="flex justify-center mt-8">
+                <div class="join">
+                    {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="join-item btn">« Previous</a>
+                    {% else %}
+                        <button class="join-item btn btn-disabled">« Previous</button>
+                    {% endif %}
+
+                    <button class="join-item btn">Page {{ page_obj.number }} of {{ page_obj.num_pages }}</button>
+
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="join-item btn">Next »</a>
+                    {% else %}
+                        <button class="join-item btn btn-disabled">Next »</button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+        {% else %}
+            {# No Payments Found Message #}
+            <div class="text-center p-8 bg-base-200 rounded-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16 mx-auto text-base-content/60">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                </svg>
+                <p class="mt-4 text-lg font-semibold text-base-content/80">No payments found.</p>
+                <p class="mt-2 text-sm text-base-content/60">Start by adding a new payment record.</p>
+                <a href="{% url 'payment:payment_create' %}" class="mt-6 btn btn-primary flex items-center gap-2 mx-auto w-fit">
+                    <i data-feather="plus" class="w-4 h-4"></i>
+                    Add New Payment
+                </a>
+            </div>
         {% endif %}
-
-    {% else %}
-        <div class="text-center p-8 bg-base-100 rounded-lg shadow-lg">
-            <p class="text-lg text-base-content/70">No payment records found.</p>
-            <p class="text-base text-base-content/50 mt-2">Start by adding a <a href="{% url 'payment:add_payment' %}" class="link link-primary">new payment</a>.</p>
-        </div>
-    {% endif %}
-
+    </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://unpkg.com/feather-icons"></script>
+<script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
 <script>
-    feather.replace();
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace(); // Initialize feather icons
+    });
 </script>
-{% endblock extra_js %}
+{% endblock %}

@@ -9,25 +9,38 @@ User = get_user_model()
 
 
 class StyledUserCreationForm(UserCreationForm):
+    # Explicitly define email field and make it required
+    email = forms.EmailField(
+        label='EMAIL ADDRESS',
+        required=True,  # KINI ANG KAUSABAN! Gihimo na ni nga REQUIRED!
+        widget=forms.EmailInput(attrs={
+            'class': 'input input-bordered w-full uppercase focus:outline-none focus:ring-2 focus:ring-primary input-xs text-xs',
+            'placeholder': 'Enter email address'
+        })
+    )
+
     # Role field, using choices defined in Profile model
     role = forms.ChoiceField(
         choices=Profile.USER_ROLES,
         label='ROLE',
         # DaisyUI and Tailwind classes for styling
         widget=forms.Select(attrs={
-                            'class': 'select select-bordered w-full uppercase focus:outline-none focus:ring-2 focus:ring-primary select-xs text-xs'})
+            'class': 'select select-bordered w-full uppercase focus:outline-none focus:ring-2 focus:ring-primary select-xs text-xs'})
     )
 
     class Meta(UserCreationForm.Meta):
         model = User
+        # Include 'email' here. Since we explicitly defined 'email' above,
+        # it will use that definition, including 'required=True'.
         fields = UserCreationForm.Meta.fields + \
-            ('email', 'first_name', 'last_name',)  # Add custom fields
+            ('email', 'first_name', 'last_name',)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Loop through all fields to apply consistent styling
         for field_name, field in self.fields.items():
-            if field_name not in ['role', 'password', 'password2', 'is_active', 'is_staff', 'is_superuser']:
+            # Exclude 'email' from generic styling here as it's defined explicitly above
+            if field_name not in ['role', 'password', 'password2', 'is_active', 'is_staff', 'is_superuser', 'email']:
                 # Apply input styling for text-based fields
                 field.widget.attrs.update({
                     # Small input size, 12px text
@@ -38,11 +51,10 @@ class StyledUserCreationForm(UserCreationForm):
                 field.widget.attrs.update(
                     {'class': 'checkbox checkbox-primary'})
 
-        # Set placeholders for relevant fields
+        # Set placeholders for relevant fields (email placeholder is now in widget attrs)
         if 'username' in self.fields:
             self.fields['username'].widget.attrs['placeholder'] = 'Choose a username'
-        if 'email' in self.fields:
-            self.fields['email'].widget.attrs['placeholder'] = 'Enter email address'
+        # 'email' placeholder is already set in its definition above.
         if 'first_name' in self.fields:
             self.fields['first_name'].widget.attrs['placeholder'] = 'Enter first name'
         if 'last_name' in self.fields:
@@ -103,6 +115,7 @@ class UserDetailsForm(forms.ModelForm):
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'input input-bordered w-full bg-base-200/50 focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-lg text-base-content placeholder:text-base-content/40 input-xs text-xs'
             if field_name == 'email':
+                # Kini nga linya naghimo na sa email nga required para sa UserDetailsForm
                 field.required = True
 
 
@@ -111,7 +124,7 @@ class UserUpdateForm(forms.ModelForm):
         choices=Profile.USER_ROLES,
         label='ROLE',
         widget=forms.Select(attrs={
-                            'class': 'select select-bordered w-full uppercase focus:outline-none focus:ring-2 focus:ring-primary select-xs text-xs'})
+            'class': 'select select-bordered w-full uppercase focus:outline-none focus:ring-2 focus:ring-primary select-xs text-xs'})
     )
 
     class Meta:

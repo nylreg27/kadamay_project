@@ -46,6 +46,7 @@ class UserListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
         return User.objects.order_by('username')
 
 
+# --- KINI ANG USERCREATEVIEW NGA DAPAT NAA ---
 class UserCreateView(LoginRequiredMixin, AdminRequiredMixin, CreateView):
     model = User
     form_class = StyledUserCreationForm
@@ -62,19 +63,18 @@ class UserCreateView(LoginRequiredMixin, AdminRequiredMixin, CreateView):
         user = form.save()  # Save the user and their profile (handled by form's save method)
         messages.success(
             self.request, f"User '{user.username}' created successfully!")
+        # Importante: Call super().form_valid(form) para mada ang redirect
         return super().form_valid(form)
 
     def form_invalid(self, form):
         messages.error(
             self.request, "Error creating user. Please check the form.")
         return super().form_invalid(form)
+# --- KATAPUSAN SA USERCREATEVIEW ---
 
 
 class UserUpdateView(LoginRequiredMixin, AdminRequiredMixin, UpdateView):
     model = User
-    # Use UserUpdateForm if you created one, otherwise specify fields directly
-    # from your previous forms.py, I recommend using a UserUpdateForm if you want to customize it.
-    # For now, I'll use the fields from your previous views.
     fields = ['username', 'email', 'first_name',
               'last_name', 'is_active', 'is_staff', 'is_superuser']
     template_name = 'account/user_form.html'
@@ -100,7 +100,6 @@ class UserDeleteView(LoginRequiredMixin, AdminRequiredMixin, DeleteView):
     model = User
     template_name = 'account/user_confirm_delete.html'
     success_url = reverse_lazy('account:user_list')
-    # Better context name for the user being deleted
     context_object_name = 'target_user'
 
     def form_valid(self, form):
@@ -249,6 +248,8 @@ class ProfileSettingsView(LoginRequiredMixin, View):
 
 # 👤 Create In-Charge User (Admin Only)
 
+# --- KINI ANG UPDATED NGA USERCREATEINCHARGEVIEW ---
+
 
 class UserCreateInchargeView(LoginRequiredMixin, AdminRequiredMixin, CreateView):
     model = User
@@ -265,25 +266,35 @@ class UserCreateInchargeView(LoginRequiredMixin, AdminRequiredMixin, CreateView)
         return context
 
     def form_valid(self, form):
-        # Gamiton nato ang transaction para sigurado nga magkasinabtanay ang user creation ug group assignment
-        with transaction.atomic():
-            # Ayaw sa i-save fully para ma-modify pa nato
-            user = form.save(commit=False)
-            user.is_staff = True  # Maghatag ta og staff access para makalog-in sa admin panel
-            user.save()  # I-save na ang user sa database
+        # 1. TAWGA ANG super().form_valid(form) UNA!
+        # Kini ang mag-save sa form (user) ug mag-set sa self.object
+        # ngadto sa bag-ong gi-create nga user instance.
+        # Kini usab ang mag-handle sa pag-redirect ngadto sa success_url.
+        response = super().form_valid(form)
 
-            # Pangitaon o buhaton ang 'Incharge' Group. Importante nga consistent ang spelling!
-            incharge_group, created = Group.objects.get_or_create(
-                name='Incharge')
-            # Id-dagan ang user sa 'Incharge' group
-            user.groups.add(incharge_group)
+        # 2. Karon, ang self.object naay sulod sa bag-ong User nga gi-create.
+        # Pwede na nato siya i-modify ug idugang sa group.
+        user = self.object  # Para klaro, i-assign nato sa 'user' variable
 
-            messages.success(
-                self.request,
-                f"In-Charge user '{user.username}' created and assigned to 'Incharge' role successfully!"
-            )
-        # Redirect ngadto sa success_url
-        return redirect(self.get_success_url())
+        # Siguradua nga ang user kay is_staff para maka-login sa admin panel
+        if not user.is_staff:  # Mag-update lang kung dili pa is_staff
+            user.is_staff = True
+            # Save lang ang is_staff field
+            user.save(update_fields=['is_staff'])
+
+        # Pangitaon o buhaton ang 'Incharge' Group. Importante nga consistent ang spelling!
+        incharge_group, created = Group.objects.get_or_create(name='Incharge')
+        # Id-dugang ang user sa 'Incharge' group
+        user.groups.add(incharge_group)
+
+        messages.success(
+            self.request,
+            f"In-Charge user '{user.username}' created and assigned to 'Incharge' role successfully!"
+        )
+
+        # 3. Ibalik ang 'response' nga gikan sa super().form_valid().
+        # Kini nga 'response' naay sulod sa redirect ngadto sa success_url.
+        return response
 
     def form_invalid(self, form):
         messages.error(
@@ -291,3 +302,4 @@ class UserCreateInchargeView(LoginRequiredMixin, AdminRequiredMixin, CreateView)
             "Error creating In-Charge user. Please check the form."
         )
         return super().form_invalid(form)
+# --- KATAPUSAN SA UPDATED NGA USERCREATEINCHARGEVIEW ---

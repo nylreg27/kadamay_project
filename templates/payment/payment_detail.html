@@ -1,9 +1,10 @@
 {# apps/payment/templates/payment/payment_detail.html #}
 {% extends 'base.html' %}
 {% load static %}
+{% load humanize %} {# Added for intcomma filter on amounts #}
 
 {% block title %}
-    {{ page_title }} - Kadamay Mortuary System
+    Payment Details: {{ payment.or_number|default:"N/A" }} - KADAMAY
 {% endblock %}
 
 {% block extra_css %}
@@ -12,59 +13,72 @@
     .payment-detail-container {
         background-color: var(--fallback-b1, oklch(var(--b1) / 1)); /* DaisyUI base-100 */
         border-radius: 1rem; /* More rounded corners */
-        padding: 1.25rem; /* Further reduced padding for maximum compactness */
+        padding: 2rem; /* Standardized padding */
         box-shadow: 0 15px 25px -5px rgba(0, 0, 0, 0.15), 0 5px 10px -5px rgba(0, 0, 0, 0.08); /* Softer, deeper shadow */
     }
     .detail-group {
-        margin-bottom: 0.5rem; /* Further reduced spacing between detail groups */
+        margin-bottom: 0.75rem; /* Standardized spacing between detail groups */
     }
     .detail-label {
         font-weight: 700; /* Bolder for labels */
         color: var(--fallback-bc, oklch(var(--bc) / 0.7)); /* Slightly muted text for labels */
-        font-size: 0.8rem; /* Closer to 12px, for a very compact feel */
-        margin-bottom: 0.05rem; /* Minimal space between label and value */
+        font-size: 0.875rem; /* Tailwind's text-sm (14px) */
+        margin-bottom: 0.125rem; /* Small space between label and value */
         display: block; /* Ensure label is on its own line */
+        text-transform: uppercase; /* Labels uppercase for consistency */
     }
     .detail-value {
-        font-size: 0.875rem; /* Tailwind's text-sm (14px), for the actual value */
+        font-size: 1rem; /* Tailwind's text-base (16px), for the actual value */
         color: var(--fallback-bc, oklch(var(--bc) / 1)); /* Full color for values */
         word-break: break-word; /* Ensure long values break */
     }
     .badge {
-        font-size: 0.7rem; /* Even smaller badge text */
-        padding: 0.25rem 0.5rem; /* Reduced padding for badges */
+        font-size: 0.75rem; /* Standard badge text size */
+        padding: 0.35rem 0.7rem; /* Adjusted padding for badges */
         border-radius: 9999px; /* Fully rounded badges */
+        font-weight: 600; /* Medium bold for badges */
     }
     .divider {
-        margin-top: 0.75rem; /* Further reduced margin */
-        margin-bottom: 0.75rem; /* Further reduced margin */
+        margin-top: 1.5rem; /* Standardized margin */
+        margin-bottom: 1.5rem; /* Standardized margin */
         height: 1px;
         background-color: theme('colors.base-content / 10%');
         width: 100%;
     }
     .covered-members-section ul li {
-        font-size: 0.875rem; /* text-sm for covered members list */
-        margin-bottom: 0.25rem; /* Slight spacing for list items */
+        font-size: 0.95rem; /* Slightly larger text for covered members list */
+        margin-bottom: 0.3rem; /* Slight spacing for list items */
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container mx-auto p-4 max-w-4xl h-full flex flex-col justify-center items-center">
+<div class="container mx-auto p-4 lg:p-8 max-w-4xl">
     {% if payment %}
-        <div class="payment-detail-container w-full">
-            <h1 class="text-3xl font-extrabold text-primary mb-5 text-center">Payment Details</h1>
+        <div class="payment-detail-container">
+            <h1 class="text-3xl font-extrabold text-primary mb-6 text-center uppercase">Payment Details</h1>
 
-            {# First Main Row of Details #}
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 mb-5"> {# Two columns on medium screens, single on small #}
+            {# General Payment Info #}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mb-6">
                 <div>
                     <div class="detail-group">
-                        <span class="detail-label">Receipt #:</span>
-                        <span class="detail-value">{{ payment.receipt_number|default:"N/A" }}</span>
+                        <span class="detail-label">OR Number:</span>
+                        <span class="detail-value text-primary font-bold">{{ payment.or_number|default:"N/A" }}</span>
+                        {% if payment.is_legacy_record %}
+                            <div class="badge badge-outline badge-info badge-sm mt-1">Legacy Record</div>
+                        {% endif %}
                     </div>
                     <div class="detail-group">
                         <span class="detail-label">Payer:</span>
-                        <span class="detail-value">{{ payment.individual.full_name|default:"N/A" }}</span>
+                        <span class="detail-value">
+                            {% if payment.individual %}
+                                <a href="{% url 'individual:individual_detail' pk=payment.individual.pk %}" class="link link-hover link-primary">
+                                    {{ payment.individual.full_name|default:"N/A" }}
+                                </a>
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </span>
                     </div>
                     <div class="detail-group">
                         <span class="detail-label">Contribution Type:</span>
@@ -72,28 +86,36 @@
                     </div>
                     <div class="detail-group">
                         <span class="detail-label">Amount:</span>
-                        <span class="detail-value">₱{{ payment.amount|floatformat:2 }}</span>
+                        <span class="detail-value text-success text-xl font-bold">₱{{ payment.amount|floatformat:2|intcomma }}</span>
                     </div>
                 </div>
                 
                 <div>
                     <div class="detail-group">
                         <span class="detail-label">Date Paid:</span>
-                        <span class="detail-value">{{ payment.date_paid|date:"F d, Y" }}</span>
+                        <span class="detail-value">{{ payment.date_paid|date:"F d, Y P" }}</span>
                     </div>
                     <div class="detail-group">
                         <span class="detail-label">Payment Method:</span>
-                        <span class="detail-value">{{ payment.get_payment_method_display }}</span>
+                        <span class="detail-value badge 
+                            {% if payment.payment_method == 'cash' %}badge-success{% elif payment.payment_method == 'gcash' %}badge-info{% else %}badge-neutral{% endif %} badge-outline">
+                            {{ payment.get_payment_method_display }}
+                        </span>
                     </div>
                     <div class="detail-group">
                         <span class="detail-label">Status:</span>
-                        <span class="badge 
-                            {% if payment.payment_status == 'VALIDATED' %}badge-success
-                            {% elif payment.payment_status == 'PENDING_VALIDATION' %}badge-warning
-                            {% elif payment.payment_status == 'CANCELLED' %}badge-error
-                            {% elif payment.payment_status == 'LEGACY' %}badge-info
+                        <span class="detail-value badge 
+                            {% if payment.status == 'paid' %}badge-success
+                            {% elif payment.status == 'pending' %}badge-warning
+                            {% elif payment.status == 'cancelled' %}badge-error
                             {% else %}badge-ghost{% endif %}">
-                            {{ payment.get_payment_status_display }}
+                            {{ payment.get_status_display }}
+                        </span>
+                    </div>
+                    <div class="detail-group">
+                        <span class="detail-label">Collected By:</span>
+                        <span class="detail-value">
+                            {% if payment.collected_by %}{{ payment.collected_by.get_full_name|default:payment.collected_by.username }}{% else %}N/A{% endif %}
                         </span>
                     </div>
                     {% if payment.series_prefix %}
@@ -105,15 +127,9 @@
                 </div>
             </div>
 
-            {# Second Main Row of Details #}
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 mb-5">
-                 <div>
-                    {% if payment.is_legacy_record %}
-                    <div class="detail-group">
-                        <span class="detail-label">Legacy Record:</span>
-                        <span class="detail-value">Yes</span>
-                    </div>
-                    {% endif %}
+            {# Optional Details: Deceased Member, Notes, Cancellation Info #}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mb-6">
+                <div>
                     {% if payment.deceased_member %}
                     <div class="detail-group">
                         <span class="detail-label">For Deceased Member:</span>
@@ -126,12 +142,11 @@
                     </div>
                 </div>
                 <div>
-                    {% if payment.cancellation_reason %}
+                    {% if payment.status == 'cancelled' %}
                     <div class="detail-group">
-                        <span class="detail-label">Cancelled:</span>
-                        <span class="detail-value">Yes ({{ payment.cancellation_reason }})</span>
+                        <span class="detail-label">Cancellation Reason:</span>
+                        <span class="detail-value">{{ payment.cancellation_reason|default:"No reason provided." }}</span>
                     </div>
-                    {% endif %}
                     {% if payment.cancelled_by %}
                     <div class="detail-group">
                         <span class="detail-label">Cancelled By:</span>
@@ -144,47 +159,75 @@
                         <span class="detail-value">{{ payment.cancellation_date|date:"F d, Y P" }}</span>
                     </div>
                     {% endif %}
+                    {% endif %}
                 </div>
             </div>
 
+            {# Covered Members Section #}
             {% if payment.individual_allocations.all %}
                 <div class="divider"></div>
 
                 <div class="covered-members-section">
-                    <h2 class="text-xl font-bold text-base-content mb-3 text-center">Covered Members</h2>
-                    <ul class="list-disc list-inside space-y-0.5 text-base"> 
-                    {% for member in payment.individual_allocations.all %}
+                    <h2 class="text-xl font-bold text-base-content mb-4 text-center uppercase">Covered Members</h2>
+                    <ul class="list-disc list-inside space-y-1 text-base-content/90"> 
+                    {% for allocation in payment.individual_allocations.all %}
                         <li>
-                            {{ member.individual.full_name }} - ₱{{ member.allocated_amount|floatformat:2 }} {% if member.is_payer %}<span class="badge badge-sm badge-outline badge-primary ml-1">Payer</span>{% endif %}
+                            <a href="{% url 'individual:individual_detail' pk=allocation.individual.pk %}" class="link link-hover link-secondary">
+                                {{ allocation.individual.full_name }}
+                            </a>
+                            - ₱{{ allocation.allocated_amount|floatformat:2|intcomma }} 
+                            {% if allocation.is_payer %}
+                                <span class="badge badge-sm badge-outline badge-primary ml-1">Payer</span>
+                            {% endif %}
                         </li>
                     {% endfor %}
                     </ul>
                 </div>
             {% endif %}
 
-            <div class="mt-6 flex flex-col sm:flex-row justify-center space-y-2 sm:space-y-0 sm:space-x-3">
-                {# Button to go back to the individual dashboard, or all payments list #}
-                <a href="{% url 'individual:individual_dashboard' %}" class="btn btn-neutral px-5 py-2 font-semibold rounded-lg shadow-md transition duration-200 ease-in-out text-center transform hover:scale-105">
-                    <i data-feather="arrow-left" class="w-4 h-4 mr-1"></i> Back to Dashboard
+            {# Action Buttons #}
+            <div class="mt-8 flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
+                <a href="{% url 'payment:payment_list' %}" class="btn btn-neutral px-6 py-2 font-semibold rounded-lg shadow-md transition duration-200 ease-in-out text-center transform hover:scale-105">
+                    <i data-feather="arrow-left" class="w-4 h-4 mr-1"></i> Back to Payments List
                 </a>
-                <a href="{% url 'payment:payment_list' %}" class="btn btn-info px-5 py-2 font-semibold rounded-lg shadow-md transition duration-200 ease-in-out text-center transform hover:scale-105">
-                    <i data-feather="list" class="w-4 h-4 mr-1"></i> All Payments
+                {# Add other action buttons here if needed, e.g., Edit, Cancel, Validate based on permissions/status #}
+                {% if payment.status == 'pending' and request.user.is_superuser or 'In-Charge' in request.user.groups.values_list('name', flat=True) %}
+                    <a href="{% url 'payment:payment_validate' pk=payment.pk %}" class="btn btn-success px-6 py-2 font-semibold rounded-lg shadow-md transition duration-200 ease-in-out text-center transform hover:scale-105">
+                        <i data-feather="check-circle" class="w-4 h-4 mr-1"></i> Validate Payment
+                    </a>
+                {% endif %}
+                {% if payment.status != 'cancelled' %}
+                    <a href="{% url 'payment:payment_cancel' pk=payment.pk %}" class="btn btn-error px-6 py-2 font-semibold rounded-lg shadow-md transition duration-200 ease-in-out text-center transform hover:scale-105">
+                        <i data-feather="x-circle" class="w-4 h-4 mr-1"></i> Cancel Payment
+                    </a>
+                {% endif %}
+                <a href="{% url 'payment:payment_update' pk=payment.pk %}" class="btn btn-warning px-6 py-2 font-semibold rounded-lg shadow-md transition duration-200 ease-in-out text-center transform hover:scale-105">
+                    <i data-feather="edit" class="w-4 h-4 mr-1"></i> Edit Payment
                 </a>
             </div>
 
         {% else %}
-            <p class="text-center text-gray-600 text-xl py-10">No payment found for the requested ID.</p>
+            <div class="text-center p-8 bg-base-100 rounded-lg shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16 mx-auto text-base-content/60">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                </svg>
+                <p class="mt-4 text-lg font-semibold text-base-content/80">Payment record not found.</p>
+                <p class="mt-2 text-sm text-base-content/60">The payment you are looking for may not exist or you do not have permission to view it.</p>
+                <a href="{% url 'payment:payment_list' %}" class="mt-6 btn btn-primary flex items-center gap-2 mx-auto w-fit">
+                    <i data-feather="list" class="w-4 h-4"></i>
+                    Back to Payments List
+                </a>
+            </div>
         {% endif %}
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-{{ block.super }}
-<script src="https://unpkg.com/feather-icons"></script> 
+<script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        feather.replace();
+        feather.replace(); // Initialize feather icons
     });
 </script>
 {% endblock %}

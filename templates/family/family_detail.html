@@ -149,7 +149,7 @@
                 </p>
                 <p class="text-xs md:text-sm text-base-content mb-1 uppercase">
                     <strong class="text-base-content/80">TOTAL ALLOCATED FOR PAYER CONTRIBUTIONS:</strong>
-                    <span class="font-bold text-info">₱{{ total_allocated_payer_contributions|floatformat:2 }}</span>
+                    <span class="font-bold text-info">₱{{ total_allocated_to_family_members|floatformat:2 }}</span>
                 </p>
                 
                 <h3 class="text-sm md:text-base font-semibold text-base-content mt-4 mb-2 uppercase">RECENT PAYMENTS BY FAMILY MEMBERS</h3>
@@ -317,6 +317,20 @@
 {% block extra_js %}
 {{ block.super }}
 <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+
+{# NEW: Add a style for active tab content to force visibility #}
+<style>
+    /* Kini nga class ang magsiguro nga mo-display ang content sa active tab */
+    .is-active-content {
+        display: block !important; /* Forcaron ang content nga makita */
+    }
+    /* Kini nga rule magsiguro nga matago ang content sa inactive tabs.
+       Ang .hidden sa Tailwind CSS dapat mubuhat na ni, pero atong i-explicit aron siguraduhon gyud. */
+    .tab-content:not(.is-active-content) {
+        display: none;
+    }
+</style>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         console.log("DOM Content Loaded. Initializing Feather icons.");
@@ -348,11 +362,13 @@
         const activateTab = (activeTab, activeContent, inactiveTab, inactiveContent) => {
             if (activeTab && activeContent) {
                 activeTab.classList.add('tab-active');
-                activeContent.classList.remove('hidden');
+                activeContent.classList.remove('hidden'); // Keep existing logic for Tailwind
+                activeContent.classList.add('is-active-content'); // NEW: Explicitly make content visible
             }
             if (inactiveTab && inactiveContent) {
                 inactiveTab.classList.remove('tab-active');
-                inactiveContent.classList.add('hidden');
+                inactiveContent.classList.add('hidden'); // Keep existing logic for Tailwind
+                inactiveContent.classList.remove('is-active-content'); // NEW: Explicitly hide content
             }
         };
 
@@ -379,4 +395,4 @@
         console.log("Initial load complete for family_detail.html.");
     });
 </script>
-{% endblock %}
+{% endblock extra_js %}

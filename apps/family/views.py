@@ -15,6 +15,7 @@ from .forms import FamilyForm
 from django.db.models.functions import Coalesce
 from apps.payment.models import PaymentCoveredMember
 
+
 class FamilyListView(LoginRequiredMixin, ListView):
     model = Family
     template_name = 'family/family_list.html'
@@ -72,6 +73,10 @@ class FamilyDetailView(LoginRequiredMixin, DetailView):
         # All individuals connected to this family
         all_individuals = family.members.all()
 
+        # Get a list of all individual IDs that belong to this family
+        # This is the crucial part to fix the ValueError
+        family_individual_ids = all_individuals.values_list('id', flat=True)
+
         context['total_members_count'] = all_individuals.count()
         context['active_members_count'] = all_individuals.filter(
             is_active_member=True, is_alive=True).count()
@@ -83,30 +88,26 @@ class FamilyDetailView(LoginRequiredMixin, DetailView):
 
         # Retrieve recent payments where an individual of this family is the primary payer (Payment.individual)
         # Or where any CoveredMember from this family is listed.
-        # Let's adjust this to show payments where ANY member of this family is covered.
+        # Modified filter to use `individual__id__in` for correctness
         context['family_payments'] = Payment.objects.filter(
-            # Filter by CoveredMember's individual's family
-            covered_members__individual__family=family
-            # Use distinct() to avoid duplicate payments if multiple family members are covered by same payment
+            Q(individual__id__in=family_individual_ids) |
+            Q(covered_members__id__in=family_individual_ids)
         ).distinct().order_by('-date_paid')[:10]
 
-        # Calculate total contributions made by members of this family (sum of amounts on Payment.amount
-        # where Payment.individual is from this family, or any covered_member is from this family)
-        # This one sums up the total 'amount' of the payment object itself.
+        # Calculate total contributions made by members of this family
+        # Modified filter to use `individual__id__in` for correctness
         context['total_family_contributions'] = Payment.objects.filter(
-            # If the primary payer is from this family
-            Q(individual__family=family) |
-            # Or if any covered member is from this family
-            Q(covered_members__individual__family=family)
+            Q(individual__id__in=family_individual_ids) |
+            Q(covered_members__id__in=family_individual_ids)
         ).distinct().aggregate(  # Use distinct() to prevent double counting payments
             total_sum=Coalesce(Sum('amount'), Decimal(
                 '0.00'), output_field=DecimalField())
         )['total_sum']
 
         # Calculate the total amount specifically *allocated* to members of this family
-        # This sums the 'allocated_amount' from the CoveredMember objects for individuals in this family.
-        total_allocated_to_family_members = CoveredMember.objects.filter(
-            individual__family=family
+        # Modified filter to use `individual__id__in` for correctness
+        total_allocated_to_family_members = PaymentCoveredMember.objects.filter(
+            individual__id__in=family_individual_ids
         ).aggregate(
             total_sum=Coalesce(Sum('amount_covered'), Decimal(
                 '0.00'), output_field=DecimalField())  # Use 'amount_covered'

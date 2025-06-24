@@ -16,7 +16,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 CSRF_TRUSTED_ORIGINS = ['http://localhost', 'http://127.0.0.1',
-                         'http://127.0.0.1:8000/', 'http://localhost:8000/']
+                        'http://127.0.0.1:8000/', 'http://localhost:8000/']
 
 
 # Application definition
@@ -28,6 +28,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # <--- AKONG GI-ADD NI DIRI PARA MAKA-GAMIT KA SA {% load humanize %}
+    'django.contrib.humanize',
 
     # My Apps (Important: Check paths for each app)
     'apps.individual',
@@ -41,7 +43,7 @@ INSTALLED_APPS = [
     'apps.contribution_type',
 
     # Third-party apps
-  #  'django_browser_reload',
+    # 'django_browser_reload',
     'widget_tweaks',
     'rest_framework',
     'crispy_forms',
@@ -57,7 +59,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-   # 'django_browser_reload.middleware.BrowserReloadMiddleware',  # For browser auto-reload
+    # 'django_browser_reload.middleware.BrowserReloadMiddleware',   # For browser auto-reload
 ]
 
 ROOT_URLCONF = 'kadamay.urls'
@@ -67,8 +69,9 @@ ROOT_URLCONF = 'kadamay.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'], # This is good for project-level templates
-        'APP_DIRS': True, # This tells Django to look in app_name/templates
+        # This is good for project-level templates
+        'DIRS': [BASE_DIR / 'templates'],
+        'APP_DIRS': True,  # This tells Django to look in app_name/templates
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
@@ -120,7 +123,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'Asia/Manila'  # Set to your local timezone
+TIME_ZONE = 'Asia/Manila'   # Set to your local timezone
 
 USE_I18N = True
 
@@ -136,8 +139,9 @@ STATIC_ROOT = BASE_DIR / 'staticfiles_collected'
 
 # Tell Django where to look for additional static files during development
 STATICFILES_DIRS = [
-    BASE_DIR / 'static', # <--- AKOA GI-ADD NI PARA MA-APIL ANG IMONG ROOT STATIC FOLDER
-    BASE_DIR / 'theme' / 'static', # This is for static files specific to your 'theme' app/folder
+    BASE_DIR / 'static',  # <--- AKOA GI-ADD NI PARA MA-APIL ANG IMONG ROOT STATIC FOLDER
+    # This is for static files specific to your 'theme' app/folder
+    BASE_DIR / 'theme' / 'static',
     # You can add more paths here if you have other project-level static folders
 ]
 
@@ -154,9 +158,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # AUTH_USER_MODEL = 'account.User' # Uncomment if you have a custom User model
 
 # Login/Logout Redirect URLs
-LOGIN_URL = 'account:login'  # Name of the login URL
-LOGIN_REDIRECT_URL = 'home'  # Name of the URL to redirect to after successful login
-LOGOUT_REDIRECT_URL = 'account:login' # Name of the URL to redirect to after logout
+LOGIN_URL = 'account:login'   # Name of the login URL
+LOGIN_REDIRECT_URL = 'home'   # Name of the URL to redirect to after successful login
+# Name of the URL to redirect to after logout
+LOGOUT_REDIRECT_URL = 'account:login'
 
 # Crispy Forms
 CRISPY_ALLOWED_TEMPLATE_PACKS = 'tailwind'
