@@ -1,40 +1,35 @@
 {# templates/individual/individual_form.html #}
 {% extends 'base.html' %}
 {% load static %} {# If you use static files like images/icons #}
-{% load widget_tweaks %} {# RE-ADDED: For easy application of DaisyUI classes. This is NOT crispy_tailwind and will not cause errors. #}
+{% load widget_tweaks %} {# For easy application of DaisyUI classes #}
 
 {% block title %}{{ page_title }} - Kadamay Mortuary System{% endblock %}
 
 {% block content %}
-{# FIXED: Adjusted the main container div to make it wider (max-w-6xl) and centered #}
-<div class="container mx-auto p-4 lg:p-8 max-w-6xl">
+<div class="container mx-auto p-4 lg:p-8 max-w-4xl"> {# Slightly reduced max-width to make it feel less stretched #}
     <div class="bg-base-100 shadow-xl rounded-lg p-6 lg:p-8">
-        <h1 class="text-3xl font-bold text-base-content mb-6">{{ page_title }}</h1>
+        <h1 class="text-3xl font-bold text-base-content mb-6 text-center">{{ page_title }}</h1> {# Centered title #}
 
-        {# Display Django messages (e.g., success/error) #}
-        {# NOTE: base.html now also handles messages via JavaScript for toast notifications. #}
-        {# You can keep this block if you want messages to also appear directly here, or remove if the toast is enough. #}
         {% if messages %}
-            <div id="django_messages_container_form" class="mb-4"> {# Renamed ID to avoid conflict with base.html #}
+            <div id="django_messages_container_form" class="mb-4">
                 {% for message in messages %}
                     <div class="alert
                         {% if message.tags == 'success' %}alert-success
                         {% elif message.tags == 'error' %}alert-error
                         {% elif message.tags == 'warning' %}alert-warning
                         {% else %}alert-info{% endif %}
-                        shadow-lg mb-2 rounded-lg">
-                        <span class="text-sm">{{ message }}</span>
+                        shadow-lg mb-2 rounded-lg text-sm"> {# Kept text-sm for message content #}
+                        <span>{{ message }}</span>
                     </div>
                 {% endfor %}
             </div>
         {% endif %}
 
-        <form method="post" class="space-y-6" enctype="multipart/form-data"> {# Added enctype for potential file uploads #}
+        <form method="post" class="space-y-6" enctype="multipart/form-data">
             {% csrf_token %}
 
-            {# Form Errors - Display non-field errors if any #}
             {% if form.non_field_errors %}
-                <div class="alert alert-error shadow-lg rounded-lg">
+                <div class="alert alert-error shadow-lg rounded-lg text-sm"> {# Kept text-sm for error content #}
                     <ul class="list-disc list-inside">
                         {% for error in form.non_field_errors %}
                             <li>{{ error }}</li>
@@ -43,159 +38,165 @@
                 </div>
             {% endif %}
 
-            {# Personal Information Section #}
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-                {# Name Fields #}
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">{{ form.given_name.label }}</span>
-                        {% if form.given_name.field.required %}<span class="text-error ml-1">*</span>{% endif %}
-                    </label>
-                    {{ form.given_name|add_class:"input input-bordered w-full" }}
-                    {% if form.given_name.errors %}<div class="text-error text-sm mt-1">{{ form.given_name.errors }}</div>{% endif %}
-                </div> {# REQUIRED: models.CharField (no blank=True) #}
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">{{ form.middle_name.label }}</span>
-                        {% if form.middle_name.field.required %}<span class="text-error ml-1">*</span>{% endif %}
-                    </label>
-                    {{ form.middle_name|add_class:"input input-bordered w-full" }}
-                    {% if form.middle_name.errors %}<div class="text-error text-sm mt-1">{{ form.middle_name.errors }}</div>{% endif %}
-                </div> {# OPTIONAL: models.CharField(blank=True, null=True) #}
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">{{ form.surname.label }}</span>
-                        {% if form.surname.field.required %}<span class="text-error ml-1">*</span>{% endif %}
-                    </label>
-                    {{ form.surname|add_class:"input input-bordered w-full" }}
-                    {% if form.surname.errors %}<div class="text-error text-sm mt-1">{{ form.surname.errors }}</div>{% endif %}
-                </div> {# REQUIRED: models.CharField (no blank=True) #}
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">{{ form.suffix_name.label }}</span>
-                        {% if form.suffix_name.field.required %}<span class="text-error ml-1">*</span>{% endif %}
-                    </label>
-                    {{ form.suffix_name|add_class:"input input-bordered w-full" }}
-                    {% if form.suffix_name.errors %}<div class="text-error text-sm mt-1">{{ form.suffix_name.errors }}</div>{% endif %}
-                </div> {# OPTIONAL: models.CharField(blank=True, null=True) #}
+            {# Personal Information Section - Grouped with a subtle border #}
+            <div class="border border-base-300 p-4 rounded-lg">
+                <h2 class="text-lg font-semibold text-base-content mb-4 border-b border-base-200 pb-2">Personal Details</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+                    {# Name Fields #}
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text text-xs">{{ form.given_name.label }}</span> {# Applied text-xs for 12px #}
+                            {% if form.given_name.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                        </label>
+                        {{ form.given_name|add_class:"input input-sm input-bordered w-full" }} {# input-sm for smaller inputs #}
+                        {% if form.given_name.errors %}<div class="text-error text-xs mt-1">{{ form.given_name.errors }}</div>{% endif %} {# text-xs for error #}
+                    </div>
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text text-xs">{{ form.middle_name.label }}</span>
+                            {% if form.middle_name.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                        </label>
+                        {{ form.middle_name|add_class:"input input-sm input-bordered w-full" }} {# input-sm #}
+                        {% if form.middle_name.errors %}<div class="text-error text-xs mt-1">{{ form.middle_name.errors }}</div>{% endif %}
+                    </div>
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text text-xs">{{ form.surname.label }}</span>
+                            {% if form.surname.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                        </label>
+                        {{ form.surname|add_class:"input input-sm input-bordered w-full" }} {# input-sm #}
+                        {% if form.surname.errors %}<div class="text-error text-xs mt-1">{{ form.surname.errors }}</div>{% endif %}
+                    </div>
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text text-xs">{{ form.suffix_name.label }}</span>
+                            {% if form.suffix_name.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                        </label>
+                        {{ form.suffix_name|add_class:"input input-sm input-bordered w-full" }} {# input-sm #}
+                        {% if form.suffix_name.errors %}<div class="text-error text-xs mt-1">{{ form.suffix_name.errors }}</div>{% endif %}
+                    </div>
+                </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {# Demographic and Contact Info Section #}
+            <div class="border border-base-300 p-4 rounded-lg">
+                <h2 class="text-lg font-semibold text-base-content mb-4 border-b border-base-200 pb-2">Demographics & Contact</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {# Demographic Fields #}
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text text-xs">{{ form.sex.label }}</span>
+                            {% if form.sex.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                        </label>
+                        {{ form.sex|add_class:"select select-sm select-bordered w-full" }} {# select-sm for smaller select #}
+                        {% if form.sex.errors %}<div class="text-error text-xs mt-1">{{ form.sex.errors }}</div>{% endif %}
+                    </div>
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text text-xs">{{ form.civil_status.label }}</span>
+                            {% if form.civil_status.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                        </label>
+                        {{ form.civil_status|add_class:"select select-sm select-bordered w-full" }} {# select-sm #}
+                        {% if form.civil_status.errors %}<div class="text-error text-xs mt-1">{{ form.civil_status.errors }}</div>{% endif %}
+                    </div>
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text text-xs">{{ form.birth_date.label }}</span>
+                            {% if form.birth_date.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                        </label>
+                        {{ form.birth_date|add_class:"input input-sm input-bordered w-full" }} {# input-sm #}
+                        {% if form.birth_date.errors %}<div class="text-error text-xs mt-1">{{ form.birth_date.errors }}</div>{% endif %}
+                    </div>
 
-                {# Demographic Fields #}
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">{{ form.sex.label }}</span>
-                        {% if form.sex.field.required %}<span class="text-error ml-1">*</span>{% endif %}
-                    </label>
-                    {{ form.sex|add_class:"select select-bordered w-full" }}
-                    {% if form.sex.errors %}<div class="text-error text-sm mt-1">{{ form.sex.errors }}</div>{% endif %}
-                </div> {# OPTIONAL: models.CharField(blank=True, null=True) #}
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">{{ form.civil_status.label }}</span>
-                        {% if form.civil_status.field.required %}<span class="text-error ml-1">*</span>{% endif %}
-                    </label>
-                    {{ form.civil_status|add_class:"select select-bordered w-full" }}
-                    {% if form.civil_status.errors %}<div class="text-error text-sm mt-1">{{ form.civil_status.errors }}</div>{% endif %}
-                </div> {# OPTIONAL: models.CharField(blank=True, null=True) #}
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">{{ form.birth_date.label }}</span>
-                        {% if form.birth_date.field.required %}<span class="text-error ml-1">*</span>{% endif %}
-                    </label>
-                    {{ form.birth_date|add_class:"input input-bordered w-full" }}
-                    {% if form.birth_date.errors %}<div class="text-error text-sm mt-1">{{ form.birth_date.errors }}</div>{% endif %}
-                </div> {# OPTIONAL: models.DateField(blank=True, null=True) #}
+                    {# Contact Info #}
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text text-xs">{{ form.contact_number.label }}</span>
+                            {% if form.contact_number.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                        </label>
+                        {{ form.contact_number|add_class:"input input-sm input-bordered w-full" }} {# input-sm #}
+                        {% if form.contact_number.errors %}<div class="text-error text-xs mt-1">{{ form.contact_number.errors }}</div>{% endif %}
+                    </div>
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text text-xs">{{ form.email_address.label }}</span>
+                            {% if form.email_address.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                        </label>
+                        {{ form.email_address|add_class:"input input-sm input-bordered w-full" }} {# input-sm #}
+                        {% if form.email_address.errors %}<div class="text-error text-xs mt-1">{{ form.email_address.errors }}</div>{% endif %}
+                    </div>
+                    <div class="form-control col-span-full md:col-span-1 lg:col-span-1"> {# Adjusted span for address #}
+                        <label class="label">
+                            <span class="label-text text-xs">{{ form.address.label }}</span>
+                            {% if form.address.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                        </label>
+                        {{ form.address|add_class:"input input-sm input-bordered w-full" }} {# input-sm #}
+                        {% if form.address.errors %}<div class="text-error text-xs mt-1">{{ form.address.errors }}</div>{% endif %}
+                    </div>
+                </div>
+            </div>
 
-                {# Contact Info #}
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">{{ form.contact_number.label }}</span>
-                        {% if form.contact_number.field.required %}<span class="text-error ml-1">*</span>{% endif %}
-                    </label>
-                    {{ form.contact_number|add_class:"input input-bordered w-full" }}
-                    {% if form.contact_number.errors %}<div class="text-error text-sm mt-1">{{ form.contact_number.errors }}</div>{% endif %}
-                </div> {# OPTIONAL: models.CharField(blank=True, null=True) #}
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">{{ form.email_address.label }}</span>
-                        {% if form.email_address.field.required %}<span class="text-error ml-1">*</span>{% endif %}
-                    </label>
-                    {{ form.email_address|add_class:"input input-bordered w-full" }}
-                    {% if form.email_address.errors %}<div class="text-error text-sm mt-1">{{ form.email_address.errors }}</div>{% endif %}
-                </div> {# OPTIONAL: models.EmailField(blank=True, null=True) #}
+            {# Membership and Affiliation Section #}
+            <div class="border border-base-300 p-4 rounded-lg">
+                <h2 class="text-lg font-semibold text-base-content mb-4 border-b border-base-200 pb-2">Membership & Affiliation</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text text-xs">{{ form.relationship.label }}</span>
+                            {% if form.relationship.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                        </label>
+                        {{ form.relationship|add_class:"select select-sm select-bordered w-full" }} {# select-sm #}
+                        {% if form.relationship.errors %}<div class="text-error text-xs mt-1">{{ form.relationship.errors }}</div>{% endif %}
+                    </div>
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text text-xs">{{ form.membership_status.label }}</span>
+                            {% if form.membership_status.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                        </label>
+                        {{ form.membership_status|add_class:"select select-sm select-bordered w-full" }} {# select-sm #}
+                        {% if form.membership_status.errors %}<div class="text-error text-xs mt-1">{{ form.membership_status.errors }}</div>{% endif %}
+                    </div>
 
-                        {# Membership Details (EXCLUDING membership_id as it's auto-generated) #}
-                        {# Removed the div for membership_id field #}
-                        <div class="form-control">
-                            <label class="label">
-                                <span class="label-text">{{ form.relationship.label }}</span>
-                                {% if form.relationship.field.required %}<span class="text-error ml-1">*</span>{% endif %}
-                            </label>
-                            {{ form.relationship|add_class:"select select-bordered w-full" }}
-                            {% if form.relationship.errors %}<div class="text-error text-sm mt-1">{{ form.relationship.errors }}</div>{% endif %}
-                        </div> {# REQUIRED: models.CharField (no blank=True) #}
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">{{ form.membership_status.label }}</span>
-                        {% if form.membership_status.field.required %}<span class="text-error ml-1">*</span>{% endif %}
-                    </label>
-                    {{ form.membership_status|add_class:"select select-bordered w-full" }}
-                    {% if form.membership_status.errors %}<div class="text-error text-sm mt-1">{{ form.membership_status.errors }}</div>{% endif %}
-                </div> {# REQUIRED: models.CharField (has default but still required in form unless blank=True is explicitly set) #}
+                    {# Boolean Fields as Checkboxes - Adjusted layout for better alignment #}
+                    <div class="form-control flex flex-row items-center gap-4 col-span-full"> {# Use flex for inline checkboxes #}
+                        <label class="label cursor-pointer justify-start gap-2">
+                            {{ form.is_active_member|add_class:"checkbox checkbox-sm checkbox-primary" }} {# checkbox-sm #}
+                            <span class="label-text text-xs">
+                                {{ form.is_active_member.label }}
+                                {% if form.is_active_member.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                            </span>
+                        </label>
+                        {% if form.is_active_member.errors %}<div class="text-error text-xs mt-1">{{ form.is_active_member.errors }}</div>{% endif %}
+                        
+                        <label class="label cursor-pointer justify-start gap-2">
+                            {{ form.is_alive|add_class:"checkbox checkbox-sm checkbox-primary" }} {# checkbox-sm #}
+                            <span class="label-text text-xs">
+                                {{ form.is_alive.label }}
+                                {% if form.is_alive.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                            </span>
+                        </label>
+                        {% if form.is_alive.errors %}<div class="text-error text-xs mt-1">{{ form.is_alive.errors }}</div>{% endif %}
+                    </div>
 
-                {# Boolean Fields as Checkboxes #}
-                <div class="form-control col-span-full md:col-span-1">
-                    <label class="label cursor-pointer justify-start gap-2">
-                        {{ form.is_active_member|add_class:"checkbox checkbox-primary" }} {# Added DaisyUI checkbox classes #}
-                        <span class="label-text">
-                            {{ form.is_active_member.label }}
-                            {% if form.is_active_member.field.required %}<span class="text-error ml-1">*</span>{% endif %} {# Add asterisk next to label text #}
-                        </span>
-                    </label>
-                    {% if form.is_active_member.errors %}<div class="text-error text-sm mt-1">{{ form.is_active_member.errors }}</div>{% endif %}
-                </div> {# REQUIRED: models.BooleanField (defaults to True, but no blank=True means required in form) #}
-                <div class="form-control col-span-full md:col-span-1">
-                    <label class="label cursor-pointer justify-start gap-2">
-                        {{ form.is_alive|add_class:"checkbox checkbox-primary" }} {# Added DaisyUI checkbox classes #}
-                        <span class="label-text">
-                            {{ form.is_alive.label }}
-                            {% if form.is_alive.field.required %}<span class="text-error ml-1">*</span>{% endif %} {# Add asterisk next to label text #}
-                        </span>
-                    </label>
-                    {% if form.is_alive.errors %}<div class="text-error text-sm mt-1">{{ form.is_alive.errors }}</div>{% endif %}
-                </div> {# REQUIRED: models.BooleanField (defaults to True, but no blank=True means required in form) #}
-
-                <div class="form-control col-span-full">
-                    <label class="label">
-                        <span class="label-text">{{ form.address.label }}</span>
-                        {% if form.address.field.required %}<span class="text-error ml-1">*</span>{% endif %}
-                    </label>
-                    {{ form.address|add_class:"input input-bordered w-full" }}
-                    {% if form.address.errors %}<div class="text-error text-sm mt-1">{{ form.address.errors }}</div>{% endif %}
-                </div> {# OPTIONAL: models.CharField(blank=True, null=True) #}
-
-
-                {# Family Field #}
-                <div class="form-control col-span-full"> {# Occupy full width for better alignment #}
-                    <label class="label">
-                        <span class="label-text">{{ form.family.label }}</span>
-                        {% if form.family.field.required %}<span class="text-error ml-1">*</span>{% endif %}
-                    </label>
-                    {{ form.family|add_class:"select select-bordered w-full" }}
-                    {% if form.family.errors %}<div class="text-error text-sm mt-1">{{ form.family.errors }}</div>{% endif %}
-                </div> {# OPTIONAL: models.ForeignKey(null=True, blank=True) #}
-                
-                {# Church Field for Individual if directly linked #}
-                {# Assuming Individual model has a direct 'church' field #}
-                <div class="form-control col-span-full">
-                    <label class="label">
-                        <span class="label-text">{{ form.church.label }}</span>
-                        {% if form.church.field.required %}<span class="text-error ml-1">*</span>{% endif %}
-                    </label>
-                    {{ form.church|add_class:"select select-bordered w-full" }}
-                    {% if form.church.errors %}<div class="text-error text-sm mt-1">{{ form.church.errors }}</div>{% endif %}
+                    {# Family Field #}
+                    <div class="form-control col-span-full">
+                        <label class="label">
+                            <span class="label-text text-xs">{{ form.family.label }}</span>
+                            {% if form.family.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                        </label>
+                        {{ form.family|add_class:"select select-sm select-bordered w-full" }} {# select-sm #}
+                        {% if form.family.errors %}<div class="text-error text-xs mt-1">{{ form.family.errors }}</div>{% endif %}
+                    </div>
+                    
+                    {# Church Field for Individual if directly linked #}
+                    <div class="form-control col-span-full">
+                        <label class="label">
+                            <span class="label-text text-xs">{{ form.church.label }}</span>
+                            {% if form.church.field.required %}<span class="text-error ml-1">*</span>{% endif %}
+                        </label>
+                        {{ form.church|add_class:"select select-sm select-bordered w-full" }} {# select-sm #}
+                        {% if form.church.errors %}<div class="text-error text-xs mt-1">{{ form.church.errors }}</div>{% endif %}
+                    </div>
                 </div>
             </div>
 
@@ -207,5 +208,4 @@
     </div>
 </div>
 
-{# No extra JS needed for this simple form, unless you want date pickers, etc. #}
 {% endblock %}

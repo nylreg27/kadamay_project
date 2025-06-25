@@ -1,7 +1,7 @@
 {# apps/payment/templates/payment/payment_form.html #}
 {% extends 'base.html' %}
 {% load static %}
-{% load crispy_forms_tags %} {# Ensure this is loaded for crispy rendering of formsets #}
+{% load tailwind_filters %} {# Assuming you're using django-crispy-forms with tailwind template #}
 
 {% block title %}
     {% if object %}
@@ -12,275 +12,243 @@
 {% endblock %}
 
 {% block content %}
-<div class="container mx-auto p-4 lg:p-8 max-w-4xl">
-    <div class="bg-base-100 shadow-xl rounded-lg p-6 lg:p-8">
+<div class="container mx-auto p-2 lg:p-4 max-w-6xl"> {# Reduced padding to make it tighter #}
+    <div class="bg-base-100 shadow-xl rounded-lg p-4 lg:p-6 text-sm"> {# Reduced padding, set base text-sm #}
         {# Header Section #}
-        <div class="flex justify-between items-center mb-8 flex-wrap gap-4">
+        <div class="flex justify-between items-center mb-6 flex-wrap gap-3"> {# Reduced margin #}
             <div>
-                <h1 class="text-2xl md:text-3xl font-extrabold text-base-content uppercase">
+                <h1 class="text-xl md:text-2xl font-extrabold text-base-content uppercase"> {# Smaller heading #}
                     {% if object %}
-                        Update Payment
+                        UPDATE PAYMENT RECORD
                     {% else %}
-                        Create New Payment
+                        CREATE PAYMENT RECORD
                     {% endif %}
                 </h1>
-                <p class="text-xs md:text-sm text-base-content/80 mt-2 uppercase">
-                    {% if object %}
-                        Adjust details for payment {{ object.or_number|default:"(No OR)" }}.
-                    {% else %}
-                        Record a new payment and its covered members.
-                    {% endif %}
+                <p class="text-xs text-base-content/80 mt-1 uppercase"> {# Smaller description #}
+                    Efficiently manage member contributions and payment allocations.
                 </p>
             </div>
-            <div class="flex flex-wrap gap-3">
-                <a href="{% url 'payment:payment_list' %}" class="btn btn-sm btn-outline btn-neutral flex items-center gap-2 rounded-lg font-semibold uppercase">
-                    <i data-feather="arrow-left" class="w-4 h-4"></i>
+            <div class="flex flex-wrap gap-2"> {# Smaller gap #}
+                <a href="{% url 'payment:payment_list' %}" class="btn btn-xs btn-outline btn-neutral flex items-center gap-1 rounded-md font-semibold uppercase"> {# Smaller button #}
+                    <i data-feather="arrow-left" class="w-3 h-3"></i> {# Smaller icon #}
                     BACK TO LIST
                 </a>
             </div>
         </div>
 
-        {# Payment Form #}
-        <form method="post" class="space-y-6">
-            {% csrf_token %}
-
-            {# Display Non-field errors (e.g., from clean method) #}
-            {% if form.non_field_errors %}
-                <div role="alert" class="alert alert-error">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    <span>
-                        {% for error in form.non_field_errors %}
-                            {{ error }}
-                        {% endfor %}
-                    </span>
-                </div>
-            {% endif %}
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {# Payer Search Field #}
-                <div class="form-control col-span-1">
-                    <label class="label">
-                        <span class="label-text">{{ form.individual.label }} <span class="text-error">*</span></span>
-                    </label>
-                    <div class="relative">
-                        <input type="text" id="id_payer_search"
-                               class="input input-bordered w-full {% if form.individual.errors %}input-error{% endif %}"
-                               placeholder="Search for Payer (e.g., John Doe, 0917...)"
-                               value="{{ form.instance.individual.full_name|default:'' }}"
-                               autocomplete="off">
-                        <div id="payer-results" class="absolute z-10 w-full bg-base-200 shadow-lg rounded-md mt-1 max-h-48 overflow-y-auto hidden"></div>
-                        {{ form.individual.as_hidden }} {# Hidden input for actual individual ID #}
-                        <p id="selected-payer-info" class="text-sm text-info mt-1">
-                            {% if form.instance.individual %}
-                                Selected: {{ form.instance.individual.full_name }} ({{ form.instance.individual.contact_number|default:'N/A' }})
+        {# Django Messages #}
+        {% if messages %}
+            <div class="mb-4"> {# Reduced margin #}
+                {% for message in messages %}
+                    <div role="alert" class="alert alert-{{ message.tags }} shadow-lg mb-2 rounded-md text-xs"> {# Smaller alert #}
+                        <div>
+                            {% if message.tags == 'success' %}
+                                <i data-feather="check-circle" class="w-4 h-4"></i> {# Smaller icon #}
+                            {% elif message.tags == 'error' %}
+                                <i data-feather="alert-circle" class="w-4 h-4"></i> {# Smaller icon #}
+                            {% else %}
+                                <i data-feather="info" class="w-4 h-4"></i> {# Smaller icon #}
                             {% endif %}
-                        </p>
-                        {% if form.individual.errors %}
-                            {% for error in form.individual.errors %}
-                                <p class="text-error text-xs mt-1">{{ error }}</p>
+                            <span class="font-medium">{{ message }}</span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <form method="post" class="space-y-6" id="payment-form"> {# Reduced space-y #}
+            {% csrf_token %}
+            
+            {# Main Payment Section - Matching Excel Placement #}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4"> {# Two columns, adjusted gaps #}
+                
+                {# Column 1: Individuals Search & Payer #}
+                <div class="col-span-1 space-y-4"> {# Reduced space-y #}
+                    <h2 class="text-lg font-bold text-base-content uppercase mb-2">INDIVIDUALS</h2> {# Smaller heading #}
+                    
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text text-xs">SEARCH PAYER: <span class="text-error">*</span></span> {# Smaller label text #}
+                        </label>
+                        <div class="relative">
+                            <input type="text" id="id_payer_search"
+                                   class="input input-bordered input-sm w-full {% if form.individual.errors %}input-error{% endif %} text-xs" {# Smaller input #}
+                                   placeholder="Search by name or contact number..."
+                                   value="{{ form.instance.individual.full_name|default:'' }}"
+                                   autocomplete="off">
+                            <div id="payer-results" class="absolute z-10 w-full bg-base-200 shadow-lg rounded-md mt-1 max-h-40 overflow-y-auto hidden text-xs"></div> {# Smaller results #}
+                            {{ form.individual.as_hidden }} {# Hidden input for actual individual ID #}
+                            <p id="selected-payer-info" class="text-xs text-info mt-1"> {# Smaller text #}
+                                {% if form.instance.individual %}
+                                    Selected Payer: <span class="font-semibold">{{ form.instance.individual.full_name }}</span>
+                                {% endif %}
+                            </p>
+                            {% if form.individual.errors %}
+                                {% for error in form.individual.errors %}
+                                    <p class="text-error text-xs mt-1">{{ error }}</p> {# Smaller error #}
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text text-xs">PAYER:</span> {# Smaller label text #}
+                        </label>
+                        <input type="text" id="id_payer_display"
+                               class="input input-bordered input-sm w-full bg-base-200 cursor-not-allowed text-xs" {# Smaller input #}
+                               value="{{ form.instance.individual.full_name|default:'' }}"
+                               readonly>
+                    </div>
+
+                </div>
+
+                {# Column 2: Payment Details #}
+                <div class="col-span-1 space-y-4"> {# Reduced space-y #}
+                    <h2 class="text-lg font-bold text-base-content uppercase mb-2">PAYMENT DETAILS</h2> {# Smaller heading #}
+
+                    {# O.R. Number Field #}
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text text-xs">O.R. NUMBER:</span> {# Smaller label text #}
+                        </label>
+                        <input type="text" name="{{ form.or_number.name }}" id="{{ form.or_number.id_for_label }}"
+                               class="input input-bordered input-sm w-full {% if form.or_number.errors %}input-error{% endif %} text-xs" {# Smaller input #}
+                               value="{{ form.or_number.value|default:'' }}"
+                               placeholder="Auto-generate or enter old O.R. number">
+                        {% if form.or_number.errors %}
+                            {% for error in form.or_number.errors %}
+                                <p class="text-error text-xs mt-1">{{ error }}</p> {# Smaller error #}
                             {% endfor %}
                         {% endif %}
+                        <p class="text-xs text-base-content/70 mt-1">Leave blank to auto-generate for new payments. Enter for old payments without OR.</p> {# Smaller text #}
                     </div>
-                </div>
 
-                {# Amount Field #}
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">{{ form.amount.label }} <span class="text-error">*</span></span>
-                    </label>
-                    {{ form.amount }}
-                    {% if form.amount.errors %}
-                        {% for error in form.amount.errors %}
-                            <p class="text-error text-xs mt-1">{{ error }}</p>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-
-                {# Date Paid Field #}
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">{{ form.date_paid.label }} <span class="text-error">*</span></span>
-                    </label>
-                    {{ form.date_paid }}
-                    {% if form.date_paid.errors %}
-                        {% for error in form.date_paid.errors %}
-                            <p class="text-error text-xs mt-1">{{ error }}</p>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-
-                {# OR Number Field (Read-only, auto-generated) #}
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">{{ form.or_number.label }}</span>
-                    </label>
-                    <input type="text" class="input input-bordered w-full" value="{{ form.or_number.value }}" readonly>
-                    {{ form.or_number.as_hidden }} {# Actual hidden field for OR number submission #}
-                    {% if form.or_number.errors %}
-                        {% for error in form.or_number.errors %}
-                            <p class="text-error text-xs mt-1">{{ error }}</p>
-                        {% endfor %}
-                    {% endif %}
-                    <label class="label">
-                        <span class="label-text-alt text-neutral-content opacity-70">This will auto-generate if left blank.</span>
-                    </label>
-                </div>
-
-                {# Payment Method Field #}
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">{{ form.payment_method.label }} <span class="text-error">*</span></span>
-                    </label>
-                    {{ form.payment_method }}
-                    {% if form.payment_method.errors %}
-                        {% for error in form.payment_method.errors %}
-                            <p class="text-error text-xs mt-1">{{ error }}</p>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-
-                {# GCash Reference Number Field (Initially hidden) #}
-                <div class="form-control" id="gcash_ref_div" style="display: {% if form.payment_method.value == 'gcash' %}block{% else %}none{% endif %};">
-                    <label class="label">
-                        <span class="label-text">{{ form.gcash_reference_number.label }}</span>
-                    </label>
-                    {{ form.gcash_reference_number }}
-                    {% if form.gcash_reference_number.errors %}
-                        {% for error in form.gcash_reference_number.errors %}
-                            <p class="text-error text-xs mt-1">{{ error }}</p>
-                        {% endfor %}
-                    {% endif %}
-                    <label class="label">
-                        <span class="label-text-alt text-error opacity-70">Required for GCash payments.</span>
-                    </label>
-                </div>
-
-                {# Contribution Type Field #}
-                <div class="form-control md:col-span-2">
-                    <label class="label">
-                        <span class="label-text">{{ form.contribution_type.label }} <span class="text-error">*</span></span>
-                    </label>
-                    {{ form.contribution_type }}
-                    {% if form.contribution_type.errors %}
-                        {% for error in form.contribution_type.errors %}
-                            <p class="text-error text-xs mt-1">{{ error }}</p>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-            </div>
-
-            <div class="divider mt-8 text-lg font-semibold">COVERED MEMBERS (PAYEES)</div>
-
-            {# Covered Members Search Input #}
-            <div class="form-control mb-4">
-                <label class="label">
-                    <span class="label-text">Add Member to Payment</span>
-                </label>
-                <div class="relative">
-                    <input type="text" id="member_search_input"
-                           class="input input-bordered w-full"
-                           placeholder="Search for family members to add (e.g., Jane Doe)"
-                           autocomplete="off">
-                    <div id="member-search-results" class="absolute z-10 w-full bg-base-200 shadow-lg rounded-md mt-1 max-h-48 overflow-y-auto hidden"></div>
-                </div>
-            </div>
-
-            {# Covered Members Formset - POS Style Display #}
-            <div id="covered-members-formset" class="bg-base-200 p-4 rounded-lg shadow-inner min-h-[100px]">
-                {{ covered_member_formset.management_form }}
-                <div class="space-y-3" id="member-list-display">
-                    {% for formset_form in covered_member_formset %}
-                        <div class="flex items-center gap-2 bg-base-100 p-3 rounded-md shadow-sm formset-row"
-                             data-form-prefix="{{ formset_form.prefix }}"
-                             id="formset-row-{{ formset_form.prefix }}"
-                             {% if formset_form.DELETE.value %}style="display: none;"{% endif %}>
-                            
-                            <input type="hidden" name="{{ formset_form.prefix }}-id" value="{{ formset_form.instance.pk|default:'' }}">
-                            {{ formset_form.id.as_hidden }}
-                            
-                            {# Hidden Individual ID for the formset row #}
-                            <input type="hidden" name="{{ formset_form.prefix }}-individual" value="{{ formset_form.instance.individual.pk|default:'' }}" class="formset-individual-id" />
-                            
-                            <div class="flex-grow font-semibold text-base-content">
-                                <span class="member-name">{{ formset_form.instance.individual.full_name|default:"New Member" }}</span>
-                                {% if formset_form.individual.errors %}
-                                    {% for error in formset_form.individual.errors %}
-                                        <p class="text-error text-xs mt-1">{{ error }}</p>
-                                    {% endfor %}
-                                {% endif %}
-                            </div>
-
-                            <div class="flex items-center gap-2 w-auto">
-                                <label class="label sr-only" for="{{ formset_form.amount_covered.id_for_label }}">Amount</label>
-                                <input type="number" step="0.01" min="0"
-                                       name="{{ formset_form.prefix }}-amount_covered"
-                                       id="{{ formset_form.amount_covered.id_for_label }}"
-                                       class="input input-bordered input-sm w-28 text-right {% if formset_form.amount_covered.errors %}input-error{% endif %}"
-                                       placeholder="Amount"
-                                       value="{{ formset_form.amount_covered.value|default_if_none:'' }}">
-                                {% if formset_form.amount_covered.errors %}
-                                    {% for error in formset_form.amount_covered.errors %}
-                                        <p class="text-error text-xs mt-1">{{ error }}</p>
-                                    {% endfor %}
-                                {% endif %}
-                            </div>
-                            
-                            {# Delete checkbox and label #}
-                            <label class="label cursor-pointer flex items-center gap-1">
-                                <input type="checkbox" name="{{ formset_form.prefix }}-DELETE"
-                                       id="{{ formset_form.DELETE.id_for_label }}"
-                                       class="checkbox checkbox-error remove-member-checkbox"
-                                       {% if formset_form.DELETE.value %}checked{% endif %}>
-                                <span class="label-text text-sm text-error">Remove</span>
-                            </label>
-                        </div>
-                    {% endfor %}
-                </div>
-                
-                {# Hidden template for new formset rows (JS will use this) #}
-                <template id="empty-formset-template">
-                    <div class="flex items-center gap-2 bg-base-100 p-3 rounded-md shadow-sm formset-row"
-                         data-form-prefix="__prefix__"
-                         id="formset-row-__prefix__">
-                        <input type="hidden" name="__prefix__-id" id="id___prefix__-id" />
-                        <input type="hidden" name="__prefix__-payment" id="id___prefix__-payment" value="{{ object.pk|default_if_none:'' }}" />
-                        <input type="hidden" name="__prefix__-individual" id="id___prefix__-individual" class="formset-individual-id" />
-
-                        <div class="flex-grow font-semibold text-base-content">
-                            <span class="member-name">New Member Name</span> {# Placeholder, will be updated by JS #}
-                        </div>
-
-                        <div class="flex items-center gap-2 w-auto">
-                            <label class="label sr-only" for="id___prefix__-amount_covered">Amount</label>
-                            <input type="number" step="0.01" min="0"
-                                   name="__prefix__-amount_covered"
-                                   id="id___prefix__-amount_covered"
-                                   class="input input-bordered input-sm w-28 text-right"
-                                   placeholder="Amount" value="">
-                        </div>
-                        
-                        <label class="label cursor-pointer flex items-center gap-1">
-                            <input type="checkbox" name="__prefix__-DELETE"
-                                   id="id___prefix__-DELETE"
-                                   class="checkbox checkbox-error remove-member-checkbox">
-                            <span class="label-text text-sm text-error">Remove</span>
+                    {# Date Paid #}
+                    {{ form.date_paid|as_crispy_field:'input-sm text-xs' }} {# Pass classes directly #}
+                    {# Amount #}
+                    {{ form.amount|as_crispy_field:'input-sm text-xs' }} {# Pass classes directly #}
+                    {# Payment Method #}
+                    {{ form.payment_method|as_crispy_field:'select-sm text-xs' }} {# Pass classes directly #}
+                    {# GCash Reference Number (toggled by JS) #}
+                    <div id="div_id_gcash_reference_number" class="form-control" style="display: {% if form.payment_method.value == 'gcash' %}block{% else %}none{% endif %};">
+                        {{ form.gcash_reference_number|as_crispy_field:'input-sm text-xs' }} {# Pass classes directly #}
+                        <label class="label">
+                            <span class="label-text-alt text-error opacity-70 text-xs">Required for GCash payments.</span> {# Smaller text #}
                         </label>
                     </div>
-                </template>
+                    {# Contribution Type #}
+                    {{ form.contribution_type|as_crispy_field:'select-sm text-xs' }} {# Pass classes directly #}
+                </div>
             </div>
 
-            <div class="flex justify-end gap-3 mt-8">
-                <button type="submit" class="btn btn-primary flex items-center gap-2 rounded-lg font-semibold uppercase">
-                    <i data-feather="save" class="w-4 h-4"></i>
+            {# Covered Members Section - New Layout #}
+            <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4"> {# New grid for this section #}
+                
+                {# Column 1: Name of Members List (dynamic) #}
+                <div class="col-span-1 space-y-3">
+                    <h2 class="text-lg font-bold text-base-content uppercase mb-2">FAMILY MEMBERS</h2> {# Smaller heading #}
+                    <div class="bg-base-200/50 p-3 rounded-md shadow-inner border border-base-300 min-h-[150px]">
+                        <p id="family-members-placeholder" class="text-xs text-base-content/70 text-center py-4">
+                            Select a Payer to load their family members.
+                        </p>
+                        <div id="family-members-list" class="space-y-2 text-xs">
+                            {# Family members will be loaded here by JS #}
+                        </div>
+                    </div>
+                </div>
+
+                {# Column 2: Covered Members (Payees) Formset #}
+                <div class="col-span-1 space-y-3">
+                    <h2 class="text-lg font-bold text-base-content uppercase mb-2">COVERED MEMBERS</h2> {# Smaller heading #}
+                    <div class="bg-base-200/50 p-3 rounded-md shadow-inner border border-base-300 min-h-[150px]">
+                        {{ covered_member_formset.management_form }}
+                        <div id="covered-members-display" class="space-y-2 text-xs">
+                            {% for formset_form in covered_member_formset %}
+                                <div class="flex items-center gap-2 bg-base-100 p-2 rounded-md shadow-sm formset-row {% if formset_form.DELETE.value %}hidden{% endif %}"
+                                     data-form-prefix="{{ formset_form.prefix }}"
+                                     data-individual-id="{{ formset_form.instance.individual.pk|default:'' }}"
+                                     id="formset-row-{{ formset_form.prefix }}">
+                                    
+                                    <input type="hidden" name="{{ formset_form.prefix }}-id" value="{{ formset_form.instance.pk|default:'' }}">
+                                    {{ formset_form.id.as_hidden }}
+                                    <input type="hidden" name="{{ formset_form.prefix }}-payment" value="{{ object.pk|default_if_none:'' }}" />
+                                    <input type="hidden" name="{{ formset_form.prefix }}-individual" value="{{ formset_form.instance.individual.pk|default:'' }}" class="formset-individual-id" />
+                                    
+                                    <label class="label cursor-pointer flex items-center gap-1 flex-grow">
+                                        <input type="checkbox" name="covered_member_checkbox_{{ formset_form.instance.individual.pk|default:'' }}"
+                                               class="checkbox checkbox-primary covered-member-checkbox"
+                                               data-individual-id="{{ formset_form.instance.individual.pk|default:'' }}"
+                                               data-form-prefix="{{ formset_form.prefix }}"
+                                               {% if not formset_form.DELETE.value %}checked{% endif %}>
+                                        <span class="label-text font-semibold member-name text-xs">{{ formset_form.instance.individual.full_name|default:"New Member" }}</span>
+                                    </label>
+
+                                    <div class="flex items-center gap-1 w-24"> {# Adjusted width for amount #}
+                                        <input type="number" step="0.01" min="0"
+                                               name="{{ formset_form.prefix }}-amount_covered"
+                                               id="{{ formset_form.amount_covered.id_for_label }}"
+                                               class="input input-bordered input-xs w-full text-right {% if formset_form.amount_covered.errors %}input-error{% endif %} text-xs"
+                                               placeholder="Amount"
+                                               value="{{ formset_form.amount_covered.value|default_if_none:'' }}">
+                                        {% if formset_form.amount_covered.errors %}
+                                            {% for error in formset_form.amount_covered.errors %}
+                                                <p class="text-error text-xs mt-1">{{ error }}</p>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                    {# This hidden DELETE input will be managed by JS #}
+                                    <input type="hidden" name="{{ formset_form.prefix }}-DELETE" value="{% if formset_form.DELETE.value %}on{% endif %}" class="delete-input-hidden">
+                                </div>
+                            {% empty %}
+                                <p class="text-base-content/70 text-center py-4 text-xs">No covered members selected yet.</p>
+                            {% endfor %}
+                        </div>
+                        
+                        {# Hidden template for new formset rows (JS will use this) #}
+                        <template id="empty-formset-template">
+                            <div class="flex items-center gap-2 bg-base-100 p-2 rounded-md shadow-sm formset-row"
+                                 data-form-prefix="__prefix__"
+                                 data-individual-id="" {# Will be set by JS #}
+                                 id="formset-row-__prefix__">
+                                <input type="hidden" name="__prefix__-id" id="id___prefix__-id" />
+                                <input type="hidden" name="__prefix__-payment" id="id___prefix__-payment" value="{{ object.pk|default_if_none:'' }}" />
+                                <input type="hidden" name="__prefix__-individual" id="id___prefix__-individual" class="formset-individual-id" />
+
+                                <label class="label cursor-pointer flex items-center gap-1 flex-grow">
+                                    <input type="checkbox" name="covered_member_checkbox___prefix__"
+                                           class="checkbox checkbox-primary covered-member-checkbox"
+                                           data-individual-id=""
+                                           data-form-prefix="__prefix__"
+                                           checked>
+                                    <span class="label-text font-semibold member-name text-xs"></span> {# Placeholder, will be updated by JS #}
+                                </label>
+
+                                <div class="flex items-center gap-1 w-24">
+                                    <input type="number" step="0.01" min="0"
+                                           name="__prefix__-amount_covered"
+                                           id="id___prefix__-amount_covered"
+                                           class="input input-bordered input-xs w-full text-right text-xs"
+                                           placeholder="Amount" value="">
+                                </div>
+                                <input type="hidden" name="__prefix__-DELETE" value="" class="delete-input-hidden">
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            {# Submit Buttons #}
+            <div class="mt-6 flex flex-col sm:flex-row justify-end gap-3"> {# Reduced margin and gap #}
+                <a href="{% url 'payment:payment_list' %}" class="btn btn-ghost btn-sm px-6 py-2 text-sm font-semibold rounded-md">CANCEL</a> {# Smaller buttons #}
+                <button type="submit" class="btn btn-primary btn-sm px-6 py-2 text-sm font-semibold rounded-md"> {# Smaller buttons #}
+                    <i data-feather="save" class="w-4 h-4 mr-1"></i> {# Smaller icon #}
                     {% if object %}
-                        Update Payment
+                        UPDATE PAYMENT
                     {% else %}
-                        Save Payment
+                        CREATE PAYMENT
                     {% endif %}
                 </button>
-                <a href="{% url 'payment:payment_list' %}" class="btn btn-outline btn-neutral flex items-center gap-2 rounded-lg font-semibold uppercase">
-                    Cancel
-                </a>
             </div>
         </form>
     </div>
@@ -288,6 +256,31 @@
 {% endblock %}
 
 {% block extra_js %}
+{{ block.super }}
 <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
-<script src="{% static 'js/payment_form_logic.js' %}"></script>
+<script src="{% static 'js/payment_form_logic.js' %}"></script> {# This is your separate JS file #}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace(); // Initialize feather icons on page load
+
+        // Manual handling for GCash Reference Number visibility
+        const paymentMethodSelect = document.getElementById('id_payment_method');
+        const gcashRefDiv = document.getElementById('div_id_gcash_reference_number');
+
+        function toggleGcashRefField() {
+            if (paymentMethodSelect.value === 'gcash') {
+                gcashRefDiv.style.display = 'block';
+            } else {
+                gcashRefDiv.style.display = 'none';
+            }
+        }
+
+        if (paymentMethodSelect && gcashRefDiv) {
+            paymentMethodSelect.addEventListener('change', toggleGcashRefField);
+            // Initial call to set visibility based on loaded value
+            toggleGcashRefField();
+        }
+    });
+</script>
 {% endblock %}

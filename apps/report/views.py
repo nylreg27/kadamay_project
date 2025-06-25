@@ -406,8 +406,8 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                 total_members=Coalesce(Count('individuals', distinct=True), 0),
                 # Filter for 'paid' or 'pending' payments for consistency
                 total_contributions=Coalesce(
-                    Sum('individuals__payments_made__amount',
-                        filter=Q(individuals__payments_made__status__in=['paid', 'pending'])), Decimal(0))
+                    Sum('individuals__payments_as_payer__amount', # <--- CORRECTED LINE
+                        filter=Q(individuals__payments_as_payer__status__in=['paid', 'pending'])), Decimal(0)) # <--- CORRECTED LINE
             ).order_by('name')
             # --- DEBUG PRINTS START ---
             print(

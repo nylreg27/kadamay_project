@@ -1,38 +1,55 @@
-# apps/account/views.py
+# apps/account/views.py (Corrected Version)
+
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.views.generic import (
-    ListView, CreateView, UpdateView, DeleteView, View
+    ListView, CreateView, UpdateView, DeleteView, View # Removed DetailView as it's not explicitly used for ProfileDetail
 )
 from django.contrib.auth.mixins import UserPassesTestMixin, LoginRequiredMixin
 from django.contrib import messages
-from django import forms
+from django import forms # For generic forms, but specific forms are imported from .forms
 from django.db import transaction
-from .models import Profile
+
+# Import Models and Forms from the current app
+from .models import Profile, UserChurch # Include UserChurch if you still plan to use it
 from .forms import ProfileThemeForm, UserDetailsForm, StyledUserCreationForm, UserLoginForm
 
 User = get_user_model()
 
-# 🔐 Mixins (Keep these - crucial for permissions)
-
-
+# 🔐 Mixins (Crucial for permissions)
 class ProfileOwnerMixin(UserPassesTestMixin):
+    """
+    Mixin to ensure a user can only access/modify their own profile,
+    unless they are a superuser.
+    """
     def test_func(self):
+        # For Profile views, ensure the requesting user owns the profile or is superuser
         profile_pk = self.kwargs.get('pk')
         if profile_pk:
             profile = get_object_or_404(Profile, pk=profile_pk)
             return profile.user == self.request.user or self.request.user.is_superuser
+        # If no PK (e.g., accessing own profile without PK in URL), just check authentication
         return self.request.user.is_authenticated
+
+    def handle_no_permission(self):
+        messages.warning(self.request, "You do not have permission to access this profile.")
+        return redirect(reverse_lazy('account:profile')) # Redirect to own profile
 
 
 class AdminRequiredMixin(UserPassesTestMixin):
+    """
+    Mixin to restrict access to superusers only.
+    """
     def test_func(self):
         return self.request.user.is_superuser
 
-# 👮‍♂️ User Management (Admin Only) - Class-Based Views for consistency
+    def handle_no_permission(self):
+        messages.error(self.request, "You must be an administrator to access this page.")
+        return redirect(reverse_lazy('account:profile')) # Or redirect to a custom permission denied page
 
+# 👮‍♂️ User Management (Admin Only) - Class-Based Views for consistency
 
 class UserListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
     model = User
@@ -41,12 +58,9 @@ class UserListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        # Exclude superuser from this list if you want to prevent superuser from deleting self
-        # Or you can add logic in the template to disable delete/edit for superuser if needed.
+        # Order users by username for consistent display
         return User.objects.order_by('username')
 
-
-# --- KINI ANG USERCREATEVIEW NGA DAPAT NAA ---
 class UserCreateView(LoginRequiredMixin, AdminRequiredMixin, CreateView):
     model = User
     form_class = StyledUserCreationForm
@@ -55,44 +69,47 @@ class UserCreateView(LoginRequiredMixin, AdminRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Pass page_title to template
         context['page_title'] = 'Create New User'
         return context
 
     def form_valid(self, form):
-        user = form.save()  # Save the user and their profile (handled by form's save method)
-        messages.success(
-            self.request, f"User '{user.username}' created successfully!")
-        # Importante: Call super().form_valid(form) para mada ang redirect
+        # The form's save method (StyledUserCreationForm.save()) handles user and profile creation/role assignment
+        user = form.save()
+        messages.success(self.request, f"User '{user.username}' created successfully!")
         return super().form_valid(form)
 
     def form_invalid(self, form):
-        messages.error(
-            self.request, "Error creating user. Please check the form.")
+        messages.error(self.request, "Error creating user. Please check the form.")
         return super().form_invalid(form)
-# --- KATAPUSAN SA USERCREATEVIEW ---
 
 
 class UserUpdateView(LoginRequiredMixin, AdminRequiredMixin, UpdateView):
     model = User
-    fields = ['username', 'email', 'first_name',
-              'last_name', 'is_active', 'is_staff', 'is_superuser']
+    # Use UserDetailsForm for user details and manage roles separately.
+    # If you need to update is_active, is_staff, is_superuser, explicitly include them here.
+    fields = ['email', 'first_name', 'last_name', 'is_active', 'is_staff', 'is_superuser']
     template_name = 'account/user_form.html'
     success_url = reverse_lazy('account:user_list')
+    context_object_name = 'target_user' # Renamed from 'user' to avoid confusion with request.user
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = 'Update User'  # Pass page_title to template
+        context['page_title'] = f'Update User: {self.object.username}'
+        # Pass the profile role for display in the template if needed
+        context['current_profile_role'] = self.object.profile.get_role_display() if hasattr(self.object, 'profile') else 'N/A'
+        
+        # If the username field is in the form, you might want to make it readonly
+        # This is typically handled by the form's __init__ method for UserUpdateForm,
+        # but since we are using direct fields, you might need to control this in the template.
+        # Or you could define a separate UserUpdateAdminForm.
         return context
 
     def form_valid(self, form):
-        messages.success(
-            self.request, f"User '{self.object.username}' updated successfully!")
+        messages.success(self.request, f"User '{self.object.username}' updated successfully!")
         return super().form_valid(form)
 
     def form_invalid(self, form):
-        messages.error(
-            self.request, "Error updating user. Please check the form.")
+        messages.error(self.request, "Error updating user. Please check the form.")
         return super().form_invalid(form)
 
 
@@ -100,11 +117,10 @@ class UserDeleteView(LoginRequiredMixin, AdminRequiredMixin, DeleteView):
     model = User
     template_name = 'account/user_confirm_delete.html'
     success_url = reverse_lazy('account:user_list')
-    context_object_name = 'target_user'
+    context_object_name = 'target_user' # Ensure consistent context object name
 
     def form_valid(self, form):
-        messages.success(
-            self.request, f"User '{self.object.username}' deleted successfully!")
+        messages.success(self.request, f"User '{self.object.username}' deleted successfully!")
         return super().form_valid(form)
 
     def form_invalid(self, form):
@@ -113,41 +129,29 @@ class UserDeleteView(LoginRequiredMixin, AdminRequiredMixin, DeleteView):
 
 # 🔁 Role Management (Using Django's Group model - useful for broader permissions)
 
-
-class UserRoleForm(forms.Form):
-    # This form now maps to Django's built-in Group model
-    role = forms.ModelChoiceField(
-        queryset=Group.objects.all(),
-        label='Assign Role',
-        widget=forms.Select(attrs={
-                            'class': 'select select-bordered w-full uppercase focus:outline-none focus:ring-2 focus:ring-primary select-xs text-xs'})
-    )
-
+# UserRoleForm (kept as is, it's defined in forms.py and used here)
 
 class UserRoleAssignView(LoginRequiredMixin, AdminRequiredMixin, View):
     template_name = 'account/user_role_form.html'
 
     def get(self, request, user_id):
         user = get_object_or_404(User, pk=user_id)
-        form = UserRoleForm()
-        messages.info(
-            request, f"Current roles for {user.username}: {', '.join([g.name for g in user.groups.all()]) or 'None'}")
-        return render(request, self.template_name, {'form': form, 'user': user, 'page_title': f'Assign Role to {user.username}'})
+        form = forms.UserRoleForm() # Use the form from forms.py
+        messages.info(request, f"Current roles for {user.username}: {', '.join([g.name for g in user.groups.all()]) or 'None'}")
+        return render(request, self.template_name, {'form': form, 'target_user': user, 'page_title': f'Assign Role to {user.username}'})
 
     def post(self, request, user_id):
         user = get_object_or_404(User, pk=user_id)
-        form = UserRoleForm(request.POST)
+        form = forms.UserRoleForm(request.POST)
         if form.is_valid():
             # Clear existing groups and add the new one for simplicity in this example
             user.groups.clear()
             user.groups.add(form.cleaned_data['role'])
             user.save()
-            messages.success(
-                request, f"Role assigned to '{user.username}' successfully!")
+            messages.success(request, f"Role assigned to '{user.username}' successfully!")
             return redirect('account:user_list')
-        messages.error(
-            request, "Failed to assign role. Please check the form.")
-        return render(request, self.template_name, {'form': form, 'user': user, 'page_title': f'Assign Role to {user.username}'})
+        messages.error(request, "Failed to assign role. Please check the form.")
+        return render(request, self.template_name, {'form': form, 'target_user': user, 'page_title': f'Assign Role to {user.username}'})
 
 
 class UserRoleDeleteView(LoginRequiredMixin, AdminRequiredMixin, View):
@@ -155,44 +159,41 @@ class UserRoleDeleteView(LoginRequiredMixin, AdminRequiredMixin, View):
         user = get_object_or_404(User, pk=user_id)
         user.groups.clear()  # Removes all groups from the user
         user.save()
-        messages.success(
-            request, f"Roles cleared for '{user.username}' successfully!")
+        messages.success(request, f"Roles cleared for '{user.username}' successfully!")
         return redirect('account:user_list')
 
 # User Registration View (for new users to sign up)
 
-
 class RegisterView(CreateView):
-    template_name = 'registration/register.html'
+    template_name = 'account/register.html' # Changed template path to 'account/register.html'
     form_class = StyledUserCreationForm
     success_url = reverse_lazy('account:login')
 
     def form_valid(self, form):
         response = super().form_valid(form)
-        messages.success(
-            self.request, "Account created successfully. Please log in.")
+        messages.success(self.request, "Account created successfully. Please log in.")
         return response
 
     def form_invalid(self, form):
-        messages.error(
-            self.request, "There was an error in your registration. Please check the form.")
+        messages.error(self.request, "There was an error in your registration. Please check the form.")
         return super().form_invalid(form)
 
 # --- PROFILE SETTINGS VIEW (Ang atong gigamit karon) ---
-
+# This view now correctly allows updating both Profile and User details.
 
 class ProfileSettingsView(LoginRequiredMixin, View):
     template_name = 'account/profile_settings.html'
 
     def get_context_data(self, **kwargs):
         context = {}
+        # Ensure profile exists, create if not (signal should handle this too, but for safety)
         try:
             profile = self.request.user.profile
         except Profile.DoesNotExist:
             profile = Profile.objects.create(user=self.request.user)
 
         context['profile_form'] = ProfileThemeForm(instance=profile)
-        # Assuming UserDetailsForm handles first_name, last_name, email
+        # UserDetailsForm should be for first_name, last_name, email (editable)
         context['user_form'] = UserDetailsForm(instance=self.request.user)
 
         context['user_status'] = "Active" if self.request.user.is_active else "Inactive"
@@ -202,18 +203,21 @@ class ProfileSettingsView(LoginRequiredMixin, View):
             user_type_list.append("Admin (Superuser)")
         if self.request.user.is_staff:
             user_type_list.append("Staff")
-        # Add roles from custom Profile model if it has a 'role' field
+        
+        # Add roles from custom Profile model field
         if hasattr(self.request.user, 'profile') and self.request.user.profile.role:
-            user_type_list.append(self.request.user.profile.get_role_display())
+            # Ensure it's not a duplicate if group name is the same as profile role
+            if self.request.user.profile.get_role_display() not in user_type_list:
+                user_type_list.append(self.request.user.profile.get_role_display())
+        
         # Add roles from Django Groups
         for group in self.request.user.groups.all():
-            user_type_list.append(group.name)
+            if group.name not in user_type_list: # Avoid duplicates
+                user_type_list.append(group.name)
 
-        context['user_type'] = ", ".join(
-            sorted(list(set(user_type_list)))) if user_type_list else "Regular User"
-        # Add page title for the template
+        context['user_type'] = ", ".join(sorted(list(set(user_type_list)))) if user_type_list else "Regular User"
         context['page_title'] = 'Profile Settings'
-
+        
         return context
 
     def get(self, request, *args, **kwargs):
@@ -226,74 +230,56 @@ class ProfileSettingsView(LoginRequiredMixin, View):
         except Profile.DoesNotExist:
             profile = Profile.objects.create(user=request.user)
 
-        profile_form = ProfileThemeForm(
-            request.POST, request.FILES, instance=profile)
+        profile_form = ProfileThemeForm(request.POST, request.FILES, instance=profile)
         user_form = UserDetailsForm(request.POST, instance=request.user)
 
         if profile_form.is_valid() and user_form.is_valid():
             profile_form.save()
             user_form.save()
-            messages.success(
-                request, 'Your profile settings have been updated successfully!')
-            # Redirect to the profile settings page itself
-            return redirect('account:profile')
+            messages.success(request, 'Your profile settings have been updated successfully!')
+            return redirect('account:profile') # Redirect to the profile settings page itself
         else:
-            messages.error(
-                request, 'There was an error updating your profile. Please check the form.')
-            context = self.get_context_data()
-            # Pass back the forms with errors
-            context['profile_form'] = profile_form
+            messages.error(request, 'There was an error updating your profile. Please check the form.')
+            context = self.get_context_data() # Re-call to get fresh forms
+            context['profile_form'] = profile_form # Pass back forms with errors
             context['user_form'] = user_form
             return render(request, self.template_name, context)
 
 # 👤 Create In-Charge User (Admin Only)
 
-# --- KINI ANG UPDATED NGA USERCREATEINCHARGEVIEW ---
-
-
 class UserCreateInchargeView(LoginRequiredMixin, AdminRequiredMixin, CreateView):
     model = User
-    form_class = StyledUserCreationForm  # Atong gamiton ang existing form
-    # Atong gamiton ang existing user form template
+    form_class = StyledUserCreationForm # Use the StyledUserCreationForm for consistency
     template_name = 'account/user_form.html'
-    # Human ma-create, balik sa user list
     success_url = reverse_lazy('account:user_list')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Kini ang title nga makita sa template
         context['page_title'] = 'Create New In-Charge User'
+        # Set the role field's initial value to IN_CHARGE for this specific form
+        context['form'].fields['role'].initial = Profile.IN_CHARGE
+        # Optionally, make the role field read-only or hidden if it's always 'IN_CHARGE'
+        # context['form'].fields['role'].widget = forms.HiddenInput()
         return context
 
     def form_valid(self, form):
-        # 1. TAWGA ANG super().form_valid(form) UNA!
-        # Kini ang mag-save sa form (user) ug mag-set sa self.object
-        # ngadto sa bag-ong gi-create nga user instance.
-        # Kini usab ang mag-handle sa pag-redirect ngadto sa success_url.
-        response = super().form_valid(form)
+        response = super().form_valid(form) # Save the user and their profile via StyledUserCreationForm.save()
 
-        # 2. Karon, ang self.object naay sulod sa bag-ong User nga gi-create.
-        # Pwede na nato siya i-modify ug idugang sa group.
-        user = self.object  # Para klaro, i-assign nato sa 'user' variable
-
-        # Siguradua nga ang user kay is_staff para maka-login sa admin panel
-        if not user.is_staff:  # Mag-update lang kung dili pa is_staff
+        user = self.object # The newly created user instance
+        
+        # Ensure the user is marked as staff if they are In-Charge
+        if not user.is_staff:
             user.is_staff = True
-            # Save lang ang is_staff field
             user.save(update_fields=['is_staff'])
 
-        # Pangitaon o buhaton ang 'Incharge' Group. Importante nga consistent ang spelling!
-        incharge_group, created = Group.objects.get_or_create(name='Incharge')
-        # Id-dugang ang user sa 'Incharge' group
+        # Assign to 'In-Charge' group
+        incharge_group, created = Group.objects.get_or_create(name='In-Charge') # Use 'In-Charge' (consistent spelling)
         user.groups.add(incharge_group)
 
         messages.success(
             self.request,
-            f"In-Charge user '{user.username}' created and assigned to 'Incharge' role successfully!"
+            f"In-Charge user '{user.username}' created and assigned to 'In-Charge' role successfully!"
         )
-
-        # 3. Ibalik ang 'response' nga gikan sa super().form_valid().
-        # Kini nga 'response' naay sulod sa redirect ngadto sa success_url.
         return response
 
     def form_invalid(self, form):
@@ -302,4 +288,71 @@ class UserCreateInchargeView(LoginRequiredMixin, AdminRequiredMixin, CreateView)
             "Error creating In-Charge user. Please check the form."
         )
         return super().form_invalid(form)
-# --- KATAPUSAN SA UPDATED NGA USERCREATEINCHARGEVIEW ---
+
+# Profile Detail View (for displaying own profile - for user, not admin list)
+class UserProfileDetailView(LoginRequiredMixin, ProfileOwnerMixin, View):
+    template_name = 'account/profile_detail.html'
+
+    def get(self, request, pk=None, *args, **kwargs):
+        # If PK is provided, ensure it's the owner's profile or superuser access.
+        # Otherwise, assume request.user's profile.
+        if pk:
+            profile = get_object_or_404(Profile, pk=pk)
+            # ProfileOwnerMixin already handles permission check
+        else:
+            profile = request.user.profile # Access current user's profile
+
+        context = {
+            'profile': profile,
+            'user_obj': profile.user, # The related User object
+            'page_title': f"{profile.user.username}'s Profile"
+        }
+        return render(request, self.template_name, context)
+
+# Profile Create View (if users can create their own profile separate from user creation)
+# Often, profile creation is handled automatically via signals or within user creation.
+# If you intend for admins to manually create profiles for existing users, this view is useful.
+class ProfileCreateView(LoginRequiredMixin, AdminRequiredMixin, CreateView):
+    model = Profile
+    form_class = ProfileThemeForm # Or a more comprehensive ProfileForm if needed
+    template_name = 'account/profile_form.html'
+    success_url = reverse_lazy('account:user_list') # Redirect to user list after creating profile
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = 'Create New Profile'
+        return context
+
+    def form_valid(self, form):
+        # You might need to select an existing user for this profile if not linked by form.
+        # For simplicity, if this is for creating a profile for an already existing user,
+        # you might add a 'user' field to the form, or handle it in the view.
+        # For now, let's assume it's for an existing user whose profile doesn't exist yet.
+        # This view's purpose needs to be clearly defined relative to StyledUserCreationForm.
+        # If StyledUserCreationForm creates Profile, then this view is for *manual* profile creation for existing users.
+        messages.success(self.request, "Profile created successfully!")
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        messages.error(self.request, "Error creating profile. Please check the form.")
+        return super().form_invalid(form)
+
+# Profile Update View (if separate from ProfileSettingsView, e.g., admin updates specific profile)
+# If ProfileSettingsView is the primary update, this might be redundant.
+# For now, let's assume ProfileSettingsView handles own user's profile updates.
+
+# Profile Delete View (for admin to delete a profile, separate from user deletion)
+class ProfileDeleteView(LoginRequiredMixin, AdminRequiredMixin, DeleteView):
+    model = Profile
+    template_name = 'account/profile_confirm_delete.html'
+    context_object_name = 'profile'
+    success_url = reverse_lazy('account:user_list') # Redirect to user list after deleting profile
+
+    def form_valid(self, form):
+        messages.success(self.request, f"Profile for '{self.object.user.username}' deleted successfully!")
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        messages.error(self.request, "Error deleting profile.")
+        return super().form_invalid(form)
+

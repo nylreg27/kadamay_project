@@ -1,5 +1,5 @@
+{# kadamay_project/templates/account/user_list.html #}
 {% extends "base.html" %}
-
 {% block content %}
 <section class="container mx-auto p-6 bg-base-100 rounded-lg shadow-lg text-base-content min-h-[80vh]">
     <h1 class="text-4xl font-semibold mb-8 text-primary">User Management</h1>
@@ -14,6 +14,7 @@
                         <th class="px-5 py-3 text-left">Email</th>
                         <th class="px-5 py-3 text-left">First Name</th>
                         <th class="px-5 py-3 text-left">Last Name</th>
+                        <th class="px-5 py-3 text-center">Profile Role</th> {# Display Profile Role #}
                         <th class="px-5 py-3 text-center">Staff</th>
                         <th class="px-5 py-3 text-center">Status</th>
                         <th class="px-5 py-3 text-center">Actions</th>
@@ -27,6 +28,13 @@
                         <td class="px-5 py-3 break-words max-w-xs">{{ user.email }}</td>
                         <td class="px-5 py-3">{{ user.first_name }}</td>
                         <td class="px-5 py-3">{{ user.last_name }}</td>
+                        <td class="px-5 py-3 text-center">
+                            {% if user.profile %} {# Check if profile exists #}
+                                <span class="badge badge-info font-semibold">{{ user.profile.get_role_display }}</span>
+                            {% else %}
+                                <span class="badge badge-warning font-semibold">N/A</span>
+                            {% endif %}
+                        </td>
                         <td class="px-5 py-3 text-center">
                             {% if user.is_staff %}
                                 <span class="badge badge-success font-semibold">Yes</span> {# DaisyUI success badge #}
@@ -45,9 +53,14 @@
                             <a href="{% url 'account:user_update' user.id %}" class="btn btn-sm btn-info" title="Edit User">
                                 <i data-feather="edit" class="w-4 h-4"></i> {# Added feather icon #}
                             </a>
-                            <a href="{% url 'account:user_delete' user.id %}" class="btn btn-sm btn-error" title="Delete User">
-                                <i data-feather="trash-2" class="w-4 h-4"></i> {# Added feather icon #}
+                            <a href="{% url 'account:assign_role' user.id %}" class="btn btn-sm btn-warning" title="Assign Role">
+                                <i data-feather="tool" class="w-4 h-4"></i> {# Icon for role assignment #}
                             </a>
+                            {% if user != request.user %} {# Prevent user from deleting themselves #}
+                                <a href="{% url 'account:user_delete' user.id %}" class="btn btn-sm btn-error" title="Delete User">
+                                    <i data-feather="trash-2" class="w-4 h-4"></i> {# Added feather icon #}
+                                </a>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
@@ -70,6 +83,9 @@
         <a href="{% url 'account:user_create' %}" class="btn btn-primary inline-flex items-center gap-2"> {# Used btn-primary and inline-flex for icon alignment #}
             <i data-feather="plus"></i> Add New User
         </a>
+        <a href="{% url 'account:create_incharge' %}" class="btn btn-secondary inline-flex items-center gap-2 ml-4"> {# Button for In-Charge User #}
+            <i data-feather="user-plus"></i> Add In-Charge User
+        </a>
     </div>
 </section>
 {% endblock %}
@@ -77,6 +93,8 @@
 {% block extra_js %}
 {{ block.super }}
 <script>
-    feather.replace(); // Re-initialize Feather Icons for any new content loaded into the DOM
+    document.addEventListener('DOMContentLoaded', function() {
+        feather.replace(); // Re-initialize Feather Icons for any new content loaded into the DOM
+    });
 </script>
 {% endblock %}

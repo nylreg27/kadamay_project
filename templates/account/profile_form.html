@@ -1,17 +1,18 @@
-{% extends "base.html" %}
-{% load widget_tweaks %} {# Make sure 'widget_tweaks' is in your INSTALLED_APPS #}
+{# kadamay_project/templates/profile_form.html #}
 
-{% block title %}Create Profile{% endblock %}
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block title %}{% if profile %}Update Profile{% else %}Create Profile{% endif %}{% endblock %}
 
 {% block content %}
 <div class="container mx-auto p-6">
-    <div class="max-w-xl mx-auto card bg-base-100 shadow-xl p-8 text-base-content">
-        <h2 class="text-3xl font-bold mb-6 text-primary">Create Profile</h2>
+    <div class="max-w-xl mx-auto card bg-base-100 shadow-xl p-8 text-base-content rounded-xl">
+        <h2 class="text-3xl font-bold mb-6 text-primary">{% if profile %}Update Profile{% else %}Create Profile{% endif %}</h2>
 
         <form method="post" enctype="multipart/form-data" class="space-y-6">
             {% csrf_token %}
 
-            {# Display non-field errors if any #}
             {% if form.non_field_errors %}
                 <div class="alert alert-error">
                     <i data-feather="alert-circle" class="w-6 h-6"></i>
@@ -32,18 +33,25 @@
                         {% endif %}
                     </label>
 
-                    {# Conditional rendering based on field type #}
                     {% if field.field.widget.input_type == 'file' %}
                         {% render_field field class="file-input file-input-bordered w-full max-w-xs" %}
+                        {% if field.value and field.value.url %}
+                            <p class="text-sm text-base-content/70 mt-2">Current file: <a href="{{ field.value.url }}" target="_blank" class="link link-primary">{{ field.value.name }}</a></p>
+                            {% if field.field.widget.clear_checkbox_name %}
+                                <label class="label cursor-pointer p-0 flex items-center gap-2">
+                                    {{ field.field.widget.clear_checkbox_name }}
+                                    <span class="label-text text-base-content/80 text-sm">Clear existing picture</span>
+                                </label>
+                            {% endif %}
+                        {% endif %}
                     {% elif field.field.widget.input_type == 'checkbox' %}
                         <label class="label cursor-pointer justify-start gap-3">
                             {% render_field field class="checkbox checkbox-primary" %}
-                            <span class="label-text">{{ field.label }}</span> {# Label for checkbox itself #}
+                            <span class="label-text">{{ field.label }}</span>
                         </label>
                     {% elif field.field.widget.input_type == 'textarea' %}
                         {% render_field field class="textarea textarea-bordered h-24 w-full focus:outline-none focus:ring-2 focus:ring-primary" %}
                     {% else %}
-                        {# Default for text, email, number, date, etc. #}
                         {% render_field field class="input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-primary" %}
                     {% endif %}
 
@@ -64,7 +72,6 @@
                 <button type="submit" class="btn btn-primary flex items-center gap-2">
                     <i data-feather="save" class="w-5 h-5"></i> Save Profile
                 </button>
-                {# Assuming a user_list URL for cancellation, adjust if another URL is more appropriate #}
                 <a href="{% url 'account:user_list' %}" class="btn btn-ghost">Cancel</a> 
             </div>
         </form>

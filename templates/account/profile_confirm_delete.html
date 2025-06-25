@@ -1,4 +1,4 @@
-{# apps/template/account/profile_confirm_delete.html #}
+{# apps/account/templates/account/profile_confirm_delete.html #}
 {% extends 'base.html' %}
 
 {% block title %}Delete Profile - {{ profile.user.username }}{% endblock %}
@@ -6,17 +6,16 @@
 {% block content %}
 <div class="container mx-auto p-6">
     <div class="max-w-md mx-auto card bg-base-100 shadow-xl p-8 text-base-content rounded-xl">
-        <h2 class="text-3xl font-bold mb-6 text-error">Confirm Profile Deletion</h2> {# Changed text-2xl to 3xl and red-600 to text-error #}
-
-        <p class="mb-4">Are you sure you want to delete the profile for **{{ profile.user.username }}**?</p> {# Accessing username via profile.user.username #}
+        <h2 class="text-3xl font-bold mb-6 text-error">Confirm Profile Deletion</h2>
+        <p class="mb-4">Are you sure you want to delete the profile for "<strong>{{ profile.user.username }}</strong>"?</p>
         <p class="text-warning text-sm mb-6">This action cannot be undone.</p>
 
         <form method="post" class="flex justify-end gap-3">
             {% csrf_token %}
-            <button type="submit" class="btn btn-error flex items-center gap-2"> {# Changed btn-danger to btn-error #}
+            <button type="submit" class="btn btn-error flex items-center gap-2">
                 <i data-feather="trash-2" class="w-5 h-5"></i> Yes, Delete
             </button>
-            <a href="{% url 'account:profile_detail' profile.id %}" class="btn btn-ghost">Cancel</a> {# Changed btn-secondary to btn-ghost #}
+            <a href="{% url 'account:profile_detail' profile.id %}" class="btn btn-ghost">Cancel</a>
         </form>
     </div>
 </div>
@@ -29,4 +28,62 @@
         feather.replace();
     });
 </script>
+{% endblock %}
+
+{# Additional password related templates, if not already existing #}
+{# You will need to create these files inside apps/account/templates/account/ #}
+
+{# apps/account/templates/account/password_change.html #}
+{# apps/account/templates/account/password_change_done.html #}
+{# apps/account/templates/account/password_reset_form.html #}
+{# apps/account/templates/account/password_reset_email.html #}
+{# apps/account/templates/account/password_reset_done.html #}
+{# apps/account/templates/account/password_reset_confirm.html #}
+{# apps/account/templates/account/password_reset_complete.html #}
+
+{# For User Role Assign View Template #}
+{# apps/account/templates/account/user_role_form.html #}
+```html
+{# apps/account/templates/account/user_role_form.html #}
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto mt-10 bg-base-100 p-8 rounded-lg shadow-lg border border-base-300 text-base-content">
+    <h2 class="text-3xl font-bold mb-6 text-primary">{{ page_title }}</h2>
+    <p class="mb-4">Assign role for user: <strong>{{ target_user.username }}</strong></p>
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+        
+        <div class="mb-5">
+            <label for="{{ form.role.id_for_label }}" class="block text-base-content font-semibold mb-2">
+                {{ form.role.label }}
+                {% if form.role.field.required %}
+                    <span class="text-error">*</span>
+                {% endif %}
+            </label>
+            {# Render the role select field #}
+            {{ form.role|add_class:"select select-bordered w-full uppercase focus:outline-none focus:ring-2 focus:ring-primary select-xs text-xs" }}
+            
+            {% if form.role.help_text %}
+                <p class="text-base-content/70 text-xs mt-1">{{ form.role.help_text }}</p>
+            {% endif %}
+            {% if form.role.errors %}
+                <p class="text-error text-sm mt-1">{{ form.role.errors }}</p>
+            {% endif %}
+        </div>
+
+        <div class="mt-8 flex items-center">
+            <button type="submit" class="btn btn-primary font-semibold px-6 py-2 rounded transition">
+                Assign Role
+            </button>
+            <a href="{% url 'account:user_list' %}" class="ml-4 link link-hover text-base-content/80 transition">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
 {% endblock %}

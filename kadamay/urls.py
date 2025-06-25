@@ -34,9 +34,6 @@ urlpatterns = [
     path('issues/', include('apps.issues.urls')),
     path('contribution-type/', include('apps.contribution_type.urls')),
 
-    # ... uban pang URLs ...
-    path('payments/', include('apps.payment.urls',
-         namespace='payment')),  # Kini ang importante!
 ]
 
 # Serve static and media files during development

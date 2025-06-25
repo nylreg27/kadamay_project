@@ -1,6 +1,6 @@
-{# apps/account/templates/account/profile_settings.html #}
+{# kadamay_project/templates/account/profile_settings.html #}
 {% extends 'base.html' %}
-{% load widget_tweaks %}
+{% load widget_tweaks %} {# Make sure you have 'widget_tweaks' added to your INSTALLED_APPS in settings.py #}
 
 {% block title %}Profile Settings — Kadamay Mortuary System{% endblock %}
 
@@ -11,7 +11,6 @@
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div class="flex items-center gap-2">
                     <div class="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
-                        {# ICON SIZE CHANGED FROM w-5 h-5 to w-4.5 h-4.5 #}
                         <i data-feather="user" class="w-4.5 h-4.5 text-primary"></i>
                     </div>
                     <h1 class="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
@@ -19,7 +18,6 @@
                     </h1>
                 </div>
                 <a href="{% url 'report:dashboard' %}" class="btn btn-ghost btn-sm hover:bg-base-200/50 transition-colors">
-                    {# ICON SIZE CHANGED FROM w-3.5 h-3.5 to w-3 h-3 #}
                     <i data-feather="arrow-left" class="w-3 h-3 mr-1.5"></i> Back to Dashboard
                 </a>
             </div>
@@ -31,7 +29,6 @@
             {# Combined non-field errors from both forms #}
             {% if profile_form.non_field_errors or user_form.non_field_errors %}
             <div class="alert alert-error bg-base-200/50 border border-error/20 text-error-content rounded-lg p-3 flex items-start gap-2 text-sm">
-                {# ICON SIZE CHANGED FROM w-4 h-4 to w-3.5 h-3.5 #}
                 <i data-feather="alert-circle" class="w-3.5 h-3.5 mt-0.5"></i>
                 <div>
                     {% for error in profile_form.non_field_errors %}
@@ -49,7 +46,6 @@
                 <section class="space-y-3">
                     <div class="flex items-center gap-2 mb-3">
                         <div class="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                            {# ICON SIZE CHANGED FROM w-4.5 h-4.5 to w-4 h-4 #}
                             <i data-feather="sun" class="w-4 h-4 text-primary"></i>
                         </div>
                         <h2 class="text-lg font-semibold text-base-content">Theme Preferences</h2>
@@ -60,10 +56,8 @@
                             <span class="label-text text-base-content/80 text-sm font-medium">Color Theme</span>
                         </label>
                         <div class="relative">
-                            {# Use profile_form.theme #}
                             {% render_field profile_form.theme class="select select-bordered select-sm w-full bg-base-200/50 focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-lg" %}
                             <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none text-base-content/40">
-                                {# ICON SIZE CHANGED FROM w-3.5 h-3.5 to w-3 h-3 #}
                                 <i data-feather="chevron-down" class="w-3 h-3"></i>
                             </div>
                         </div>
@@ -75,7 +69,6 @@
                         {% if profile_form.theme.errors %}
                             <label class="label">
                                 <span class="label-text-alt text-error text-xs flex items-center gap-1">
-                                    {# ICON SIZE CHANGED FROM w-3 h-3 to w-2.5 h-2.5 #}
                                     <i data-feather="alert-circle" class="w-2.5 h-2.5"></i>
                                     {% for error in profile_form.theme.errors %}{{ error }}{% endfor %}
                                 </span>
@@ -87,7 +80,6 @@
                 <section class="space-y-3">
                     <div class="flex items-center gap-2 mb-3">
                         <div class="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                            {# ICON SIZE CHANGED FROM w-4.5 h-4.5 to w-4 h-4 #}
                             <i data-feather="image" class="w-4 h-4 text-primary"></i>
                         </div>
                         <h2 class="text-lg font-semibold text-base-content">Profile Picture</h2>
@@ -105,8 +97,6 @@
                                 <input type="file" name="{{ profile_form.profile_picture.name }}" id="{{ profile_form.profile_picture.id_for_label }}"
                                     class="file-input file-input-bordered file-input-sm w-full bg-base-200/50 border-2 border-base-300 focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-lg text-sm text-base-content">
 
-                                {% comment %} Removed the 'Currently:' text as requested {% endcomment %}
-
                                 {% if profile_form.profile_picture.help_text %}
                                     <label class="label">
                                         <span class="label-text-alt text-xs text-base-content/60">{{ profile_form.profile_picture.help_text }}</span>
@@ -115,7 +105,6 @@
                                 {% if profile_form.profile_picture.errors %}
                                     <label class="label">
                                         <span class="label-text-alt text-error text-xs flex items-center gap-1">
-                                            {# ICON SIZE CHANGED FROM w-3 h-3 to w-2.5 h-2.5 #}
                                             <i data-feather="alert-circle" class="w-2.5 h-2.5"></i>
                                             {% for error in profile_form.profile_picture.errors %}{{ error }}{% endfor %}
                                         </span>
@@ -137,7 +126,6 @@
                                                transition-all duration-300 group-hover:shadow-lg group-hover:scale-105">
                                     <div class="absolute inset-0 bg-black/20 rounded-lg opacity-0 group-hover:opacity-100 
                                                 transition-opacity flex items-center justify-center">
-                                        {# ICON SIZE CHANGED FROM w-5 h-5 to w-4 h-4 #}
                                         <i data-feather="eye" class="w-4 h-4 text-white"></i>
                                     </div>
                                 </div>
@@ -156,7 +144,6 @@
             <section class="space-y-3">
                 <div class="flex items-center gap-2 mb-3">
                     <div class="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                        {# ICON SIZE CHANGED FROM w-4.5 h-4.5 to w-4 h-4 #}
                         <i data-feather="info" class="w-4 h-4 text-primary"></i>
                     </div>
                     <h2 class="text-lg font-semibold text-base-content">Personal Details</h2>
@@ -172,9 +159,8 @@
                                 <span class="text-error ml-1">*</span>
                                 {% endif %}
                             </label>
-                            {# All user_form fields are inputs, so this general render is fine #}
-                            {# ADDED readonly attribute #}
-                            {% render_field field class="input input-bordered w-full bg-base-200/50 focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-lg text-sm text-base-content placeholder:text-base-content/40 input-sm" readonly="readonly" %}
+                            {# REMOVED readonly="readonly" HERE TO ALLOW EDITING #}
+                            {% render_field field class="input input-bordered w-full bg-base-200/50 focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-lg text-sm text-base-content placeholder:text-base-content/40 input-sm" %}
                             
                             {# Reduced help text label padding #}
                             {% if field.help_text %}
@@ -186,13 +172,44 @@
                             {% if field.errors %}
                             <label class="label py-0 mt-0.5">
                                 <span class="label-text-alt text-error text-xs flex items-center gap-1">
-                                    {# ICON SIZE CHANGED FROM w-3 h-3 to w-2.5 h-2.5 #}
                                     <i data-feather="alert-circle" class="w-2.5 h-2.5"></i>
                                     {% for error in field.errors %}{{ error }}{% endfor %}
                                 </span>
                             </label>
                             {% endif %}
                         </div>
+                    {% endfor %}
+                    
+                    {# New editable fields from Profile: Contact Number, Address, Date of Birth, Church Assignment #}
+                    {# Use a separate form or render profile_form fields here as well, if they are editable #}
+                    {# For now, assuming ProfileThemeForm handles theme/picture only, and UserDetailsForm handles user fields #}
+                    {# If Profile also contains contact_number, address, dob, etc., you'll need another form for that or combine ProfileThemeForm #}
+                    {# For simplicity in this template, let's render additional profile fields from ProfileThemeForm if they were added #}
+                    {% for field in profile_form %}
+                        {% if field.name not in "theme,profile_picture" %} {# Exclude already rendered fields #}
+                            <div class="form-control w-full">
+                                <label class="label py-0 mb-0.5" for="{{ field.id_for_label }}">
+                                    <span class="label-text text-base-content/80 text-sm font-medium">{{ field.label }}</span>
+                                    {% if field.field.required %}
+                                    <span class="text-error ml-1">*</span>
+                                    {% endif %}
+                                </label>
+                                {% render_field field class="input input-bordered w-full bg-base-200/50 focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-lg text-sm text-base-content placeholder:text-base-content/40 input-sm" %}
+                                {% if field.help_text %}
+                                <label class="label py-0 mt-0.5">
+                                    <span class="label-text-alt text-xs text-base-content/60">{{ field.help_text }}</span>
+                                </label>
+                                {% endif %}
+                                {% if field.errors %}
+                                <label class="label py-0 mt-0.5">
+                                    <span class="label-text-alt text-error text-xs flex items-center gap-1">
+                                        <i data-feather="alert-circle" class="w-2.5 h-2.5"></i>
+                                        {% for error in field.errors %}{{ error }}{% endfor %}
+                                    </span>
+                                </label>
+                                {% endif %}
+                            </div>
+                        {% endif %}
                     {% endfor %}
 
                     {# Read-only fields: User Status #}
@@ -216,7 +233,6 @@
 
             <div class="flex justify-end pt-5 border-t border-base-200/50 mt-6">
                 <button type="submit" class="btn btn-primary btn-sm hover:scale-105 transition-transform shadow-lg hover:shadow-xl">
-                    {# ICON SIZE CHANGED FROM w-4 h-4 to w-3.5 h-3.5 #}
                     <i data-feather="save" class="w-3.5 h-3.5 mr-1.5"></i>
                     Save Changes
                 </button>
@@ -232,8 +248,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         feather.replace();
         
-        // Add subtle animation to form elements on focus/blur
-        const inputs = document.querySelectorAll('input:not([type="file"]), select, textarea'); // Exclude file input from this selector
+        const inputs = document.querySelectorAll('input:not([type="file"]), select, textarea');
         inputs.forEach(input => {
             input.addEventListener('focus', function() {
                 this.classList.add('ring-2', 'ring-primary/50');

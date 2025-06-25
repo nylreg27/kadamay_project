@@ -1,90 +1,131 @@
-# apps/payment/models.py
+# apps/payment/models.py (Corrected Version)
+
 from django.db import models
-from apps.individual.models import Individual
-from apps.contribution_type.models import ContributionType
 from django.contrib.auth import get_user_model
+from apps.church.models import Church # Import Church model - assuming still needed for other models in the future, or delete if not.
+# No direct import of Individual or ContributionType here due to string references.
 
-User = get_user_model()
-
+User = get_user_model() # Get the currently active user model
 
 class Payment(models.Model):
+    """
+    Model for recording payments from KADAMAY members.
+    Handles multiple payments under one OR number via PaymentCoveredMember.
+    """
     PAYMENT_METHOD_CHOICES = [
-        ('cash', 'Cash'),
-        ('gcash', 'GCash'),
+        ('CASH', 'Cash'),
+        ('GCASH', 'G-Cash'),
     ]
 
-    STATUS_CHOICES = [
-        ('paid', 'Paid'),
-        ('pending', 'Pending (for GCash validation)'),
-        ('cancelled', 'Cancelled'),
+    PAYMENT_STATUS_CHOICES = [
+        ('PAID', 'Paid'),
+        ('CANCELLED', 'Cancelled'),
     ]
 
-    # KINI ANG KAUSABAN: Gihimo ni natong null=True ug blank=True
-    # para maka-accommodate sa payments nga walay OR number
-    or_number = models.CharField(
-        max_length=50, unique=True, null=True, blank=True, verbose_name="Official Receipt No.")
-
+    # FIELD ADDED/MODIFIED FOR CONSISTENCY WITH FORMS.PY AND REQUIREMENTS
     individual = models.ForeignKey(
-        Individual, on_delete=models.CASCADE, related_name='payments_made', verbose_name="Payer/Member")
-    amount = models.DecimalField(
-        max_digits=10, decimal_places=2, verbose_name="Amount Paid")
+        'individual.Individual',  # String reference to Individual model
+        on_delete=models.CASCADE,
+        related_name='payments_as_payer',
+        verbose_name="Payer"
+    )
+
+    # RENAMED from 'total_amount' to 'amount' for consistency with forms.py
+    amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Amount Paid")
+    
+    # RENAMED from 'payment_date' to 'date_paid' and changed to DateField
+    # Removed auto_now_add=True so it can be set by the form
     date_paid = models.DateField(verbose_name="Date Paid")
-    payment_method = models.CharField(
-        max_length=10, choices=PAYMENT_METHOD_CHOICES, default='cash', verbose_name="Payment Method")
-    gcash_reference_number = models.CharField(
-        max_length=50, blank=True, null=True, verbose_name="GCash Reference Number")
-    status = models.CharField(
-        max_length=20, choices=STATUS_CHOICES, default='paid', verbose_name="Payment Status")
-    collected_by = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Collected By")
+    
+    # NEW FIELD: contribution_type, needed for the PaymentForm
     contribution_type = models.ForeignKey(
-        ContributionType, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Contribution Type")
+        'contribution_type.ContributionType',  # String reference to ContributionType model
+        on_delete=models.SET_NULL, # Set to null if the ContributionType is deleted
+        null=True, blank=True,
+        related_name='payments_by_type',
+        verbose_name="Contribution Type"
+    )
 
-    # BAG-ONG ADDED FIELDS PARA SA AUDITORS PURPOSE, BRO!
+    or_number = models.CharField(max_length=50, unique=True, verbose_name="Official Receipt Number")
+    payment_method = models.CharField(max_length=10, choices=PAYMENT_METHOD_CHOICES, verbose_name="Payment Method")
+    
+    # For G-Cash payments
+    gcash_reference_number = models.CharField(
+        max_length=100, blank=True, null=True, verbose_name="G-Cash Reference No."
+    )
+    is_validated = models.BooleanField(default=False, verbose_name="Is G-Cash Validated?")
     validated_by = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='payments_validated',
-        verbose_name="Validated By", help_text="User who validated the payment (e.g., for GCash)")
-    cancelled_by = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='payments_cancelled',
-        verbose_name="Cancelled By", help_text="User who cancelled the payment")
-    date_validated = models.DateTimeField(
-        null=True, blank=True, verbose_name="Date Validated")
-    date_cancelled = models.DateTimeField(
-        null=True, blank=True, verbose_name="Date Cancelled")
-    cancellation_reason = models.TextField(
-        blank=True, verbose_name="Cancellation Reason")
+        User, on_delete=models.SET_NULL, null=True, blank=True, 
+        related_name='payments_validated', verbose_name="Validated By"
+    )
 
-    # This M2M field is fine, just ensure the through model has the amount_covered field
-    covered_members = models.ManyToManyField(
-        Individual, through='PaymentCoveredMember', related_name='payments_covered', verbose_name="Members Covered by this Payment")
+    status = models.CharField(max_length=10, choices=PAYMENT_STATUS_CHOICES, default='PAID', verbose_name="Payment Status")
+    collected_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, 
+        related_name='payments_collected', verbose_name="Collected By"
+    )
+    remarks = models.TextField(blank=True, null=True, verbose_name="Remarks/Notes")
+
+    created_at = models.DateTimeField(auto_now_add=True) # This is for tracking when the record was created
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = "Payment"
         verbose_name_plural = "Payments"
-        # Mag-ampo ta nga dili magkagubot sa ordering kung null ang or_number, pero sa date_paid ra man gihapon ang primary.
-        ordering = ['-date_paid', '-or_number']
+        # Updated ordering to use 'date_paid'
+        ordering = ['-date_paid', 'or_number'] 
 
     def __str__(self):
-        # I-handle ang kaso kung null ang or_number
-        or_str = self.or_number if self.or_number else "NO OR"
-        return f"OR {or_str} - {self.amount} ({self.individual.full_name if self.individual else 'N/A'})"
+        # Using 'amount' now
+        return f"OR #{self.or_number} - {self.amount} ({self.get_payment_method_display()})"
 
-    def get_full_name(self):
-        return f"{self.individual.given_name} {self.individual.surname}"
+    def save(self, *args, **kwargs):
+        # Auto-generate OR number if not set (or is empty string)
+        if not self.or_number:
+            last_payment = Payment.objects.order_by('-or_number').first()
+            if last_payment and last_payment.or_number.isdigit():
+                # Assuming OR numbers are purely numeric like 2000134
+                next_or_number = int(last_payment.or_number) + 1
+            else:
+                next_or_number = 2000001 # Starting OR number for KADAMAY project
+            self.or_number = str(next_or_number)
+        super().save(*args, **kwargs)
 
-
-# THIS IS THE PaymentCoveredMember MODEL THAT NEEDS TO BE IN models.py
 class PaymentCoveredMember(models.Model):
-    payment = models.ForeignKey(Payment, on_delete=models.CASCADE)
-    individual = models.ForeignKey(
-        Individual, on_delete=models.CASCADE, verbose_name="Member Covered")
-    amount_covered = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0, verbose_name="Amount Covered")
+    """
+    Represents an individual covered by a specific Payment,
+    allowing multiple individuals per Payment and tracking their attributed amount.
+    """
+    payment = models.ForeignKey(Payment, on_delete=models.CASCADE, related_name='covered_members', verbose_name="Payment")
+    # Gamiton ang string reference para sa 'Individual' model para walay circular import
+    individual = models.ForeignKey('individual.Individual', on_delete=models.CASCADE, related_name='payments_covered', verbose_name="Covered Individual")
+    amount_covered = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Amount Covered for Individual")
+    remarks = models.TextField(blank=True, null=True, verbose_name="Remarks for this Individual")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, 
+        related_name='covered_members_created', verbose_name="Added By"
+    )
 
     class Meta:
-        verbose_name = "Member Covered"
-        verbose_name_plural = "Members Covered"
+        verbose_name = "Payment Covered Member"
+        verbose_name_plural = "Payment Covered Members"
+        # Ensure an individual is only covered once per payment
         unique_together = ('payment', 'individual')
+        ordering = ['payment__or_number', 'individual__surname']
 
     def __str__(self):
-        return f"{self.individual.full_name if self.individual else 'N/A'} (for OR #{self.payment.or_number if self.payment.or_number else 'NO OR'})"
+        # Access Individual properties through the relationship
+        individual_name = "Unknown Individual"
+        if self.individual:
+            try:
+                # Ensure Individual model has 'full_name' property
+                if hasattr(self.individual, 'full_name'):
+                    individual_name = self.individual.full_name
+                else:
+                    individual_name = f"{self.individual.first_name} {self.individual.surname}"
+            except Exception:
+                pass # If Individual object cannot be retrieved or has no name
+
+        return f"Payment OR#{self.payment.or_number} for {individual_name} - {self.amount_covered}"

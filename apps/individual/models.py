@@ -1,6 +1,6 @@
 # apps/individual/models.py
 from django.db import models
-from apps.family.models import Family
+# DELETE THIS LINE: from apps.family.models import Family # <--- THIS IS THE CULPRIT!
 from django.utils import timezone
 from decimal import Decimal
 
@@ -68,15 +68,15 @@ class Individual(models.Model):
 
     date_added = models.DateTimeField(auto_now_add=True)
 
+    # CHANGED: Use string reference 'family.Family' to avoid circular import
     family = models.ForeignKey(
-        Family, on_delete=models.SET_NULL, null=True, blank=True, related_name='members')
+        'family.Family', on_delete=models.SET_NULL, null=True, blank=True, related_name='members')
 
     church = models.ForeignKey(
         Church, on_delete=models.SET_NULL, null=True, blank=True, related_name='individuals'
     )
 
     # Custom save method to auto-generate membership_id
-
     def save(self, *args, **kwargs):
         # Only generate a new membership_id if it's not already set
         if not self.membership_id:
